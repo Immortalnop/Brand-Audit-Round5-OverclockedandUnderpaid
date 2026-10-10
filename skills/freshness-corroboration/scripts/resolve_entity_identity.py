@@ -30,6 +30,9 @@ _LEGAL_SUFFIX_RE = re.compile(
     re.IGNORECASE,
 )
 
+ORG_TYPES = frozenset({"Organization", "Corporation", "LocalBusiness", "OnlineStore", "NGO",
+                       "EducationalOrganization", "GovernmentOrganization"})
+
 _PLATFORM_HOSTS = {
     "twitter.com": "twitter", "x.com": "twitter", "facebook.com": "facebook",
     "linkedin.com": "linkedin", "instagram.com": "instagram", "youtube.com": "youtube",
@@ -63,7 +66,7 @@ def resolve_entity_identity(artifacts, deadline):
         # Mapping (not dict): real PageArtifacts store jsonld_blocks frozen as
         # MappingProxyType; dict-only fixtures still match too.
         block for page in artifacts.pages for block in iter_nodes(page.jsonld_blocks)
-        if isinstance(block, Mapping) and types_of(block) & {"Organization", "Corporation", "LocalBusiness", "OnlineStore", "NGO", "EducationalOrganization", "GovernmentOrganization"}
+        if isinstance(block, Mapping) and types_of(block) & ORG_TYPES
     ]
 
     if not org_blocks:

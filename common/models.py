@@ -88,6 +88,10 @@ class AuditArtifacts:
     sitemap_data: dict
     acquisition_metadata: dict
     warnings: tuple
+    # Observations of non-text media (images, PDFs) gathered after the page crawl.
+    # None when acquisition did not reach that step (blocked target, fail-closed
+    # robots) or when a caller builds a snapshot without it.
+    media_data: Optional[dict] = None
 
 
 @dataclass(frozen=True)

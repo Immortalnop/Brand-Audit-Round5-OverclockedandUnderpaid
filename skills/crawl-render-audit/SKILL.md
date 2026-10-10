@@ -1,7 +1,7 @@
 ---
 name: crawl-render-audit
 description: >-
-  Analyzes off-site AI discoverability mechanics for a crawled website -- reachability, robots.txt (with fetch-status calibration: ok/absent/timeout/ inaccessible/malformed/blocked, never inferring a disallow from a failed fetch) and AI-crawler-specific access, raw-vs-rendered content gaps, machine-readable structured data (JSON-LD), sitemap.xml discovery, and llms.txt presence. Called by audit-orchestrator as part of its independent analysis batch; not intended to be invoked standalone.
+  Analyzes off-site AI discoverability mechanics for a crawled website -- reachability, robots.txt (with fetch-status calibration: ok/absent/timeout/ inaccessible/malformed/blocked, never inferring a disallow from a failed fetch) and AI-crawler-specific access, raw-vs-rendered content gaps, machine-readable structured data (JSON-LD), sitemap.xml discovery, llms.txt presence, and facts locked in non-text media (SVG image text, raster images named as price lists or menus, and linked PDFs). Called by audit-orchestrator as part of its independent analysis batch; not intended to be invoked standalone.
 license: MIT
 allowed-tools: Bash(python3:*) Read
 ---
@@ -21,7 +21,7 @@ An `AuditArtifacts` snapshot produced by `acquire_site.py`.
 
 ## Procedure
 Run `analyze_crawlability`, `analyze_rendering`, `analyze_machine_readability`,
-`check_ai_crawler_access`, and `check_llms_txt` -- see
+`check_ai_crawler_access`, `check_llms_txt`, and `analyze_non_text` -- see
 `references/crawl-render-checklist.md`.
 
 ## Output
@@ -50,3 +50,12 @@ descriptions, canonical hints, language, landmarks, heading hierarchy and social
 previews. Performance covers observed document bytes, synchronous head scripts,
 image dimension hints and retrieval timing, never fabricated Core Web Vitals.
 Use common/check_catalog.py for rule mechanisms and implementation guidance.
+
+## Non-text media
+
+`analyze_non_text.py` reads the image and PDF observations that acquisition
+collected (`common/non_text.py` for SVG text and image headers,
+`common/pdf_text.py` for standard-library PDF text extraction). It compares the
+facts found in media with the facts stated in readable text and reports
+`facts-in-images`, `pdf-only-facts` and `pdf-image-only`. It makes no network
+requests of its own.

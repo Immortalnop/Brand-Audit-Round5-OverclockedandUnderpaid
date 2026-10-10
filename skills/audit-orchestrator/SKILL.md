@@ -30,7 +30,7 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    independent analysis batch (crawl-render-audit checks plus the data-producing
    steps of freshness-corroboration and engagement-audit), runs the mandatory
    sequential `identify_important_facts` step, then runs the dependent batch
-   (freshness, corroboration, footprint, engagement).
+   (freshness, corroboration, footprint, knowledge graph, engagement).
 3. Findings are merged (`merge_findings.py`), prioritized
    (`prioritize_findings.py`), and validated (`validate_report.py`).
 4. Return the resulting report to the user as-is.
@@ -51,6 +51,18 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
   network policy; the audit does not click, type or submit forms.
 - **Byte budgets are enforced during download** (streaming), not after a full
   response has already been pulled into memory.
+- **Non-text media is bounded**: after the page crawl, at most 6 images and 3
+  linked PDFs are fetched, same origin only, robots-checked before selection, from
+  the request, byte and time budget the crawl left. Raster images are read only up
+  to their header (a Range request capped at 64 KiB); PDF parsing is capped at 4
+  seconds per file.
+- **Knowledge-graph verification is bounded and optional**: the only requests
+  to hosts other than the target verify a Wikidata item or Wikipedia article the
+  site itself declares in Organization sameAs. At most 4 GETs to public `/wiki/`
+  pages, each host's robots.txt read first (fail closed), within 15 seconds;
+  `KNOWLEDGE_GRAPH_LOOKUP=0` turns it off. A failed lookup is a limitation, never
+  a finding. Sitemap `<lastmod>` and `Last-Modified` dates come from responses
+  already fetched, so they cost no requests.
 
 ## Output
 A JSON report matching `references/report-schema.md`: `site`, `audited_at`,

@@ -27,6 +27,15 @@ class Limits:
     PER_FETCH_TIMEOUT_MS: int = 3500
     MAX_EXTERNAL_CONCURRENCY: int = 4
     MAX_TOTAL_HTTP_REQUESTS: int = 90
+    # Non-text media (facts locked in images and PDFs). Fetched after the page
+    # crawl from whatever request, byte and time budget remains; same origin only.
+    MAX_IMAGE_FETCHES: int = 6
+    MAX_SVG_BYTES: int = 262_144
+    MAX_IMAGE_HEADER_BYTES: int = 65_536
+    MAX_PDF_FETCHES: int = 3
+    MAX_PDF_BYTES: int = 1_500_000
+    PDF_PARSE_BUDGET_S: float = 4.0
+    MAX_IMAGE_RECORDS_PER_PAGE: int = 60
 
 
 DEFAULT_LIMITS = Limits()

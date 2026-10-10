@@ -11,19 +11,27 @@ allowed-tools: Bash(python3:*) Read
 Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`, and
 `build_site_graph`-adjacent data steps run in the independent batch;
 `identify_important_facts` runs once, sequentially, between the two batches;
-`assess_freshness`, `corroborate_claims`, and `assess_external_footprint` run in
-the dependent batch.
+`assess_freshness`, `corroborate_claims`, `assess_external_footprint`, and
+`check_knowledge_graph` run in the dependent batch.
 
 ## Dependencies
 `extract_claims`, `identify_important_facts`, `resolve_entity_identity`, and
-`assess_freshness` are pure-Python, no network. `corroborate_claims` and
+`assess_freshness` (with `update_signals`) are pure-Python, no network.
+`check_knowledge_graph` checks Organization `sameAs` for a Wikidata or Wikipedia
+link without network access; it verifies a declared link with at most a few
+robots-checked GETs to the public `/wiki/` paths of wikidata.org and
+wikipedia.org (15-second budget, off with `KNOWLEDGE_GRAPH_LOOKUP=0`). A failed
+lookup is a warning, never a finding. `corroborate_claims` and
 `assess_external_footprint` call the pluggable `common/search_provider.py`
 (optional capability, standard-library) -- gated on `SEARCH_API_URL` being set;
 unset or failing degrades to `insufficient_evidence`, never a confirmed
 absence.
 
 ## Inputs
-`AuditArtifacts`, the `claims` intermediate artifact, and the shared
+`AuditArtifacts` (including JSON-LD `datePublished`/`dateModified`, read by
+`extract_claims.structured_date_claims`; sitemap `<lastmod>` and the HTTP
+`Last-Modified` header, read by `update_signals.page_update_claims`), the
+`claims` intermediate artifact, and the shared
 `entity_identity` artifact (resolved once, reused by every consumer).
 
 ## Procedure

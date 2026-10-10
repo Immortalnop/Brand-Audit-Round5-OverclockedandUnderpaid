@@ -26,10 +26,17 @@ CHECK_TIERS = MappingProxyType({
     "freshness_from_dated_facts": "executable",
     "dedup_merge_prioritize_validate": "executable",
     "rendering_gap_heuristic": "executable",
+    "non_text_svg_and_pdf_text": "executable",
+    "structured_date_freshness": "executable",
+    "sitemap_lastmod_and_last_modified_freshness": "executable",
+    "knowledge_graph_link_check": "executable",
+    "knowledge_graph_entity_verification": "fallback",
     "rendering_headless_browser": "fallback",
     "external_corroboration": "fallback",
     "external_footprint_search": "fallback",
     "agent_entity_corroboration": "optional",
+    "agent_image_vision": "optional",
+    "agent_knowledge_graph_search": "optional",
 })
 
 

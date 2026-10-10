@@ -14,8 +14,18 @@ it stays a plain classification of what the fact IS, not a verdict on it.
 """
 import re
 from collections.abc import Mapping
-from structured_data import iter_nodes
+from datetime import date, datetime, timedelta, timezone
+from structured_data import iter_nodes, types_of
 from models import intermediate_artifact
+
+# Strict ISO 8601 calendar date with an optional time and offset, the form
+# schema.org expects for datePublished and dateModified. Parsed by hand so the
+# behavior is identical on every supported Python version.
+_ISO_DATE_RE = re.compile(
+    r"(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?")
+_COMMERCIAL_TYPES = {"Product", "IndividualProduct", "Offer", "AggregateOffer", "Service",
+                     "SoftwareApplication", "MobileApplication", "WebApplication"}
+_STRUCTURED_DATE_KEYS = ("datePublished", "dateModified")
 
 _DATE_RE = re.compile(
     r"\b(19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2}\b"
@@ -45,6 +55,79 @@ _STRUCTURED_KEY_CATEGORY = {
     "sameAs": "editorial",
     "name": "editorial",
 }
+
+
+def _parse_iso_date(value):
+    if not isinstance(value, str):
+        return None
+    match = _ISO_DATE_RE.fullmatch(value.strip())
+    if not match:
+        return None
+    try:
+        return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    except ValueError:
+        return None
+
+
+def structured_date_claims(pages, today=None):
+    """Explicit publication and update dates declared in JSON-LD.
+
+    Returns (claims, issues). Each JSON-LD node contributes at most one claim: its
+    most recent valid date, so an old datePublished followed by a recent
+    dateModified reads as recently updated, never as stale. `issues` lists values
+    that are not ISO 8601 dates, dates in the future, and a dateModified earlier
+    than the datePublished of the same node.
+
+    These claims are deliberately not added to the claims artifact: the
+    important-facts ranking keeps only the top-ranked claims for corroboration,
+    and site-wide date claims would displace prices and contact facts there.
+    assess_freshness reads them directly instead."""
+    today = today or datetime.now(timezone.utc).date()
+    claims, issues = [], []
+    for page in pages:
+        for node in iter_nodes(page.jsonld_blocks):
+            if not isinstance(node, Mapping):
+                continue
+            types = types_of(node)
+            subject = sorted(types)[0] if types else "entity"
+            parsed = {}
+            for key in _STRUCTURED_DATE_KEYS:
+                if key not in node:
+                    continue
+                values = node[key] if isinstance(node[key], (list, tuple)) else [node[key]]
+                for raw in values[:3]:
+                    shown = str(raw).strip()[:80]
+                    parsed_date = _parse_iso_date(raw)
+                    if parsed_date is None:
+                        issues.append({"source": page.url, "subject": subject, "field": key,
+                                       "value": shown, "issue": "unparseable"})
+                    elif parsed_date > today + timedelta(days=1):
+                        issues.append({"source": page.url, "subject": subject, "field": key,
+                                       "value": shown, "issue": "future"})
+                    elif key not in parsed or parsed_date > parsed[key][0]:
+                        parsed[key] = (parsed_date, shown)
+            if not parsed:
+                continue
+            if "datePublished" in parsed and "dateModified" in parsed \
+                    and parsed["dateModified"][0] < parsed["datePublished"][0]:
+                issues.append({"source": page.url, "subject": subject, "field": "dateModified",
+                               "value": parsed["dateModified"][1],
+                               "issue": "modified_before_published",
+                               "published": parsed["datePublished"][1]})
+            # Latest date wins; on a tie the declared modification date is reported.
+            key = max(parsed, key=lambda k: (parsed[k][0], k == "dateModified"))
+            latest, shown = parsed[key]
+            if types & _COMMERCIAL_TYPES:
+                category = "commercial"
+            elif page.page_type == "legal":
+                category = "legal"
+            else:
+                category = "editorial"
+            claims.append({"source": page.url, "subject": subject, "predicate": key,
+                           "value": shown, "iso_date": latest.isoformat(), "type": "date",
+                           "category": category, "origin": "jsonld",
+                           "importance": 0.5, "confidence": 0.9})
+    return claims, issues
 
 
 def extract_claims(artifacts, deadline):

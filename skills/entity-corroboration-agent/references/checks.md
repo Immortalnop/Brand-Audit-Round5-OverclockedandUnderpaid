@@ -1,4 +1,4 @@
-# Agent-stage checks (AG-01 to AG-03)
+# Agent-stage checks (AG-01 to AG-05)
 
 These three checks are deliberately not automated. Each requires judging natural
 language, which a fixed threshold cannot do without producing false positives on
@@ -7,7 +7,8 @@ entrypoint ingests them in-process and reconstructs each through the shared find
 factory, so catalog wording and Invariant I-1 apply exactly as for script findings.
 
 Catalog rule IDs used after ingest: AG-01 maps to about-concreteness, AG-02 to
-no-independent-mention, AG-03 to independent-contradiction.
+no-independent-mention, AG-03 to independent-contradiction, AG-04 to
+facts-in-images, AG-05 to kg-namesake-ambiguity.
 
 - AG-01 (medium) About-page self-description is not concrete enough to quote.
   Fires when the opening of the About page (or homepage, if there is no About page)
@@ -32,6 +33,26 @@ no-independent-mention, AG-03 to independent-contradiction.
   the discrepancy and confidence drops across every fact associated with the
   entity, including the ones that were correct. This is the most damaging of the
   three and the most frequently missed, because the site itself looks healthy.
+
+- AG-04 (medium, confirmed) Facts are drawn inside an image instead of stated in
+  text. Fires when the agent views an image and sees a concrete fact (price,
+  opening hours, phone number, specification) that the page text does not state.
+  Mechanism: crawlers and assistants read HTML text, not pixels, so a fact that
+  exists only inside an image is invisible to them. The scripts read SVG text and
+  flag raster images by name; only this vision step can confirm what a raster
+  image shows. Supply affected_pages so the finding merges with the script
+  finding for the same pages.
+
+- AG-05 (medium, confirmed) Other knowledge-graph entities share the brand name.
+  Fires when a search of Wikidata and Wikipedia finds an entity with the same or a
+  near-identical name that is a different organization, person, place or product,
+  and the site does not declare its own entity in Organization sameAs.
+  Mechanism: knowledge graphs are the main signal assistants use to tell
+  same-named entities apart; without a declared entity, facts about the namesake
+  can be merged into the brand. The scripts only verify a declared entity
+  (kg-link-missing, kg-entity-mismatch); robots.txt for both hosts disallows their
+  search endpoints, so the name lookup is this agent step. Having no Wikidata entry
+  at all is not a defect and records nothing.
 
 ## The three-outcome rule
 

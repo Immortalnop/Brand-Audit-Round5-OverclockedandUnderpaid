@@ -13,7 +13,7 @@ class Document(HTMLParser):
         self.images=0;self.missing_alt=0;self.forms=0;self.email_capture=False;self.search=False
         self.buttons=[];self.media=0;self.details=0;self.overlay=False;self.microdata=False
         self.landmarks=set();self.head_blocking_scripts=0;self.images_missing_dims=0;self.images_lazy=0
-        self.canonicals=[];self.paragraph_text=[]
+        self.canonicals=[];self.paragraph_text=[];self.image_records=[]
         self._script=None
     def handle_starttag(self,tag,attrs):
         self.node_count+=1
@@ -40,6 +40,11 @@ class Document(HTMLParser):
             if a.get('loading','').lower()=='lazy':self.images_lazy+=1
             # alt="" is valid for decorative images; only missing attributes count.
             if 'alt' not in a and a.get('role') not in ('presentation','none'):self.missing_alt+=1
+            # Bounded per-page record of visible images for the non-text media checks.
+            src=(a.get('src') or a.get('data-src') or a.get('data-lazy-src') or a.get('srcset','').split(',')[0].strip().split(' ')[0]).strip()
+            if src and not src.lower().startswith('data:') and not frame['hidden'] and len(self.image_records)<60:
+                self.image_records.append({'src':src,'alt':a['alt'] if 'alt' in a else None,'title':a.get('title') or None,
+                                           'width':a.get('width') or None,'height':a.get('height') or None})
         if tag=='form':self.forms+=1
         if tag=='input':
             self.email_capture |= a.get('type','').lower()=='email'
@@ -92,4 +97,5 @@ class Document(HTMLParser):
                 'buttons':self.buttons[:50],'anchors':self.links[:200],'scripts':self.scripts,'spa_mount':self.spa,
                 'images':self.images,'missing_alt':self.missing_alt,'forms':self.forms,'email_capture':self.email_capture,
                 'search':self.search,'media':self.media,'details':self.details,'overlay_pattern':self.overlay,
-                'alternative_structured_markup':self.microdata,'meta':self.meta}
+                'alternative_structured_markup':self.microdata,'meta':self.meta,
+                'image_records':self.image_records}

@@ -456,6 +456,65 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                      'put the important lines first in outbound emails.',
                             'mechanism': 'Inbox summaries are built from readable text, so substance carried '
                                          'only in images can be dropped.'},
+ 'facts-in-images': {'expected_outcome': 'Prices, hours and specifications shown in images become '
+                                         'quotable text for crawlers and assistants.',
+                     'implementation_detail': 'State each fact shown in the image as HTML text near the '
+                                              'image, give the image descriptive alt text, and mirror '
+                                              'structured facts in JSON-LD.',
+                     'mechanism': 'Facts shown only inside an image are invisible to crawlers and '
+                                  'assistants that read HTML text.'},
+ 'pdf-only-facts': {'expected_outcome': 'Key facts are retrievable from an HTML page, with the PDF kept '
+                                        'as a supplementary download.',
+                    'implementation_detail': 'Publish the prices, specifications or contact details from '
+                                             'each PDF on an HTML page and link the PDF from it.',
+                    'mechanism': 'Facts that exist only in a PDF are less likely to be retrieved and '
+                                 'quoted than facts stated on an HTML page.'},
+ 'pdf-image-only': {'expected_outcome': 'The PDF contents become extractable and quotable.',
+                    'implementation_detail': 'Export the PDF from its source document with selectable '
+                                             'text or add a text layer with OCR, and state the key facts '
+                                             'in HTML.',
+                    'mechanism': 'A PDF whose pages are images has no text layer, so nothing in it can '
+                                 'be extracted or quoted.'},
+ 'structured-date-invalid': {'expected_outcome': 'Structured publication and update dates are parsed '
+                                                 'reliably and agree with each other.',
+                             'implementation_detail': 'Emit datePublished and dateModified as ISO 8601 '
+                                                      'dates, keep dateModified on or after '
+                                                      'datePublished, and never set a future date.',
+                             'mechanism': 'Unparseable, inverted or future JSON-LD dates give crawlers '
+                                          'contradictory freshness signals, so the dates are ignored or '
+                                          'distrusted.'},
+ 'sitemap-lastmod-unreliable': {'expected_outcome': 'Crawlers can rely on sitemap lastmod to find and '
+                                                    'recrawl pages that actually changed.',
+                                'implementation_detail': 'Set each sitemap lastmod from the date the page '
+                                                         'content last changed, in W3C Datetime form, never '
+                                                         'the build time and never a future date.',
+                                'mechanism': 'Crawlers use sitemap lastmod to decide what to recrawl only '
+                                             'while it is present and accurate; missing, invalid or '
+                                             'build-stamped values are ignored, so updates are found late.'},
+ 'kg-link-missing': {'expected_outcome': 'Assistants can tie the brand to one knowledge-graph entity and '
+                                         'tell it apart from same-named entities.',
+                     'implementation_detail': 'Add the Wikidata item (and Wikipedia article, if one exists) '
+                                              'to Organization sameAs, and make sure the Wikidata item '
+                                              'lists this site as its official website (P856).',
+                     'mechanism': 'Knowledge graphs are the main signal assistants use to tell same-named '
+                                  'entities apart; without a two-way link between the site and its '
+                                  'knowledge-graph entity, the brand can be confused with a namesake.'},
+ 'kg-entity-mismatch': {'expected_outcome': 'The declared knowledge-graph entity and the site describe the '
+                                            'same organization.',
+                        'implementation_detail': 'Point Organization sameAs at the correct Wikidata item and '
+                                                 'Wikipedia article, or correct the official website and '
+                                                 'name on the entity itself.',
+                        'mechanism': 'A sameAs link to a knowledge-graph entity whose name or official '
+                                     'website disagrees with the site tells assistants the brand is a '
+                                     'different organization, which causes mistaken identity.'},
+ 'kg-namesake-ambiguity': {'expected_outcome': 'Assistants attribute facts to the right organization when '
+                                               'other entities share its name.',
+                           'implementation_detail': 'Declare the brand knowledge-graph entity in '
+                                                    'Organization sameAs and state distinguishing facts '
+                                                    '(category, location, founding year) on the site.',
+                           'mechanism': 'When other knowledge-graph entities share the brand name, '
+                                        'assistants can merge their facts into the brand unless the site '
+                                        'states clearly which entity it is.'},
  'viewport': {'expected_outcome': 'Improves responsive layout configuration; actual layout still requires '
                                   'testing.',
               'implementation_detail': 'Add a responsive viewport declaration and verify real mobile layout.',

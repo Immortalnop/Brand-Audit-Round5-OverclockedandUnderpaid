@@ -4,7 +4,9 @@ The entity-corroboration-agent skill is the one qualitative stage in this
 marketplace: the calling agent, not a deterministic script, judges About-page
 concreteness (AG-01) and cross-web agreement or contradiction (AG-02 / AG-03)
 using its own reading and web_search tools, per the handout's explicit allowance
-to query public community platforms such as Reddit and Quora. That judgment is
+to query public community platforms such as Reddit and Quora, and reads facts
+drawn inside raster images with its own vision (AG-04), and searches knowledge
+graphs for entities that share the brand name (AG-05). That judgment is
 handed back as a small JSON array; this module ingests it in-process and returns
 a SkillResult in exactly the same shape as every other v6 specialist.
 
@@ -28,6 +30,7 @@ import os
 
 from models import (skill_result, make_finding, insufficient_evidence_result,
                      apply_invariant_i1)
+from check_catalog import get_entry
 
 # Environment variable naming the agent's findings file. Kept as an env var (not a
 # fixed workdir path) so nothing about this stage assumes the donor's subprocess
@@ -77,6 +80,45 @@ _AG_RULES = {
         "steps": ("Identify the specific contradicted fact and its source",
                   "Correct the fact where it is wrong",
                   "State the accurate version explicitly on-site and in markup"),
+    },
+    # AG-04 is the vision half of the deterministic facts-in-images check: scripts
+    # can read SVG text but never raster pixels, so the calling agent looks at the
+    # images and reports facts it saw that the page text does not state. It shares
+    # the facts-in-images rule and root cause, so merge_findings folds an AG-04
+    # finding into the script finding for the same pages.
+    "AG-04": {
+        "rule_id": "facts-in-images",
+        "category": "ai_discoverability",
+        "default_severity": "medium",
+        "default_status": "confirmed",
+        "default_type": "defect",
+        "root_cause_from_catalog": True,
+        "title": "Facts are drawn inside images instead of stated in text",
+        "summary": "State the facts shown in these images as real text on the page",
+        "steps": ("Write the prices, hours or specifications shown in each listed image as HTML "
+                  "text near the image",
+                  "Give each image alt text that says what it shows",
+                  "Where the facts are structured, also state them in JSON-LD"),
+        "expected_benefit": "Crawlers and assistants that read text can quote these facts",
+    },
+    # AG-05 is the search half of the knowledge-graph check. robots.txt for
+    # wikidata.org and wikipedia.org disallows their search APIs, so the scripts
+    # only verify an entity the site already declares; the agent looks the brand
+    # name up with its own web search and reports same-named entities.
+    "AG-05": {
+        "rule_id": "kg-namesake-ambiguity",
+        "category": "ai_discoverability",
+        "default_severity": "medium",
+        "default_status": "confirmed",
+        "default_type": "proactive_improvement",
+        "root_cause_from_catalog": True,
+        "title": "Other knowledge-graph entities share the brand name",
+        "summary": "Declare the brand's own knowledge-graph entity and state what sets it apart",
+        "steps": ("Add the brand's Wikidata item to Organization sameAs, or create one if the "
+                  "organization meets Wikidata's notability policy",
+                  "State distinguishing facts on the site: category, location and founding year",
+                  "Use the same name and description in markup and on the About page"),
+        "expected_benefit": "Assistants stop merging facts about same-named entities into the brand",
     },
 }
 
@@ -135,6 +177,12 @@ def _build_finding(raw):
     steps = action.get("steps")
     steps = list(steps) if isinstance(steps, (list, tuple)) and steps else list(rule["steps"])
 
+    evidence = _evidence_list(raw)
+    pages = raw.get("affected_pages")
+    if isinstance(pages, list):
+        pages = [u for u in pages if isinstance(u, str) and u.startswith(("http://", "https://"))][:20]
+    else:
+        pages = []
     finding = make_finding(
         category=rule["category"],
         finding_type=finding_type,
@@ -142,15 +190,18 @@ def _build_finding(raw):
         status=status,
         confidence=0.7 if status == "confirmed" else 0.55,
         title=str(raw.get("title") or rule["title"]),
-        root_cause=_evidence_list(raw)[0]["description"],
-        evidence=_evidence_list(raw),
+        root_cause=(get_entry(rule["rule_id"])["mechanism"] if rule.get("root_cause_from_catalog")
+                    else evidence[0]["description"]),
+        evidence=evidence,
+        affected_pages=pages or None,
         suggested_action={
             "summary": summary,
             "steps": steps,
             "priority": severity,
             "effort": str(action.get("effort") or "medium"),
-            "expected_benefit": "Improves identity clarity and independent corroboration",
-            "verification": "Re-run the qualitative corroboration stage after changes",
+            "expected_benefit": rule.get("expected_benefit",
+                                         "Improves identity clarity and independent corroboration"),
+            "verification": "Re-run the qualitative agent stage after changes",
         },
         provenance={"skill": "entity-corroboration-agent",
                     "script": "ingest_agent_findings.py", "rule_id": rule["rule_id"]},

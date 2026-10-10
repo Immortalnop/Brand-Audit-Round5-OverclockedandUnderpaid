@@ -11,11 +11,29 @@ or address (contact) breaks the ability to reach the business, so it's also high
 operational facts (hours, "last verified" style claims) are medium; editorial dates
 (blog/article timestamps) and legal boilerplate (copyright years) are low -- both
 are common and expected to lag.
+
+Two date sources are combined:
+  - dates mentioned in visible text (extract_claims). When the full claims
+    artifact is supplied, every text date is assessed, not only the dates that
+    survived the important-facts ranking, where dates rank lowest.
+  - explicit JSON-LD datePublished/dateModified (extract_claims.structured_date_claims).
+    A page whose JSON-LD declares a recent update is not reported for old
+    editorial dates in its text: the declared update supersedes them. Invalid
+    structured dates (not ISO 8601, in the future, or modified before published)
+    are reported separately as structured-date-invalid.
+  - page update dates declared outside the text: sitemap <lastmod> and the HTTP
+    Last-Modified header (update_signals). A page claim is added only when it is
+    more recent than every JSON-LD date on that page, and a recent update from
+    any source supersedes old editorial dates in the page text. Missing,
+    invalid or build-stamped lastmod values are reported as
+    sitemap-lastmod-unreliable.
 """
 from datetime import datetime, timezone
 import re
 from models import (skill_result, make_finding, insufficient_evidence_result,
                      coverage_ratio, scale_confidence, step_down_severity)
+from extract_claims import structured_date_claims
+from update_signals import page_update_claims
 
 # category -> (severity, human label used in the finding title/root_cause)
 _CATEGORY_CALIBRATION = {
@@ -29,20 +47,158 @@ _CATEGORY_CALIBRATION = {
 # old; being old is not evidence of staleness for this category, so it is excluded
 # from staleness detection entirely rather than assigned a low severity.
 _EXCLUDED_FROM_STALENESS = {"historical"}
+_STALE_AFTER_YEARS = 3
+_ISSUE_TEXT = {
+    "unparseable": "is not an ISO 8601 date",
+    "future": "is in the future",
+    "modified_before_published": "is earlier than datePublished",
+}
 
 
-def assess_freshness(facts, artifacts, deadline):
+_DECLARED_ORIGINS = ("jsonld", "update_signal")
+
+
+def _years(fact):
+    if fact.get("origin") in _DECLARED_ORIGINS:
+        return [int(fact["iso_date"][:4])]
+    return [int(y) for y in re.findall(r"\b((?:19|20)\d{2})\b", str(fact["value"]))]
+
+
+def _dedupe(facts):
+    seen, out = set(), []
+    for fact in facts:
+        key = (fact.get("source"), fact.get("predicate"), str(fact.get("value")))
+        if key not in seen:
+            seen.add(key)
+            out.append(fact)
+    return out
+
+
+def _describe(fact):
+    if fact.get("origin") == "jsonld":
+        return f"JSON-LD {fact['predicate']} {fact['value']} ({fact.get('subject', 'entity')})"
+    if fact.get("origin") == "update_signal":
+        return f"{fact['predicate']} {fact['value']} (page last updated {fact['iso_date']})"
+    return str(fact["value"])
+
+
+def _invalid_dates_finding(issues):
+    unique = _dedupe([{"source": i["source"], "predicate": i["field"] + i["issue"], "value": i["value"], **i}
+                      for i in issues])
+    evidence = []
+    for issue in unique[:10]:
+        detail = _ISSUE_TEXT[issue["issue"]]
+        if issue["issue"] == "modified_before_published":
+            detail += f" ({issue.get('published')})"
+        evidence.append({"type": "structured_date",
+                         "description": f"{issue['field']} '{issue['value']}' on {issue['subject']} {detail}",
+                         "urls": [issue["source"]]})
+    return make_finding(
+        category="freshness", finding_type="defect", severity="low",
+        status="confirmed", confidence=0.9,
+        title="JSON-LD publication or update dates are invalid",
+        root_cause="Structured datePublished/dateModified values are unparseable, in the future, "
+                   "or inverted, so they cannot serve as a reliable freshness signal",
+        evidence=evidence,
+        suggested_action={
+            "summary": "Correct the invalid datePublished and dateModified values",
+            "steps": ["Emit both dates in ISO 8601 form, for example 2026-03-01 or 2026-03-01T09:00:00Z",
+                      "Keep dateModified on or after datePublished",
+                      "Never set a publication or update date in the future"],
+            "priority": "low", "effort": "low",
+            "expected_benefit": "Crawlers can read and trust the declared publication and update dates",
+            "verification": "Re-run the audit and validate the markup with a structured-data validator",
+        },
+        provenance={"skill": "freshness-corroboration", "script": "assess_freshness.py",
+                    "rule_id": "structured-date-invalid"},
+    )
+
+
+def _sitemap_lastmod_finding(sitemap_data, quality):
+    """sitemap-lastmod-unreliable: the sitemap was read but gives crawlers no usable
+    update dates (none declared, invalid values, or one date stamped on nearly
+    every URL). Returns None when the sitemap was not read or its dates are fine."""
+    if sitemap_data.get("status") != "ok" or not quality["url_entries"]:
+        return None
+    evidence, confirmed = [], False
+    if not quality["with_lastmod"]:
+        confirmed = True
+        evidence.append({"type": "sitemap_lastmod",
+                         "description": f"None of the {quality['url_entries']} sitemap URL entries "
+                                        f"declares <lastmod>"})
+    for item in quality["invalid"][:5]:
+        confirmed = True
+        detail = {"unparseable": "is not a date in W3C Datetime form",
+                  "nonstandard": "is not in W3C Datetime form (a 'T' must separate date and time); "
+                                 "its date was still used",
+                  "future": "is in the future"}[item["issue"]]
+        evidence.append({"type": "sitemap_lastmod", "description": f"lastmod '{item['value']}' {detail}",
+                         "urls": [item["url"]]})
+    if quality["uniform"]:
+        u = quality["uniform"]
+        evidence.append({"type": "sitemap_lastmod",
+                         "description": f"{u['count']} of {u['of']} valid lastmod values are the same date "
+                                        f"({u['date']}), so they reflect when the sitemap was generated, "
+                                        f"not when each page changed"})
+    if not evidence:
+        return None
+    invalid = bool(quality["invalid"])
+    return make_finding(
+        category="freshness", finding_type="defect" if invalid else "proactive_improvement",
+        severity="low", status="confirmed" if confirmed else "suspected",
+        confidence=0.85 if confirmed else 0.6,
+        title="Sitemap lastmod dates are missing or unreliable",
+        root_cause="Sitemap lastmod dates are missing, malformed or not set per page, so crawlers "
+                   "cannot rely on them to recrawl changed pages first",
+        evidence=evidence, affected_pages=[],
+        suggested_action={
+            "summary": "Publish an accurate <lastmod> for every sitemap URL",
+            "steps": ["Set lastmod from the date each page's content last changed, not the build time",
+                      "Use W3C Datetime, for example 2026-03-01 or 2026-03-01T09:00:00+00:00",
+                      "Never declare a future date"],
+            "priority": "low", "effort": "low",
+            "expected_benefit": "Search and AI crawlers recrawl updated pages sooner and keep trusting the dates",
+            "verification": "Re-run the audit and compare lastmod values with real content changes",
+        },
+        provenance={"skill": "freshness-corroboration", "script": "assess_freshness.py",
+                    "rule_id": "sitemap-lastmod-unreliable"},
+    )
+
+
+def assess_freshness(facts, artifacts, deadline, claims=None):
     fact_list = facts.get("data", {}).get("facts", [])
-    date_facts = [f for f in fact_list if f["type"] == "date"]
+    pool = list(fact_list)
+    if claims is not None:
+        pool += claims.get("data", {}).get("claims", [])
+    text_dates = _dedupe([f for f in pool if f.get("type") == "date" and f.get("origin") != "jsonld"])
+    structured, issues = structured_date_claims(artifacts.pages)
+    structured = _dedupe(structured)
+    page_updates, update_metrics, lastmod_quality = page_update_claims(
+        artifacts.pages, artifacts.sitemap_data)
+    newest_structured = {}
+    for f in structured:
+        newest_structured[f["source"]] = max(newest_structured.get(f["source"], ""), f["iso_date"])
+    # A page update date adds information only when it is newer than every JSON-LD
+    # date already declared on that page; otherwise the JSON-LD claim speaks for it.
+    page_updates = [f for f in page_updates if f["iso_date"] > newest_structured.get(f["source"], "")]
+    date_facts = text_dates + structured + page_updates
+    lastmod_finding = _sitemap_lastmod_finding(artifacts.sitemap_data, lastmod_quality)
 
-    if not date_facts:
+    if not date_facts and not issues and lastmod_finding is None:
         return insufficient_evidence_result(
             "freshness-corroboration",
             "No dated facts found; freshness cannot be assessed (absence is not proof of staleness).",
+            metrics=update_metrics,
         )
 
     current_year = datetime.now(timezone.utc).year
-    stale_all = [f for f in date_facts if any(int(y) < current_year - 3 for y in re.findall(r"\b((?:19|20)\d{2})\b", f["value"]))]
+    cutoff = current_year - _STALE_AFTER_YEARS
+    recently_updated = {f["source"] for f in structured + page_updates if _years(f)[0] >= cutoff}
+    superseded = [f for f in text_dates
+                  if f.get("category") == "editorial" and f.get("source") in recently_updated]
+    superseded_ids = {id(f) for f in superseded}
+    candidates = [f for f in date_facts if id(f) not in superseded_ids]
+    stale_all = [f for f in candidates if any(y < cutoff for y in _years(f))]
     stale_assessable = [f for f in stale_all if f.get("category") not in _EXCLUDED_FROM_STALENESS]
     excluded_count = len(stale_all) - len(stale_assessable)
 
@@ -74,7 +230,7 @@ def assess_freshness(facts, artifacts, deadline):
             root_cause=f"Dated content classified as '{category}' appears outdated relative to the current year"
                        + ("" if crawl_ratio >= 0.999 else " (within the pages actually crawled; the "
                                                            "rest of the site was not analyzed)"),
-            evidence=[{"type": "date", "description": f["value"], "urls": [f["source"]]}
+            evidence=[{"type": "date", "description": _describe(f), "urls": [f["source"]]}
                       for f in facts_in_category[:5]],
             suggested_action={
                 "summary": f"Review and refresh outdated {label}",
@@ -86,10 +242,18 @@ def assess_freshness(facts, artifacts, deadline):
             provenance={"skill": "freshness-corroboration", "script": "assess_freshness.py",
                         "rule_id": f"stale-dates:{category}"},
         ))
+    if issues:
+        findings.append(_invalid_dates_finding(issues))
+    if lastmod_finding is not None:
+        findings.append(lastmod_finding)
 
     return skill_result(
         "freshness-corroboration", findings=findings,
         metrics={"date_facts_found": len(date_facts), "stale_facts": len(stale_assessable),
+                 "text_date_facts": len(text_dates), "structured_date_facts": len(structured),
+                 "page_update_date_facts": len(page_updates), **update_metrics,
+                 "structured_date_issues": len(issues),
+                 "text_dates_superseded_by_structured_update": len(superseded),
                  "stale_facts_excluded_as_historical": excluded_count,
                  "stale_facts_by_category": {k: len(v) for k, v in by_category.items()}},
     )

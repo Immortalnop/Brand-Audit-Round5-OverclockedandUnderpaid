@@ -198,7 +198,7 @@ def test_every_emitted_check_id_resolves_after_merge_and_recommendations():
 def test_no_em_dash_or_second_skill_orchestrator():
     for p in ROOT.rglob('*'):
         if p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
-            assert chr(0x2014) not in p.read_text(),str(p)
+            assert chr(0x2014) not in p.read_text(encoding='utf-8'),str(p)
     entry=(ROOT/'skills/audit-orchestrator/scripts/run_audit.py').read_text()
     assert 'subprocess.run(' not in entry and '--workdir' not in entry
 

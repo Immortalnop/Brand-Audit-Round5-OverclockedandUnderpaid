@@ -63,6 +63,7 @@ from analyze_rendering import analyze_rendering
 from analyze_machine_readability import analyze_machine_readability
 from check_ai_crawler_access import check_ai_crawler_access
 from check_llms_txt import check_llms_txt
+from analyze_non_text import analyze_non_text
 
 from extract_claims import extract_claims
 from identify_important_facts import identify_important_facts
@@ -70,6 +71,7 @@ from resolve_entity_identity import resolve_entity_identity
 from assess_freshness import assess_freshness
 from corroborate_claims import corroborate_claims
 from assess_external_footprint import assess_external_footprint
+from check_knowledge_graph import check_knowledge_graph
 
 from build_site_graph import build_site_graph
 from analyze_engagement import analyze_engagement
@@ -137,6 +139,7 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
         "machine_readability": lambda: analyze_machine_readability(artifacts, deadline),
         "ai_crawler_access": lambda: check_ai_crawler_access(artifacts, deadline),
         "llms_txt": lambda: check_llms_txt(artifacts, deadline),
+        "non_text": lambda: analyze_non_text(artifacts, deadline),
         "claims": lambda: extract_claims(artifacts, deadline),
         "entity_identity": lambda: resolve_entity_identity(artifacts, deadline),
         "site_graph": lambda: build_site_graph(artifacts, deadline),
@@ -147,13 +150,14 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
 
 
 def run_dependent_batch(facts, entity_identity, artifacts, site_graph, rendering_result,
-                         deadline, limits, instrumentation, capabilities):
+                         deadline, limits, instrumentation, capabilities, claims=None):
     instrumentation.start_stage("dependent_batch")
     jobs = {
-        "freshness": lambda: assess_freshness(facts, artifacts, deadline),
+        "freshness": lambda: assess_freshness(facts, artifacts, deadline, claims),
         "answer_content": lambda: analyze_answer_content(artifacts, entity_identity, deadline),
         "corroboration": lambda: corroborate_claims(facts, entity_identity, artifacts, deadline, limits, instrumentation),
         "footprint": lambda: assess_external_footprint(artifacts, entity_identity, deadline, limits, instrumentation),
+        "knowledge_graph": lambda: check_knowledge_graph(artifacts, entity_identity, deadline, limits, instrumentation),
         "engagement": lambda: analyze_engagement(artifacts, site_graph, rendering_result, deadline),
         "agent_corroboration": lambda: ingest_agent_findings(artifacts, entity_identity, deadline, capabilities),
     }
@@ -187,15 +191,16 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     dependent = run_dependent_batch(
         facts, independent["entity_identity"], artifacts,
         independent["site_graph"], independent["rendering"], deadline, limits, instrumentation,
-        capabilities,
+        capabilities, claims=independent["claims"],
     )
     _progress("analysis complete; merging and validating report")
 
     skill_results = [
         independent["metadata"], independent["performance"], dependent["answer_content"],
         independent["crawlability"], independent["directives"], independent["rendering"], independent["machine_readability"],
-        independent["ai_crawler_access"], independent["llms_txt"],
-        dependent["freshness"], dependent["corroboration"], dependent["footprint"], dependent["engagement"],
+        independent["ai_crawler_access"], independent["llms_txt"], independent["non_text"],
+        dependent["freshness"], dependent["corroboration"], dependent["footprint"], dependent["knowledge_graph"],
+        dependent["engagement"],
         dependent["agent_corroboration"],
     ]
 
@@ -228,8 +233,15 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "pages_skipped": telemetry["pages_skipped"],
         "skip_reason_counts": acq_coverage.get("skip_reason_counts", {}),
         "rendered_pages": independent["rendering"].get("metrics", {}).get("rendered_pages", 0),
+        "non_text_media": dict((artifacts.media_data or {}).get("summary", {})),
         "external_claims_checked": dependent["corroboration"].get("metrics", {}).get("claims_checked", 0),
         "external_footprint_queries": dependent["footprint"].get("metrics", {}).get("queries_attempted", 0),
+        "knowledge_graph": {k: v for k, v in dependent["knowledge_graph"].get("metrics", {}).items()
+                            if k in ("lookup", "organization_pages", "declared_wikidata", "declared_wikipedia",
+                                     "verdict", "entity", "robots", "lookup_failures")},
+        "freshness_update_signals": {k: v for k, v in dependent["freshness"].get("metrics", {}).items()
+                                     if k.startswith(("sitemap_lastmod", "update_dates_from", "last_modified",
+                                                      "pages_with_update_date", "page_update_date"))},
         "agent_corroboration_stage": dependent["agent_corroboration"].get("metrics", {}).get("agent_stage", "not_supplied"),
         "external_fetches": telemetry["external_fetches_attempted"],
         "identity_confidence": independent["entity_identity"].get("data", {}).get("confidence", 0.0),

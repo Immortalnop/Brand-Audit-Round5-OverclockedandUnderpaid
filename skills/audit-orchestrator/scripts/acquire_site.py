@@ -13,6 +13,8 @@ from tls_context import environment_summary
 from robots_policy import RobotsPolicy
 from html_features import Document
 from structured_data import iter_nodes,types_of,normalize_type
+from non_text import image_tokens,fact_keywords,is_excluded_image,image_kind,raster_dimensions,svg_text
+from pdf_text import extract_pdf_text
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -64,6 +66,12 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     features['html_bytes']=len(resp.content) if resp and html else 0
     features['network_duration_ms']=getattr(resp,'network_duration_ms',None) if resp else None
     features['redirect_hops']=resp.redirect_hops if resp else 0
+    images=[]
+    for record in features.get('image_records',())[:limits.MAX_IMAGE_RECORDS_PER_PAGE]:
+        try:src=normalize_url(record['src'],base)
+        except ValueError:continue
+        if src:images.append({**record,'src':src})
+    features['image_records']=images
     breadcrumb=next((n for n in iter_nodes(blocks) if 'BreadcrumbList' in types_of(n)),None)
     return PageArtifact(url=url,status_code=resp.status_code if resp else None,content_type=ctype,
         evidence_snippet=visible[:limits.EVIDENCE_SNIPPET_MAX_CHARS] or None,visible_text=visible,
@@ -75,9 +83,124 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
         ai_crawler_directives=freeze_value({}),warnings=tuple(warnings),features=freeze_value(features),
         response_headers=freeze_value(dict(resp.headers) if resp else {}),final_url=base)
 
+def _collect_lastmod(tree,origin,lastmods,url_entries,cap=200):
+    """Raw <lastmod> text per <url> entry of a urlset, keyed by normalized <loc>.
+    Values are kept as written; the freshness skill parses and judges them."""
+    for entry in tree:
+        if not isinstance(entry.tag,str) or entry.tag.rsplit('}',1)[-1]!='url':continue
+        url_entries[0]+=1
+        loc=lastmod=None
+        for child in entry:
+            name=child.tag.rsplit('}',1)[-1] if isinstance(child.tag,str) else ''
+            if name=='loc' and child.text:loc=child.text.strip()
+            elif name=='lastmod' and child.text:lastmod=child.text.strip()[:64]
+        if not loc or not lastmod or len(lastmods)>=cap:continue
+        try:key=normalize_url(loc,origin)
+        except ValueError:continue
+        if key:lastmods.setdefault(key,lastmod)
+
 def _ai_crawler_directives(rp,origin,conservative):
     if conservative:return {}
     return {a:'allow' if rp.can_fetch(a,origin) else 'disallow' for a in ('OAI-SearchBot','ChatGPT-User','GPTBot','Claude-SearchBot','ClaudeBot','Googlebot','Google-Extended','PerplexityBot','CCBot')}
+
+_SENSITIVE_ROUTE=re.compile(r'/(?:logout|signout|admin|wp-admin|checkout|cart|account)(?:/|$)',re.I)
+
+# Media fetch outcomes that mean no request reached the server.
+_NOT_REQUESTED=frozenset({'not_attempted','cross_origin_not_fetched','robots_disallowed','blocked','deadline',
+                          'budget_exhausted','cross_origin_redirect_blocked'})
+
+def _int_attr(value):
+    return int(value) if isinstance(value,str) and re.fullmatch(r'[0-9]{1,6}',value.strip()) else None
+
+def _fetch_image(tr,entry,limits):
+    """Bounded GET for one same-origin image: SVG text, or raster header dimensions."""
+    svg=entry['kind']=='svg'
+    cap=limits.MAX_SVG_BYTES if svg else limits.MAX_IMAGE_HEADER_BYTES
+    r,st=tr.get(entry['url'],max_bytes=cap,headers=None if svg else {'Range':f'bytes=0-{cap-1}'})
+    if st!='ok':entry['fetch_status']=st;return st
+    if not r.ok:entry['fetch_status']=f'http_{r.status_code}';return st
+    ctype=r.headers.get('Content-Type','')
+    entry['fetch_status']='ok';entry['content_type']=ctype.split(';')[0].strip().lower() or None
+    kind=image_kind(entry['url'],ctype)
+    if kind=='svg':
+        entry['kind']='svg'
+        status,text=('truncated','') if r.truncated else svg_text(r.content)
+        entry['svg_status']=status;entry['svg_text']=text
+    elif ctype.lower().startswith(('text/','application/')):
+        entry['fetch_status']='not_image'
+    else:
+        dims=raster_dimensions(r.content)
+        entry['kind']='raster'
+        if dims:entry['format'],entry['width'],entry['height']=dims
+    return st
+
+def _acquire_media(tr,pages,pdf_links,origin,limits):
+    """Facts locked in non-text media: bounded, same-origin, robots-checked GETs
+    for the images most likely to carry facts and for linked PDFs. Runs after the
+    page crawl, so it only spends request, byte and time budget the crawl left."""
+    images={}
+    for p in pages:
+        for record in (p.features or {}).get('image_records',()):
+            url=record['src'];entry=images.get(url)
+            if entry is None:
+                if len(images)>=400:continue
+                tokens=image_tokens(url,record.get('alt'),record.get('title'))
+                entry=images[url]={'url':url,'pages':[],'alt':record.get('alt'),'title':record.get('title'),
+                    'width_attr':_int_attr(record.get('width')),'height_attr':_int_attr(record.get('height')),
+                    'kind':image_kind(url),'keywords':list(fact_keywords(tokens)),'excluded':is_excluded_image(tokens),
+                    'same_origin':same_origin(url,origin),'fetch_status':'not_attempted'}
+            if p.url not in entry['pages'] and len(entry['pages'])<5:entry['pages'].append(p.url)
+    candidates=[e for e in images.values() if e['keywords']]
+    large_svg=[e for e in images.values() if not e['keywords'] and not e['excluded'] and e['kind']=='svg'
+               and ((e['width_attr'] or 0)>=300 or (e['height_attr'] or 0)>=200)]
+    for entry in candidates:
+        if not entry['same_origin']:entry['fetch_status']='cross_origin_not_fetched'
+    queue=[]
+    for e in candidates+large_svg:
+        if not e['same_origin'] or _SENSITIVE_ROUTE.search(urlsplit(e['url']).path):continue
+        # Robots is checked before selection so a disallowed asset never takes a fetch slot.
+        if tr.robots is not None and not tr.robots.can_fetch(USER_AGENT,e['url']):e['fetch_status']='robots_disallowed';continue
+        queue.append(e)
+    stopped=None
+    for entry in queue[:limits.MAX_IMAGE_FETCHES]:
+        if stopped:entry['fetch_status']=stopped;continue
+        st=_fetch_image(tr,entry,limits)
+        if st in ('deadline','budget_exhausted'):stopped=st
+    pdfs=[]
+    selected=0
+    for url,sources in pdf_links.items():
+        if selected>=limits.MAX_PDF_FETCHES or len(pdfs)>=2*limits.MAX_PDF_FETCHES:break
+        if _SENSITIVE_ROUTE.search(urlsplit(url).path):continue
+        doc={'url':url,'linked_from':list(sources),'fetch_status':'not_attempted','extraction':'not_attempted'}
+        pdfs.append(doc)
+        if tr.robots is not None and not tr.robots.can_fetch(USER_AGENT,url):doc['fetch_status']='robots_disallowed';continue
+        selected+=1
+        if stopped:doc['fetch_status']=stopped;continue
+        r,st=tr.get(url,max_bytes=limits.MAX_PDF_BYTES)
+        if st in ('deadline','budget_exhausted'):stopped=st
+        if st!='ok':doc['fetch_status']=st;continue
+        if not r.ok:doc['fetch_status']=f'http_{r.status_code}';continue
+        doc['fetch_status']='ok';doc['bytes']=len(r.content);doc['truncated']=r.truncated
+        remaining=tr.deadline-monotonic()
+        if remaining<1.0:doc['extraction']='deadline';continue
+        parsed=extract_pdf_text(r.content,time_budget_s=min(limits.PDF_PARSE_BUDGET_S,remaining-0.5),truncated=r.truncated)
+        doc['extraction']=parsed.pop('status');doc.update(parsed)
+    kept=[e for e in images.values() if e['keywords'] or e['fetch_status']!='not_attempted'][:60]
+    attempted=lambda e:e['fetch_status'] not in _NOT_REQUESTED
+    return {'images':kept,'pdfs':pdfs,
+            'summary':{'images_observed':sum((p.features or {}).get('images',0) for p in pages),
+                       'unique_image_urls':len(images),'fact_keyword_images':len(candidates),
+                       'image_fetches_attempted':sum(attempted(e) for e in images.values()),
+                       'images_fetched_ok':sum(e['fetch_status']=='ok' for e in images.values()),
+                       'svg_text_read':sum(e.get('svg_status')=='ok' for e in images.values()),
+                       'pdfs_discovered':len(pdf_links),
+                       'pdfs_fetch_attempted':sum(attempted(d) for d in pdfs),
+                       'pdfs_text_extracted':sum(d['extraction']=='ok' for d in pdfs),
+                       'image_fetch_cap':limits.MAX_IMAGE_FETCHES,'pdf_fetch_cap':limits.MAX_PDF_FETCHES,
+                       # Per-item outcomes so an unfetched or unread item is always explained.
+                       'image_fetch_outcomes':dict(Counter(e['fetch_status'] for e in kept)),
+                       'pdf_outcomes':[{'url':d['url'],'fetch_status':d['fetch_status'],'extraction':d['extraction']}
+                                       for d in pdfs]}}
 
 def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_targets=False):
     i=instrumentation or Instrumentation();i.start_memory_tracking();i.start_stage('acquisition')
@@ -115,6 +238,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     # Probe failures never justify fetching blocked pages, including under blanket disallow.
     if not conservative:
         maps=list(dict.fromkeys(rp.sitemaps or [urljoin(origin,'/sitemap.xml')]))[:4];seen_maps=set();locs=[];statuses=[]
+        lastmods={};url_entries=[0]
         while maps and len(seen_maps)<4:
             sm=urljoin(origin,maps.pop(0))
             if sm in seen_maps:continue
@@ -129,10 +253,13 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
                 if kind not in ('urlset','sitemapindex'):raise ET.ParseError()
                 found=[e.text.strip() for e in tree.iter() if e.tag.rsplit('}',1)[-1]=='loc' and e.text]
                 if kind=='sitemapindex':maps.extend(found[:4-len(seen_maps)])
-                else:locs.extend(found[:200-len(locs)])
+                else:
+                    locs.extend(found[:200-len(locs)])
+                    _collect_lastmod(tree,origin,lastmods,url_entries)
                 statuses.append('ok')
             except ET.ParseError:statuses.append('malformed')
-        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200]}
+        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200],
+                 'url_entries':url_entries[0],'lastmod':lastmods}
         r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
         if st=='tls_certificate_error':probe_failures.append({'url':urljoin(origin,'/llms.txt'),'reason':st})
         if st!='ok':llms={'present':False,'status':'blocked' if st in ('blocked','robots_disallowed') else 'inaccessible'}
@@ -141,7 +268,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         else:
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
-    queue=[(site_url,0)];visited=set();discovered={site_url};pages=[];blocked=set()
+    queue=[(site_url,0)];visited=set();discovered={site_url};pages=[];blocked=set();pdf_links={}
     for raw in sitemap['urls']:
         try:u=normalize_url(raw,origin)
         except ValueError:continue
@@ -153,7 +280,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         if depth>limits.MAX_CRAWL_DEPTH:i.record_skip('max_crawl_depth_exceeded');continue
         if conservative:i.record_skip('robots_permission_unknown');continue
         if not rp.can_fetch(USER_AGENT,url):blocked.add(url);i.record_skip('robots_disallowed');continue
-        if re.search(r'/(?:logout|signout|admin|wp-admin|checkout|cart|account)(?:/|$)',urlsplit(url).path,re.I):i.record_skip('sensitive_route');continue
+        if _SENSITIVE_ROUTE.search(urlsplit(url).path):i.record_skip('sensitive_route');continue
         start=monotonic();r,st=tr.get(url)
         for _ in range(limits.MAX_FETCH_RETRIES):
             if st not in retryable:break
@@ -166,10 +293,15 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         links=sorted(page.internal_links,key=lambda u:(not bool(re.search(r'/(about|contact|product|pricing|blog|docs)',u)),u))
         for link in links:
             if not same_origin(link,origin):continue
+            if re.search(r'\.pdf(?:$|\?)',link,re.I):
+                sources=pdf_links.setdefault(link,[])
+                if page.url not in sources and len(sources)<5:sources.append(page.url)
+                continue
             if re.search(r'\.(pdf|zip|png|jpg|jpeg|svg|gif|mp4|css|js)(?:$|\?)',link,re.I):continue
             discovered.add(link)
             if link not in visited:queue.append((link,depth+1))
     if queue:i.record_skip('acquisition_limit_reached')
+    media=_acquire_media(tr,pages,pdf_links,origin,limits)
     ok=[p for p in pages if p.status_code and 200<=p.status_code<300];analyzed=[p for p in ok if p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts')]
     timed=[p for p in pages if 'fetch_timeout' in p.warnings]
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(pages),'urls_fetched_ok':len(ok),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in pages),
@@ -177,4 +309,5 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
          'urls_analyzed':len(analyzed),'urls_never_attempted':max(0,len(discovered)-len(pages)),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons))}
     i.end_stage('acquisition')
     return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'fetch_outcome':status,'attempt_outcomes':robots_attempts}),
-        freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings))
+        freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings),
+        media_data=freeze_value(media))

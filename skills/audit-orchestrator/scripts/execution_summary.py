@@ -70,6 +70,37 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
             "footprint assessment were not checked this run (not the same as \"nothing found\")."
         )
 
+    media = coverage.get("non_text_media") or {}
+    unread_raster = [e for e in (getattr(artifacts, "media_data", None) or {}).get("images", ())
+                     if e.get("keywords") and e.get("svg_status") != "ok"]
+    if unread_raster and coverage.get("agent_corroboration_stage") != "ingested":
+        out.append(
+            f"{len(unread_raster)} image(s) whose file name or alt text suggests prices, hours or "
+            f"specifications were not read: the scripts never interpret raster pixels, and the agent "
+            f"vision stage (AG-04) was not supplied, so facts inside those images are suspected, not confirmed."
+        )
+    skipped_pdfs = media.get("pdfs_discovered", 0) - media.get("pdfs_fetch_attempted", 0)
+    if skipped_pdfs > 0:
+        out.append(
+            f"{skipped_pdfs} linked PDF(s) were not fetched (robots rules, a cross-origin redirect, the "
+            f"per-audit cap of {media.get('pdf_fetch_cap', 0)}, or remaining budget; see "
+            f"coverage.non_text_media.pdf_outcomes); their contents were not assessed."
+        )
+
+    kg = coverage.get("knowledge_graph") or {}
+    if kg.get("lookup") in ("disabled", "incomplete"):
+        out.append(
+            "The Wikidata or Wikipedia entity declared in Organization sameAs could not be fully verified "
+            f"(lookup {kg['lookup']}; see coverage.knowledge_graph), so a mismatch with the brand was not "
+            "ruled out."
+        )
+    if kg.get("organization_pages") and coverage.get("agent_corroboration_stage") != "ingested":
+        out.append(
+            "No search for same-named knowledge-graph entities was run: robots.txt for Wikidata and "
+            "Wikipedia disallows their search endpoints, so only the agent stage (AG-05) can look the "
+            "brand name up; namesake ambiguity is unassessed."
+        )
+
     if artifacts.sitemap_data.get("status") not in ("ok", "absent"):
         out.append(
             f"sitemap.xml could not be checked (status: '{artifacts.sitemap_data.get('status')}'); "

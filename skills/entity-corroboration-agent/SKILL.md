@@ -1,9 +1,9 @@
 ---
 name: entity-corroboration-agent
 description: >-
-  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources across the wider web corroborate (AG-02) or contradict (AG-03) what the site claims about itself. Unlike every other skill in this marketplace it runs no deterministic script: the calling agent performs it with its own reading and web_search tools, then hands structured findings back to the entrypoint, which ingests them in-process. Use when diagnosing entity confusion, hallucinated brand attributes, or a lack of multi-source consensus.
+  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources across the wider web corroborate (AG-02) or contradict (AG-03) what the site claims about itself. Unlike every other skill in this marketplace it runs no deterministic script: the calling agent performs it with its own reading and web_search tools, then hands structured findings back to the entrypoint, which ingests them in-process. Use when diagnosing entity confusion, hallucinated brand attributes, or a lack of multi-source consensus. It also reads facts drawn inside raster images with the agent's own vision (AG-04), the one part of the facts-in-images check a script cannot do, and searches knowledge graphs for entities that share the brand name (AG-05), which robots.txt stops a script from doing.
 license: MIT
-allowed-tools: Read WebSearch
+allowed-tools: Read WebSearch WebFetch
 ---
 
 # Entity Corroboration (agent stage)
@@ -34,8 +34,13 @@ findings; the agent supplies only what it observed.
 
 ## Inputs
 
-- The audited site URL and the already-acquired site snapshot. Do not re-fetch the
-  site: the page text, titles and JSON-LD are already available to the audit. Read
+- The audited site URL and the already-acquired site snapshot. Do not re-crawl the
+  site: the page text, titles and JSON-LD are already available to the audit. The
+  only site requests this stage may make are AG-04 image views (at most 8 GETs,
+  only for images on paths robots.txt allows). AG-05 uses web search plus at
+  most 4 GETs to public `/wiki/` pages of wikidata.org or wikipedia.org (never
+  `/w/api.php`, `/w/rest.php`, `/api/` or `Special:Search`, which their
+  robots.txt disallows). Read
   the brand name from the resolved identity (Organization JSON-LD name, og:site_name
   or title).
 
@@ -67,6 +72,34 @@ and Quora for brand visibility. Then classify into exactly one of three outcomes
 | No independent mention found at all | AG-02 | low | confirmed |
 | An independent source contradicts the site (different category, ownership, location, or a same-named different entity dominating results) | AG-03 | high | confirmed |
 
+Step 2b, text inside images (AG-04). Only if you can view images. Take the image
+URLs listed in the evidence of a facts-in-images finding from an earlier report of
+this audit; without one, use the large images on the home, pricing, product,
+menu and contact pages. View at most 8 images. Fire AG-04 for an image only when
+it shows a concrete fact (a price, opening hours, a phone number, a specification)
+that the page text does not state. A decorative photo, a logo, or an image whose
+facts are repeated in the page text records nothing. List the page URLs in
+affected_pages so the finding merges with the script finding for those pages.
+
+Step 2c, same-named entities (AG-05). Only if a web_search tool is available.
+The scripts verify a Wikidata or Wikipedia entity the site already declares in
+Organization sameAs (kg-link-missing, kg-entity-mismatch), but they cannot look
+a name up, because robots.txt for both hosts disallows their search endpoints.
+Search for the brand name restricted to the knowledge graphs, for example:
+
+```
+"<brand name>" site:wikidata.org
+"<brand name>" site:wikipedia.org
+```
+
+Open at most 4 of the results by their `/wiki/` URL. Fire AG-05 only when at
+least one entity with the same or a near-identical name is a different
+organization, person, place or product (its description, official website or
+country differs from the site's), and the site does not already declare its own
+entity in sameAs. List the namesakes with their Wikidata IDs in evidence. If
+every match is the brand itself, or nothing matches, record nothing: having no
+Wikidata entry is not a defect for a small organization.
+
 Step 3, graceful fallback. If no search tool exists, it errors, or it is
 rate-limited: do not abort, and do not report absence of corroboration. Supply
 nothing (or a single entry with status insufficient_evidence). The distinction
@@ -83,7 +116,7 @@ together.
 ## Output
 
 The file named by AGENT_FINDINGS_PATH: a JSON array of findings (or an object with
-a findings array). Useful keys per finding: check (AG-01, AG-02 or AG-03), title,
+a findings array). Useful keys per finding: check (AG-01, AG-02, AG-03, AG-04 or AG-05), title,
 severity, status, evidence, and suggested_action with summary and steps. mechanism,
 implementation_detail and expected_outcome are filled automatically from
 common/check_catalog.py, so supply only what you observed.
@@ -109,7 +142,8 @@ Both are valid; the stage records not_supplied when the variable is unset.
 
 ## Guarantees
 
-Read-only. Does not fetch the audited site (it reads the already-acquired
-snapshot). Never reports an unavailable capability as a site defect: the absence of
+Read-only. Does not crawl the audited site (it reads the already-acquired
+snapshot); AG-04 views at most 8 images by plain GET; AG-05 opens at most 4
+robots-allowed knowledge-graph pages by plain GET. Never reports an unavailable capability as a site defect: the absence of
 the stage is recorded as insufficient_evidence, capped low and advisory by
 Invariant I-1.

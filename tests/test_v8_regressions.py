@@ -75,7 +75,9 @@ def test_no_hardcoded_brand_or_domain_in_detectors():
     allowed = ('schema.org', 'w3.org', 'example.com', 'example.org', 'localhost',
                '127.0.0.1', 'metadata.google', '169.254', 'agentskills.io',
                'twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com',
-               'youtube.com', 'tiktok.com', 'pinterest.com')
+               'youtube.com', 'tiktok.com', 'pinterest.com',
+               # Public knowledge-graph hosts verified by check_knowledge_graph.py.
+               'wikidata.org', 'wikipedia.org')
     domain_re = re.compile(r'["\']([a-z0-9-]+\.(?:com|net|org|io|ai|co))["\']', re.I)
     offenders = []
     for script in ROOT.glob('skills/*/scripts/*.py'):
