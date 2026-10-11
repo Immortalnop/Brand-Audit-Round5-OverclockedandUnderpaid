@@ -222,8 +222,13 @@ def _opportunities(page, found):
     features = page.features or {}
     english = (features.get("lang") or "").lower().split("-")[0] in ("en", "")
     out = []
-    if "FAQPage" not in found and features.get("question_headings", 0) >= 3:
-        out.append(f"{features['question_headings']} question-shaped H2/H3 headings with no FAQPage markup")
+    # FAQPage fits only questions the page itself answers: a question heading
+    # followed by answer text. Headline teasers that link to other pages are not
+    # counted as question headings at all (common/html_features.py).
+    answered = sum(1 for qa in features.get("question_answers") or ()
+                   if (qa.get("answer") or "").strip())
+    if "FAQPage" not in found and answered >= 3:
+        out.append(f"{answered} question-shaped H2/H3 headings with no FAQPage markup")
     headings = list(page.headings or ())
     steps = sum(1 for h in headings if _STEP_HEADING.match(h or ""))
     how_to = english and (_HOW_TO_TITLE.match(page.title or "") or any(_HOW_TO_TITLE.match(h or "")

@@ -23,9 +23,11 @@ def analyze_experience(artifacts,deadline):
     add('missing-alt','Images lack alt attributes',[p for p in pages if p.features['missing_alt']>=3], 'At least three images per affected page lack alt attributes; empty decorative alt attributes were not counted.', ['Describe informative images and keep decorative alt text empty','Repeat essential image-only facts in nearby text'])
     # Overlays and cookie banners are judged by analyze_overlays.py.
     add('hash-routing','Navigation uses client-only route fragments',[p for p in pages if sum(h.startswith(('#/','#!')) for h,t in p.features['anchors'])>=2], 'Route fragments are not sent in HTTP requests. Browser deep links may still work; raw-HTML retrieval may lose destination-specific content.', ['Verify direct arrival and raw HTML for each destination','Prefer server-resolvable paths where route-specific content needs indexing'])
-    # email_capture means any type="email" input, so contact and login forms count too; the title must not claim a signup.
-    signup=[p for p in pages if p.features['email_capture'] and p.features['forms']]
-    add('email-summary','Email form on '+page_share(signup,pages)+'; outbound email text was not checked',signup, 'An email form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
+    # Only an email subscription form (email field, signup wording, no password;
+    # html_features.is_signup_form) means the site sends email worth summarizing.
+    # Contact, search and login forms also hold email fields and do not count.
+    signup=[p for p in pages if p.features.get('signup_forms',0)]
+    add('email-summary','Email signup form on '+page_share(signup,pages)+'; outbound email text was not checked',signup, 'An email subscription form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
     commercial=[p for p in pages if p.page_type in ('product','category')]
     stuck=[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links]
     add('next-step','No button, form or internal link on '+page_share(stuck,commercial,'commercial page'),stuck, 'No form, button or internal next-step link was observed on these commercial pages.', ['Add a relevant purchase, inquiry or comparison route if missing'])
@@ -67,7 +69,9 @@ def analyze_experience(artifacts,deadline):
     # the surrounding page carries the substance only in images (no matching visible
     # text), a summarizer has little to work with. Conservative: fires only when an
     # email flow is present AND the page is image-heavy relative to its visible text.
-    esf=[p for p in pages if p.features['email_capture'] and p.features['images']>=3 and len(p.visible_text.split())<120]
+    # Substance is "in images" only when at least three images carry no alt text:
+    # described images (a product gallery with alt text) put their facts in text too.
+    esf=[p for p in pages if p.features.get('signup_forms',0) and p.features['missing_alt']>=3 and len(p.visible_text.split())<120]
     add('email-summary-readable','Email-capture pages carry substance in images, not readable text',esf,
         'An email-capture flow was observed on pages whose visible text is sparse relative to their images; AI inbox summaries are built from readable text, so image-carried substance can be dropped.',
         ['Provide the key message as real text near the top, not only inside images','In outbound emails put the important lines first and keep decorative content secondary'])

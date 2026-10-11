@@ -15,6 +15,7 @@ it stays a plain classification of what the fact IS, not a verdict on it.
 import re
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, timezone
+from urllib.parse import urlsplit
 from structured_data import iter_nodes, types_of
 from models import intermediate_artifact
 
@@ -35,16 +36,62 @@ _PRICE_RE = re.compile(r"[$\u20ac\u00a3\u20b9]\s?\d[\d,]*(\.\d{2})?")
 _PHONE_RE = re.compile(r"\+?\d[\d\-\s\(\)]{7,}\d")
 
 # page_type (acquisition-owned) -> the category a bare date mention on that page
-# most plausibly belongs to. Not exhaustive by design -- anything not listed here
-# defaults to "operational", the safest middle ground (neither dismissed like
-# "historical" nor over-weighted like "commercial").
+# most plausibly belongs to. A page type not listed here says nothing about its
+# dates, so a date there is "operational" only when an operational cue sits in
+# the same sentence (_OPERATIONAL_CUE); otherwise it is "unclassified", which is
+# counted but never reported as stale: an old date on an essay, a news item or an
+# event recap is not evidence that a current fact is out of date.
 _DATE_CATEGORY_BY_PAGE_TYPE = {
     "legal": "legal",
     "article": "editorial",
+    "listing": "editorial",  # a blog or news index: its dates are post dates
     "product": "commercial",
     "about": "historical",
     "home": "historical",
 }
+_DEFAULT_DATE_CATEGORY = "unclassified"
+# Words that make a date part of a current operational fact: opening hours,
+# validity and expiry, "as of" and "last updated" statements, prices and fees,
+# schedules and deadlines.
+_OPERATIONAL_CUE = re.compile(
+    r"\b(?:opening hours|hours of operation|open(?:ing)?\s+(?:from|on|until|daily)|closed\s+(?:on|from|until)"
+    r"|valid\s+(?:until|through|thru|till|from)|expir(?:es|y|ed|ation)|offer ends|sale ends|deadline"
+    r"|as of|last\s+(?:updated|reviewed|verified|checked|revised)|updated\s+(?:on|:)"
+    r"|effective\s+(?:from|date|as of|on)|prices?|pricing|fees?|tariffs?|timetable|schedule[sd]?"
+    r"|apply by|register by|registration closes)\b", re.I)
+# Path segments of archive-style sections, whose dates are history by design.
+_ARCHIVE_PATH = re.compile(r"/(?:archives?|history|essays?|past[-_][\w-]+|(?:19|20)\d{2})(?:/|$)", re.I)
+_SENTENCE_BREAK = re.compile(r"[.!?]\s|\n")
+
+
+def _sentence_around(text, start, end):
+    """The sentence holding text[start:end], bounded to 200 characters each side."""
+    left = text[max(0, start - 200):start]
+    breaks = list(_SENTENCE_BREAK.finditer(left))
+    if breaks:
+        left = left[breaks[-1].end():]
+    right = text[end:end + 200]
+    stop = _SENTENCE_BREAK.search(right)
+    if stop:
+        right = right[:stop.start() + 1]
+    return left + text[start:end] + right
+
+
+def _date_category(page, text, match):
+    """Category of a date mention in visible text: from the page type when it
+    implies one, else from an archive path or an operational cue in the sentence."""
+    category = _DATE_CATEGORY_BY_PAGE_TYPE.get(page.page_type)
+    if category:
+        return category
+    try:
+        path = urlsplit(page.url).path
+    except (ValueError, AttributeError):
+        path = ""
+    if _ARCHIVE_PATH.search(path or ""):
+        return "historical"
+    if _OPERATIONAL_CUE.search(_sentence_around(text, match.start(), match.end())):
+        return "operational"
+    return _DEFAULT_DATE_CATEGORY
 
 # JSON-LD key -> category, for structured facts (independent of page_type, since a
 # priceRange or telephone means the same thing regardless of what page it's on).
@@ -133,11 +180,10 @@ def structured_date_claims(pages, today=None):
 def extract_claims(artifacts, deadline):
     claims = []
     for page in artifacts.pages:
-        text = page.visible_text
-        date_category = _DATE_CATEGORY_BY_PAGE_TYPE.get(page.page_type, "operational")
+        text = page.visible_text or ""
         for m in _DATE_RE.finditer(text):
             claims.append({"source": page.url, "subject": "date_mention", "predicate": "mentions_date",
-                           "value": m.group(0), "type": "date", "category": date_category,
+                           "value": m.group(0), "type": "date", "category": _date_category(page, text, m),
                            "importance": 0.5, "confidence": 0.6})
         for m in _PRICE_RE.finditer(text):
             claims.append({"source": page.url, "subject": "price_mention", "predicate": "mentions_price",

@@ -127,7 +127,8 @@ def test_confidence_shows_its_method_and_components():
     result = overall_confidence({"pages_discovered": 10, "pages_fetched_attempted": 10,
                                   "identity_confidence": 0.9}, "completed")
     assert "method" in result and "components" in result
-    assert result["score"] == 0.9  # capped by identity_confidence, the weakest link
+    # identity_confidence is shown but no longer caps the score (Plan phase 4).
+    assert result["score"] == 1.0 and result["components"]["identity_confidence"] == 0.9
 
 
 def test_confidence_is_capped_by_incomplete_crawl_even_with_high_identity_confidence():

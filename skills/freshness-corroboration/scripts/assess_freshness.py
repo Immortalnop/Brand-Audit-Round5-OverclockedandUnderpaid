@@ -46,7 +46,10 @@ _CATEGORY_CALIBRATION = {
 # Historical facts (founding dates, "since 1998"-style claims) are expected to be
 # old; being old is not evidence of staleness for this category, so it is excluded
 # from staleness detection entirely rather than assigned a low severity.
-_EXCLUDED_FROM_STALENESS = {"historical"}
+# "unclassified" text dates (extract_claims.py) sit on pages whose type says
+# nothing about them and in sentences with no operational cue, so their age alone
+# is no evidence that a current fact is stale either.
+_EXCLUDED_FROM_STALENESS = {"historical", "unclassified"}
 _STALE_AFTER_YEARS = 3
 _ISSUE_TEXT = {
     "unparseable": "is not an ISO 8601 date",

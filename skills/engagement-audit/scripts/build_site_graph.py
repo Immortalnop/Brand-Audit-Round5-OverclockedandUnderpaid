@@ -43,7 +43,10 @@ def _weakly_connected_components(urls, pages):
 
 
 def build_site_graph(artifacts, deadline):
-    pages = tuple(p for p in artifacts.pages if p.status_code == 200)
+    # Only HTML pages are nodes. A Markdown, text or PDF file the crawl fetched
+    # (an llms.txt target such as /agents.md) has no navigation to link out with
+    # and is not a page a visitor browses, so it is never an orphan or dead end.
+    pages = tuple(p for p in artifacts.pages if p.status_code == 200 and "non_html_content" not in p.warnings)
     urls = sorted({p.url for p in pages})
     in_degree = {u: 0 for u in urls}
     out_degree = {u: 0 for u in urls}

@@ -38,8 +38,12 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    (freshness, corroboration, footprint, knowledge graph, off-site profiles,
    Core Web Vitals, engagement). The optional Core Web Vitals field-data request
    starts before acquisition so its latency overlaps the crawl.
-3. Findings are merged (`merge_findings.py`), prioritized
-   (`prioritize_findings.py`), and validated (`validate_report.py`).
+3. Findings are merged (`merge_findings.py`; checks that report one problem with
+   one fix, such as missing alt attributes and images with no text alternative,
+   become one finding), prioritized (`prioritize_findings.py`), and validated
+   (`validate_report.py`). Both of the last two apply the severity gate: a high or
+   critical finding must be confirmed or backed by two independent kinds of
+   evidence, else it is lowered and says why. See `references/severity-rubric.md`.
 4. Return the resulting report to the user as-is.
 
 ## Safety guarantees (enforced by `acquire_site.py`, not just documented)
@@ -49,6 +53,12 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
   metadata hosts/IPs, and (by default) loopback/private/link-local/reserved
   addresses are all rejected before any request is issued. Blocked URLs are
   recorded as safety skips, never as findings.
+- **One re-anchor, never a cross-origin crawl**: redirects to another origin are
+  not followed during the crawl. Only when the start URL or its robots.txt
+  redirects to another origin and no page could be analyzed does the audit move,
+  once, to that origin: the target must resolve and pass the SSRF check, its own
+  robots.txt is read first, and the report names both URLs
+  (`coverage.start_redirect`, `coverage.audited_url`).
 - **Robots.txt never fails open**: absence (a confirmed 404) is the only state
   that means "allowed". Timeout, other HTTP errors, or an undecodable body make
   the crawl conservative (no pages fetched until permission is known) and
@@ -93,10 +103,21 @@ A JSON report matching `references/report-schema.md`: `site`, `audited_at`,
 (completed / completed_with_timeouts / degraded / partial_deadline_reached),
 `limitations` (plain-English, each tied to a real signal from the run -- never
 unconditional boilerplate), and `confidence` (the minimum of sample
-representativeness, identity confidence, and an execution penalty, with its
-method shown). Sitemap URLs are crawled round-robin across site sections, so a
+representativeness, counted from analyzed pages, and an execution penalty, with
+its method shown, plus a `level`, the `limiting_factor` and a plain-English
+`explanation`; brand identity confidence is reported beside the score, not in
+it). Each finding's `confidence` is the probability that the stated problem is
+real (a `confirmed` finding needs at least 0.7) and its `coverage` states how
+many of the analyzed pages it was seen on. Login pages (a visible password input, at most 1,500
+characters of visible text, no entity structured data, plus an auth path, a
+login title or a login form outside the page chrome) are fetched but not analyzed;
+`coverage.out_of_scope_pages` lists them with their signals. Sitemap URLs are crawled round-robin across site sections, so a
 bounded crawl samples every section first; `--max-pages N` (at most 100)
 crawls deeper with proportionally larger request and byte budgets. Recommend-only -- no skill ever modifies a live site.
+
+`common/report_markdown.py` turns a saved JSON report into a Markdown report
+for a non-expert (`python common/report_markdown.py report.json` writes
+`report.md`). It reads only the JSON, makes no requests and escapes all site text.
 
 After validation the entrypoint adds two aids a non-expert can act on
 (`common/fix_snippets.py`, `prioritize_findings.annotate_action_plan`):
@@ -131,6 +152,7 @@ Illustrative excerpt (not a complete report):
     {"id": "R-001", "category": "engagement", "finding_type": "proactive_improvement"}
   ],
   "execution_status": "completed",
-  "confidence": {"score": 0.82, "method": "weakest_link"}
+  "confidence": {"score": 0.82, "level": "high", "limiting_factor": "sample_representativeness",
+                 "explanation": "Confidence is high (0.82). ..."}
 }
 ```

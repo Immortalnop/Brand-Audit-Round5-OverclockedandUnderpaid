@@ -266,9 +266,12 @@ def test_2_3_email_summary_readable_fires_on_image_carried_substance():
     from analyze_experience import analyze_experience
     imgs="<img src='a.png'><img src='b.png'><img src='c.png'>"
     html=("<html lang=\"en\"><head><title>T</title></head><body>"
-          "<form><input type='email'></form>"+imgs+"<p>Sign up.</p></body></html>")
+          "<form><input type='email'><button>Sign up</button></form>"+imgs+"<p>Sign up.</p></body></html>")
     result=analyze_experience(snapshot([page(html)]),make_deadline(LIMITS))
     assert 'email-summary-readable' in ids(result)
+    # A contact form also has an email field, but it is not an email subscription.
+    contact=html.replace("<button>Sign up</button>","<textarea name='message'></textarea><button>Send</button>")
+    assert 'email-summary-readable' not in ids(analyze_experience(snapshot([page(contact)]),make_deadline(LIMITS)))
 
 
 def test_2_4_baseline_recommendations_carry_rich_action_and_evidence_status():

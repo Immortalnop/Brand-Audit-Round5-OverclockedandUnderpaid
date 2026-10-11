@@ -104,7 +104,11 @@ Every suggested action carries an impact (from severity and evidence), an effort
 
 ```bash
 python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com > report.json
+python3 common/report_markdown.py report.json        # optional: writes report.md
+python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in > results.json; python common/report_markdown.py results.json #Both in one line
 ```
+
+The Markdown report is built from the JSON report alone, with no new requests: confidence and why, a summary, where to start, top actions, quick wins, every finding with its evidence, steps and ready-to-paste fix, and what the audit could not check. It reads UTF-8 or UTF-16 JSON (PowerShell's `>` writes UTF-16) and always writes UTF-8. Text from the audited site is escaped, so it cannot add headings, links, table columns or HTML. Pass a second path to name the file, or `-` to print it.
 
 No installation required beyond Python 3.10+ standard library. No pip install, no API keys, no browser download.
 
@@ -122,9 +126,11 @@ Optional environment variables:
 ## Safety
 
 - **Read-only**: only HTTP GET; no authentication, form submission, or site modification.
+- **Login pages out of scope**: a fetched page is not analyzed only when it has a visible password input, at most 1,500 characters of visible text, no entity structured data (Organization, Product, Article and so on), and a login signal: an auth path (`/login`, `/sign-in`, `/wp-login.php`, matched as a whole path segment), a login title or H1, or a login form outside the header, nav and footer. Any page with real copy or entity markup is always audited. It is listed in `coverage.out_of_scope_pages` with its signals, and the report warns when the start URL is a login page.
 - **SSRF protection**: every URL (target, redirects, discovered links, sitemaps) is validated against loopback, private, link-local, multicast, reserved, and cloud-metadata ranges.
 - **Robots-first**: unknown robots permission prevents page acquisition (fail closed, not open).
-- **Sampled, not exhaustive**: sitemap URLs are crawled round-robin across site sections (first path segment), so a bounded crawl reaches every section before any section gets a second page. Overall confidence measures how representative that sample is (sections reached and sample size), not only the share of discovered URLs fetched. `--max-pages N` (at most 100) crawls deeper on purpose; the request and byte budgets grow with it, the time limit does not.
+- **Redirects to another site**: never followed during the crawl. When the start URL itself (or its robots.txt) redirects to another origin, such as `example.so` to `example.com` or `http` to `https`, and nothing could be analyzed, the audit moves once to that origin, checks it against the SSRF policy, reads its robots.txt first, and names both URLs in the report.
+- **Sampled, not exhaustive**: sitemap URLs are crawled round-robin across site sections (first path segment), so a bounded crawl reaches every section before any section gets a second page. Overall confidence measures how representative the analyzed sample is (sections reached and sample size), not only the share of discovered URLs; a page fetched but not analyzed counts for nothing, and brand identity is reported beside the score rather than in it. Each finding's confidence says how likely the stated problem is real, and its `coverage` says how many analyzed pages showed it. The confidence block also names its `level` (high, medium or low), the `limiting_factor` that set it, and a plain-English `explanation`. `--max-pages N` (at most 100) crawls deeper on purpose; the request and byte budgets grow with it, the time limit does not.
 - **Bounded**: 50-page crawl cap by default, 90-request budget, 40 MiB body limit, 270-second wall-clock timeout. After the page crawl, at most 6 images and 3 PDFs are fetched (same origin, robots-checked) from the budget that remains; PDF parsing is capped at 4 seconds per file. A site served over plain HTTP gets one GET of `https://<host>/robots.txt` to check whether HTTPS is available. Up to 4 same-origin content images get a Range GET of their first 32 KiB to read file size and format. llms.txt adds at most 1 probe of `/llms-full.txt` and 8 GETs of listed same-origin pages that were not already crawled. Third-party requests are limited to links the site itself declares, and each host's robots.txt is read first (fail closed): the knowledge-graph verification (at most 4 GETs to public `/wiki/` pages of wikidata.org and wikipedia.org, within 15 seconds) and the sameAs and review profiles (at most 8 profile GETs, 2 per host, within 18 seconds). With `PAGESPEED_API_KEY` set, one GET to the PageSpeed Insights API runs alongside the crawl (at most 60 seconds); the key is never written to the report. A failed or blocked lookup only adds a limitation.
 - **Streaming**: response bodies are streamed under per-request byte caps to prevent memory exhaustion.
 
@@ -153,6 +159,7 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 │   ├── non_text.py                <- SVG text, image headers, fact comparison for media
 │   ├── pdf_text.py                <- bounded standard-library PDF text extraction
 │   ├── platforms.py               <- video, podcast, review and directory platform hosts
+│   ├── report_markdown.py         <- JSON report to a readable Markdown report
 │   ├── robots_policy.py           <- robots.txt parsing and fail-closed policy
 │   ├── search_provider.py         <- optional external-search adapter
 │   ├── structured_data.py         <- JSON-LD extraction/parsing
@@ -248,6 +255,19 @@ python3 -m pytest tests/test_media_schema_authorship.py  # alt text, video/audio
 python3 -m pytest tests/test_llms_profiles_vitals.py  # llms.txt, sameAs/review profiles, Core Web Vitals
 python3 -m pytest tests/test_points_15_21.py  # hreflang, noscript, graphics text, image context and weight, accessibility, overlays
 python3 -m pytest tests/test_points_6_11.py  # concrete titles, answer formats, location and context, fix snippets, impact x effort
+python3 -m pytest tests/test_precision_traps.py  # false-positive traps, severity gate, rendering-gap evidence
+python3 -m pytest tests/test_benchmark_tools.py  # measurement harness and fixture recall
 ```
 
 `tests/conftest.py` switches the third-party lookups off for every test, so the suite never leaves the machine; tests of those lookups inject a fake transport.
+
+### Measuring precision on real sites (opt-in)
+
+`tests/live_benchmark.py` audits a local list of real sites, one after another, with the normal safety rules, and writes each report plus a `findings.csv` with an empty `label` column. Label each row `tp`, `fp` or `irrelevant`, then score it:
+
+```bash
+LIVE_BENCHMARK=1 python3 tests/live_benchmark.py urls.txt      # lines: "dev https://..." or "holdout https://..."
+python3 tests/score_benchmark.py benchmark_runs/findings.csv --split holdout --recall
+```
+
+The scorer reports precision, high-severity precision, per-check precision and expected calibration error, and with `--recall` the share of planted defects found in the offline fixture corpora. Tune rules on `dev` sites only and score `holdout` once, so the numbers stay honest about unseen sites. The runner refuses to start without `LIVE_BENCHMARK=1`, and the suite never runs it.

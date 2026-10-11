@@ -54,7 +54,8 @@ from prioritize_findings import prioritize_findings, annotate_action_plan, top_a
 from fix_snippets import attach_fix_snippets
 from generate_recommendations import generate_recommendations
 from validate_report import validate_report
-from execution_summary import derive_execution_status, derive_limitations, overall_confidence
+from execution_summary import (derive_execution_status, derive_limitations, overall_confidence,
+                               identity_resolution, unfinished_confidence)
 
 from analyze_crawlability import analyze_crawlability
 from analyze_directives import analyze_directives
@@ -263,9 +264,18 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "pages_fetched_ok": acq_coverage.get("urls_fetched_ok", len(artifacts.pages)),
         "pages_analyzed": acq_coverage.get("urls_analyzed", len(artifacts.pages)),
         "pages_blocked": acq_coverage.get("urls_blocked", 0),
+        # Login pages: fetched, never analyzed, each listed with its signals.
+        "pages_out_of_scope": acq_coverage.get("urls_out_of_scope", 0),
+        "out_of_scope_pages": acq_coverage.get("out_of_scope_pages", []),
+        "start_url_out_of_scope": acq_coverage.get("start_url_out_of_scope", False),
         "sections_discovered": acq_coverage.get("sections_discovered", 0),
         "sections_analyzed": acq_coverage.get("sections_analyzed", 0),
         "page_types_analyzed": acq_coverage.get("page_types_analyzed", []),
+        # Set when the start URL redirected to another origin and that origin was
+        # audited instead (acquire_site re-anchors once); None otherwise.
+        "start_redirect": (dict(artifacts.acquisition_metadata["start_redirect"])
+                           if artifacts.acquisition_metadata.get("start_redirect") else None),
+        "audited_url": artifacts.site_url,
         "robots_permission": "unknown" if artifacts.robots_data.get("conservative_fail_closed") else "disallowed" if artifacts.robots_data.get("general_disallow") else "evaluated" if artifacts.robots_data.get("status") in ("ok","absent") else "unknown",
         "transport_diagnostics": artifacts.acquisition_metadata.get("transport_diagnostics", []),
         "transport_environment": artifacts.acquisition_metadata.get("transport_environment", {}),
@@ -306,12 +316,21 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "agent_corroboration_stage": dependent["agent_corroboration"].get("metrics", {}).get("agent_stage", "not_supplied"),
         "external_fetches": telemetry["external_fetches_attempted"],
         "identity_confidence": independent["entity_identity"].get("data", {}).get("confidence", 0.0),
+        # Why identity_confidence is what it is; the confidence explanation reads it.
+        "identity_resolution": identity_resolution(independent["entity_identity"]),
         "memory_budget_used_mb": memory_peak_mb,  # None if unmeasured, never a fabricated 0
         "runtime_seconds": round(monotonic() - deadline.started_monotonic, 3),  # measured, not derived from the budget
         "deadline_reached": deadline.expired(),
         "capabilities": capability_report(capabilities),
         "instrumentation": telemetry,
     }
+
+    # How much of the site each finding speaks for, stated beside its confidence
+    # instead of being folded into it.
+    for finding in prioritized:
+        finding["coverage"] = {"affected_pages": len(finding.get("affected_pages") or ()),
+                               "pages_analyzed": coverage["pages_analyzed"],
+                               "pages_discovered": coverage["pages_discovered"]}
 
     report = {
         "site": site_url,
@@ -368,7 +387,7 @@ def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False)
                      "measurements_unavailable": True, "cancelled": result.cancelled},
         "execution_status": "partial_deadline_reached" if result.timed_out else "degraded",
         "limitations": ["The audit worker did not return a complete report. No site-level conclusions can be drawn.", result.error or "Worker failed"],
-        "confidence": {"score": 0.0, "method": "no completed audit evidence"},
+        "confidence": unfinished_confidence(),
         "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
 
 

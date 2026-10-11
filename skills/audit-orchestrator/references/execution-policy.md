@@ -13,7 +13,9 @@ All acquisition probes, redirects and pages share 90 requests and 40 MiB of body
 bytes; expanded gzip is bounded. Each hop checks URL safety and robots permissions.
 DNS results are validated and the connection uses that address with original-host
 TLS verification. Robots 404 permits crawling; unreadable/error robots fail closed.
-Cross-origin redirects are blocked. Production pacing respects robots crawl-delay.
+Cross-origin redirects are blocked during the crawl. If the start URL or robots.txt redirects to
+another origin and no page was analyzed, acquisition re-anchors once on that origin after an SSRF
+check and a read of its own robots.txt. Production pacing respects robots crawl-delay.
 
 Optional rendering is opt-in and uses additional local phase caps of 20 requests,
 4 MiB and 25 seconds under the outer deadline. Only allowed same-origin GETs are

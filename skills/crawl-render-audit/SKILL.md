@@ -57,6 +57,16 @@ previews. Performance covers observed document bytes, synchronous head scripts,
 image dimension hints and retrieval timing, never fabricated Core Web Vitals.
 Use common/check_catalog.py for rule mechanisms and implementation guidance.
 
+## Sitemaps and AI crawlers by section
+
+Sitemaps are parsed incrementally: one larger than the 512 KB read budget, or a
+gzipped one, still yields every complete `<url>` entry and is listed in
+`sitemap_data.partial`, never reported as malformed. `sitemap-unavailable`
+names the sitemap URLs it checked. `ai-crawler-section-blocked` reports AI
+crawlers that robots.txt disallows on some site sections while leaving them open
+to crawlers in general (one sample URL per section, judged from robots.txt with
+no request): medium for search crawlers, low for training or user-fetch ones.
+
 ## Non-text media
 
 `analyze_non_text.py` reads the image and PDF observations that acquisition
@@ -119,6 +129,17 @@ full registry, so a rare valid code is never reported.
 `analyze_rendering.py` excludes `<noscript>` text from the raw-text count. Real
 fallback text of substantial size still prevents a render-gap; a `<noscript>`
 that only says JavaScript is required is cited as evidence and raises confidence.
+A short page that loads no script and has no such `<noscript>` is never a
+render-gap: nothing can add content to it after load, so its raw HTML is judged
+like any other page.
+
+Without a headless browser, a thin page that runs scripts is a suspected
+render-gap only with a sign of client-side rendering in its raw HTML: an empty
+app mount point, a framework bundle or attribute, page state serialized for a
+script (`__NEXT_DATA__`, `window.__INITIAL_STATE__`), or a JavaScript-required
+`<noscript>`. One sign makes it medium, two or more make it high. A thin page with
+no sign, or a page whose text is mostly real links (a splash or chooser page), is
+reported only as `render-gap-unconfirmed` (insufficient evidence).
 
 ## Text drawn in graphics
 

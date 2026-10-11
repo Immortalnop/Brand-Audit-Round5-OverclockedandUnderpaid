@@ -48,6 +48,11 @@ def _validate_finding_like(items: list, warnings: list, label: str) -> list:
         if not _invariant_i1_ok(f):
             warnings.append(f"Dropped {label} {f['id']}: violates Invariant I-1")
             continue
+        # Defense in depth for the severity gate applied in prioritize_findings:
+        # an unearned high or critical severity is lowered, never kept.
+        from models import apply_severity_gate, apply_status_floor
+        apply_status_floor(f)
+        apply_severity_gate(f)
         seen_ids.add(f["id"])
         kept.append(f)
     return kept
@@ -68,6 +73,11 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
     for req in ("site", "audited_at", "summary", "coverage", "execution_status", "limitations", "confidence"):
         if req not in report:
             warnings.append(f"Missing required report field: {req}")
+
+    confidence = report.get("confidence")
+    if isinstance(confidence, dict) and not (isinstance(confidence.get("explanation"), str)
+                                             and confidence["explanation"].strip()):
+        warnings.append("Report confidence has no plain-English explanation.")
 
     if not kept_recommendations:
         # A successful audit must always ship a recommendations section: an empty

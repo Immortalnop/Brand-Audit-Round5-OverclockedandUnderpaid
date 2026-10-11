@@ -143,6 +143,14 @@ def prioritize_findings(findings: list) -> list:
     for f in findings:
         if f["status"] == "insufficient_evidence" and f["finding_type"] != "proactive_improvement":
             raise ValueError(f"Invariant I-1 violated by finding {f['id']}")
+    # Severity gate, one rule for every skill: a high or critical finding must be
+    # confirmed or carry two independent kinds of evidence (models.severity_gate_ok).
+    # The status floor runs first: a finding it moves to suspected may then need
+    # the gate.
+    from models import apply_severity_gate, apply_status_floor
+    for f in findings:
+        apply_status_floor(f)
+        apply_severity_gate(f)
     # Two-pass stable sort: first establish a deterministic baseline order by id
     # (ascending), then sort by score (descending). Python's sort is stable, so
     # findings that tie on every element of _score retain their id-ascending order

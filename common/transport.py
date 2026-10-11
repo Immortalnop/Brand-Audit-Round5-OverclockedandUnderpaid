@@ -29,6 +29,9 @@ class Transport:
         self.allow_private=allow_private;self.bytes=0;self.requests=0;self.last_request=0.
         self.diagnostics=[];self._address_attempts={};self.tls_settings={}
         self.robots=None;self.delay=0. if allow_private else getattr(limits,'REQUEST_DELAY_S',.2)
+        # Where the last redirect to another origin pointed ({'from','to'}); the
+        # redirect itself is never followed by this transport.
+        self.last_cross_origin_redirect=None
     def _diagnostic(self,url,category,exc=None,**details):
         item={'url':url,'category':category,**details}
         if category.startswith('tls_') and self.tls_settings:item['tls_settings']=dict(self.tls_settings)
@@ -110,6 +113,7 @@ class Transport:
                     self.i.record_request(True);counted=True
                     dest=urljoin(url,hdr['Location'])
                     if not same_origin(dest,self.origin):
+                        self.last_cross_origin_redirect={'from':url,'to':dest,'http_status':status}
                         self.i.record_skip('cross_origin_redirect_blocked');return None,'cross_origin_redirect_blocked'
                     network_elapsed+=time.monotonic()-network_started
                     self.i.record_redirect();url=dest;continue

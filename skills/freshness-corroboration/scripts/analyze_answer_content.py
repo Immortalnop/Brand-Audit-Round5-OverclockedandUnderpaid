@@ -5,6 +5,7 @@ likelihood, app-store metadata or independent brand facts are invented here.
 """
 import re
 from collections import Counter
+from urllib.parse import urlsplit
 from check_helpers import eligible_pages, observation, page_share
 from models import skill_result
 from structured_data import iter_nodes, types_of
@@ -18,6 +19,19 @@ def terms(text):
 def english(page):
     return (page.features.get('lang') or '').lower().split('-')[0]=='en'
 
+def _brand_terms(artifacts,entity_identity):
+    """Terms of the brand's name: the resolved canonical name, whatever its
+    confidence, and the first label of the site's host ("python" for
+    www.python.org)."""
+    name=(entity_identity or {}).get('data',{}).get('canonical_name')
+    out=set(terms(name)) if isinstance(name,str) else set()
+    try:host=(urlsplit(getattr(artifacts,'site_url','') or '').hostname or '').lower()
+    except ValueError:host=''
+    if host.startswith('www.'):host=host[4:]
+    label=host.split('.')[0] if host else ''
+    out.update(terms(label.replace('-',' ')))
+    return out
+
 def analyze_answer_content(artifacts, entity_identity, deadline):
     pages=eligible_pages(artifacts)
     out=[]
@@ -29,13 +43,17 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
                                    skill='freshness-corroboration',script='analyze_answer_content.py'))
     lexical=[p for p in pages if english(p) and p.features.get('visible_text_complete',False)]
     mismatch=[];repeated=[];details={}
+    brand=_brand_terms(artifacts,entity_identity)
     for p in lexical:
         body_words=re.findall(r"[a-z]+(?:'[a-z]+)?",p.visible_text.lower())
         title_terms=set(terms(p.title or ''));body_terms=Counter(terms(p.visible_text))
         if len(body_words)>=200 and len(title_terms)>=3 and len(title_terms & body_terms.keys())<=1:
             mismatch.append(p);details[p.url]='Unmatched literal title terms: '+', '.join(sorted(title_terms-body_terms.keys()))+'. Synonyms and semantic equivalence were not evaluated.'
-        if len(body_words)>=300 and body_terms:
-            term,count=body_terms.most_common(1)[0]
+        # The brand's own name is expected to recur on its own site, so it is not
+        # counted as a repeated term.
+        repeat_terms=Counter({t:c for t,c in body_terms.items() if t not in brand})
+        if len(body_words)>=300 and repeat_terms:
+            term,count=repeat_terms.most_common(1)[0]
             if count/len(body_words)>.06:
                 repeated.append(p)
                 details[p.url+'#repeat']=f"Term '{term}' occurs {count} times among {len(body_words)} words. Repetition alone is not proof of spam."
@@ -50,7 +68,11 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
     identity_pages=[p for p in lexical if p.page_type in ('home','about') and len(p.visible_text)>300]
     if isinstance(name,str) and len(name.strip())>=3 and identity.get('confidence',0)>=.85 and identity_pages:
         name_pattern=re.compile(r'(?<!\w)'+re.escape(name)+r'(?!\w)',re.I)
-        verb=re.compile(r'\b(is|are|helps|provides|offers|builds|makes|delivers|creates|specializes)\b',re.I)
+        # Descriptive verbs a one-sentence brand definition uses ("Acme sells...",
+        # "Acme runs daily ferries...", "Acme repairs boilers...").
+        verb=re.compile(r'\b(is|are|helps|provides|offers|builds|makes|delivers|creates|specializes|sells|runs|'
+                        r'operates|serves|designs|develops|manufactures|produces|publishes|supplies|repairs|fixes|'
+                        r'connects|teaches|trains|hosts|organizes|organises)\b',re.I)
         def defines(p):
             candidates=re.split(r'(?<=[.!?])\s+',p.visible_text)+[p.meta_description or '']
             return any(20<=len(s)<=250 and name_pattern.search(s) and verb.search(s) for s in candidates)

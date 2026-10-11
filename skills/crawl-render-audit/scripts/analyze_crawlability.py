@@ -72,7 +72,7 @@ def analyze_crawlability(artifacts, deadline):
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect",
             severity=step_down_severity("medium", crawl_ratio),
-            status="confirmed", confidence=scale_confidence(0.85, crawl_ratio),
+            status="confirmed", confidence=0.9,
             title="Broken pages found during crawl",
             root_cause="Pages return 4xx/5xx status codes"
                        + ("" if crawl_ratio >= 0.999 else

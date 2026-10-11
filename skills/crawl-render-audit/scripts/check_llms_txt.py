@@ -39,7 +39,7 @@ def check_llms_txt(artifacts, deadline):
                              "urls": [_url(artifacts, "/llms-full.txt")]})
         findings.append(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
-            status="confirmed", confidence=0.6,
+            status="confirmed", confidence=0.9,
             title="No llms.txt file found",
             root_cause="Site does not publish an llms.txt guidance file",
             evidence=evidence,

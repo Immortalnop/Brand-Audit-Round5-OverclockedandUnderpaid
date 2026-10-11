@@ -1,9 +1,11 @@
 """analyze_rendering.py -- raw vs rendered content gaps.
 
 Two tiers, matching common/capabilities.py:
-  - "rendering_gap_heuristic" (executable, always runs): flags pages whose raw HTML
-    shows near-zero visible text -- a real, evidence-backed signal that needs no
-    browser, but on its own can't distinguish "needs JS" from "genuinely thin page".
+  - "rendering_gap_heuristic" (executable, always runs): flags pages that run
+    scripts and whose raw HTML shows near-zero visible text -- a real,
+    evidence-backed signal that needs no browser, but on its own can't distinguish
+    "needs JS" from "genuinely thin page". A page with no script at all is never
+    flagged: nothing can add content to it after load.
   - "rendering_headless_browser" (fallback/optional): when a real headless browser
     is available (see capabilities.detect_capabilities), every heuristic-flagged page
     is actually re-rendered and compared against the static fetch. A page is only a
@@ -38,6 +40,57 @@ def _heuristic_gap_pages(pages):
     does not count as content, unless it is a real fallback of substantial size."""
     return [p.url for p in pages
             if p.status_code == 200 and "non_html_content" not in p.warnings and script_dependent(p)]
+
+
+# Independent signs, in the raw HTML, that a script builds the page content.
+_SIGN_TEXT = {
+    "app_shell": "An empty application mount point (id root, app, __next...) holds the page",
+    "framework_bundle": "A client-side framework bundle or framework attribute is present",
+    "serialized_state": "Page data is serialized in a script for the browser to render",
+    "noscript": "The page's <noscript> text says JavaScript is required and offers no fallback content",
+    "state_content": "The serialized page data holds more readable text than the page's HTML shows: the content "
+                     "exists, but only for a script to render",
+}
+_SIGN_LABEL = {"app_shell": "an empty app mount point", "framework_bundle": "a framework bundle",
+               "serialized_state": "serialized page state", "noscript": "a JavaScript-required notice",
+               "state_content": "page text held only in script data"}
+
+
+def _link_hub(page):
+    """True when most of a thin page's visible text is the text of real links: a
+    splash page, a site or campus chooser, a page of links. Its content is in the
+    raw HTML; it is short, not built by a script."""
+    anchors = [(h or "", (t or "").strip()) for h, t in (page.features or {}).get("anchors") or ()]
+    linked = [t for h, t in anchors if t and not h.strip().lower().startswith(("#", "javascript:"))]
+    text = len((page.visible_text or "").strip())
+    return len(linked) >= 2 and text > 0 and sum(len(t) for t in linked) >= 0.3 * text
+
+
+def _client_render_signs(page, js_required):
+    """The set of _SIGN_TEXT kinds observed on one thin page. A link hub counts
+    only when it also has an empty mount point or a JavaScript-required notice:
+    a framework bundle or a state blob alone does not outweigh links that already
+    carry the page's text."""
+    f = page.features or {}
+    if _link_hub(page) and not (f.get("spa_mount") or js_required):
+        return set()
+    signs = set()
+    if f.get("spa_mount"):
+        signs.add("app_shell")
+    if f.get("framework_hint"):
+        signs.add("framework_bundle")
+    if f.get("state_blob"):
+        signs.add("serialized_state")
+        # Text for the page in the serialized data, at least as much as a page of
+        # this type needs, while the HTML itself shows less: the gap is observed.
+        state_text = int(f.get("state_text_chars") or 0)
+        if state_text >= _threshold_for(page.page_type) and state_text > len((page.visible_text or "").strip()):
+            # One blob is one sign: the stronger reading replaces the weaker one.
+            signs.discard("serialized_state")
+            signs.add("state_content")
+    if js_required:
+        signs.add("noscript")
+    return signs
 
 
 def _noscript_summary(pages):
@@ -221,7 +274,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
             findings.append(make_finding(
                 category="ai_discoverability", finding_type="defect",
                 severity=step_down_severity("high", render_ratio),
-                status="confirmed", confidence=scale_confidence(0.9, render_ratio),
+                status="confirmed", confidence=0.9,
                 title="Content requires JavaScript rendering to appear",
                 root_cause="Raw HTML is near-empty but headless rendering reveals substantial content"
                            + ("" if render_ratio >= 0.999 else
@@ -241,34 +294,66 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                             "rule_id": "render-gap", "tier": "rendering_headless_browser"},
             ))
     elif heuristic_gap_pages:
-        # No headless browser available: the heuristic alone can only suspect, not confirm.
-        # A <noscript> that says JavaScript is required is the page's own statement
-        # that it depends on scripts, so it raises confidence (still not confirmed:
-        # nothing was rendered).
-        stated = [u for u in heuristic_gap_pages if u in js_required_pages]
-        evidence = [{"type": "render_gap", "description": "Static fetch returns near-empty content",
-                     "urls": heuristic_gap_pages[:10]}]
-        if stated:
-            evidence.append({"type": "noscript", "description": "The page's <noscript> text says JavaScript is "
-                                                                "required and offers no fallback content",
-                             "urls": stated[:10]})
-        findings.append(make_finding(
-            category="ai_discoverability", finding_type="defect", severity="high",
-            status="suspected", confidence=0.75 if stated else 0.6,
-            title="Content appears to require JavaScript rendering",
-            root_cause="Raw HTML shows near-empty visible content consistent with client-side rendering",
-            evidence=evidence,
-            suggested_action={
-                "summary": "Server-side render or pre-render key content",
-                "steps": ["Add SSR or static generation for key pages",
-                          "Re-run this audit with a headless-rendering capability to confirm"],
-                "priority": "high", "effort": "high",
-                "expected_benefit": "Content becomes machine-readable without JS",
-                "verification": "Confirm raw HTML contains key facts",
-            },
-            provenance={"skill": "crawl-render-audit", "script": "analyze_rendering.py",
-                        "rule_id": "render-gap", "tier": "rendering_gap_heuristic"},
-        ))
+        # No headless browser available: the heuristic alone can only suspect, not
+        # confirm. A thin page that runs scripts may be built by JavaScript or may
+        # simply be short (a splash page, a chooser, a page of links), so the raw
+        # HTML is searched for independent signs of client-side rendering
+        # (_client_render_signs). With none, the page is reported only as
+        # insufficient evidence. With one, the gap is a suspected medium defect;
+        # with two or more independent signs it is high, since each sign alone has
+        # innocent explanations but together they describe an app shell.
+        by_url = {p.url: p for p in artifacts.pages}
+        signs = {u: _client_render_signs(by_url[u], u in js_required_pages) for u in heuristic_gap_pages}
+        shells = [u for u in heuristic_gap_pages if signs[u]]
+        thin = [u for u in heuristic_gap_pages if not signs[u]]
+        if shells:
+            evidence = [{"type": "render_gap", "description": "Static fetch returns near-empty content",
+                         "urls": shells[:10]}]
+            for kind, description in _SIGN_TEXT.items():
+                urls = [u for u in shells if kind in signs[u]]
+                if urls:
+                    evidence.append({"type": kind, "description": description, "urls": urls[:10]})
+            strongest = max(len(signs[u]) for u in shells)
+            severity = "high" if strongest >= 2 else "medium"
+            findings.append(make_finding(
+                category="ai_discoverability", finding_type="defect", severity=severity,
+                status="suspected", confidence=0.75 if strongest >= 2 else 0.6,
+                title="Content appears to require JavaScript rendering",
+                root_cause="Raw HTML shows near-empty visible content, and the page carries signs of client-side "
+                           "rendering (" + ", ".join(sorted({_SIGN_LABEL[k] for u in shells for k in signs[u]})) + ")",
+                evidence=evidence,
+                suggested_action={
+                    "summary": "Server-side render or pre-render key content",
+                    "steps": ["Add SSR or static generation for key pages",
+                              "Re-run this audit with a headless-rendering capability to confirm"],
+                    "priority": severity, "effort": "high",
+                    "expected_benefit": "Content becomes machine-readable without JS",
+                    "verification": "Confirm raw HTML contains key facts",
+                },
+                provenance={"skill": "crawl-render-audit", "script": "analyze_rendering.py",
+                            "rule_id": "render-gap", "tier": "rendering_gap_heuristic"},
+            ))
+        if thin:
+            findings.append(apply_invariant_i1(make_finding(
+                category="ai_discoverability", finding_type="proactive_improvement", severity="low",
+                status="insufficient_evidence", confidence=0.3,
+                title="Some near-empty pages could not be confirmed as rendering gaps",
+                root_cause="These pages run scripts and carry little text in their raw HTML, but show no other sign "
+                           "of client-side rendering (no app mount point, framework bundle, serialized page state "
+                           "or JavaScript-required notice); they may simply be short pages",
+                evidence=[{"type": "render_gap_unconfirmed",
+                           "description": "Little raw-HTML text and no sign of client-side rendering",
+                           "urls": thin[:10]}],
+                suggested_action={"summary": "Open these pages with JavaScript turned off and check that the "
+                                             "content visitors need is still there",
+                                  "steps": ["Compare each page in a browser with and without JavaScript",
+                                            "If content disappears, server-render or pre-render it"],
+                                  "priority": "low", "effort": "low",
+                                  "expected_benefit": "Clarifies whether a real rendering fix is needed",
+                                  "verification": "Manual inspection"},
+                provenance={"skill": "crawl-render-audit", "script": "analyze_rendering.py",
+                            "rule_id": "render-gap-unconfirmed", "tier": "rendering_gap_heuristic"},
+            )))
 
     return skill_result(
         "crawl-render-audit", findings=findings,

@@ -43,7 +43,11 @@ _FILLER_OPENER = re.compile(
 _CTA_QUESTION = re.compile(
     r"^(?:need|want|ready|looking for|interested|have (?:a |any )?questions?|got (?:a |any )?questions?|still have"
     r"|questions\b|can'?t find|would you like|wish to|keen to|curious)\b", re.I)
-_COMPARISON =re.compile(r"\b(?:vs\.?|versus|comparison|compared?|alternatives?)\b", re.I)
+# "Alternative" signals a comparison only as a noun naming the options compared
+# ("Slack alternatives", "alternatives to Slack"); as an adjective ("Alternative
+# Python implementations", "alternative routes") it does not.
+_COMPARISON = re.compile(r"\b(?:vs\.?|versus|comparison|compared?)(?=\W|$)|\balternatives?\s+(?:to|for)\b"
+                         r"|\balternatives\b(?!\s+[A-Za-z])|\balternatives\s+in\b", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 

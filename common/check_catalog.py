@@ -35,6 +35,13 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                  'action steps; verify the change by repeating the audit.',
                         'mechanism': 'The observed condition can limit retrieval or visitor access on '
                                      'sampled pages.'},
+ 'ai-crawler-section-blocked': {'expected_outcome': 'Content sections become readable by the AI crawlers that '
+                                                    'cite sources, where that is the intended policy.',
+                                'implementation_detail': 'Remove or narrow the Disallow rules for the listed AI '
+                                                         'user-agents on the listed sections, or keep them if the '
+                                                         'exclusion is deliberate.',
+                                'mechanism': 'An AI crawler that robots.txt disallows on a section never reads its '
+                                             'pages, so assistants that rely on that crawler cannot quote them.'},
  'ai-crawler-unchecked': {'expected_outcome': 'Enables a real verdict',
                           'implementation_detail': 'Re-run once reachable',
                           'mechanism': 'The observed condition can limit retrieval or visitor access on '
@@ -346,9 +353,10 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                              'run is invisible to them.'},
  'render-gap-unconfirmed': {'expected_outcome': 'Clarifies whether a real rendering fix is needed',
                             'implementation_detail': 'Open the page in a browser and compare to the raw HTML',
-                            'mechanism': 'Headless rendering also returned little content, or failed, for '
-                                         'these pages -- could be genuinely thin content rather than a JS '
-                                         'dependency'},
+                            'mechanism': 'The raw HTML carries little text, but nothing confirms that a script '
+                                         'adds the content: headless rendering also returned little content or '
+                                         'failed, or the page shows no sign of client-side rendering. It may be '
+                                         'a genuinely short page rather than a JS dependency'},
  'render-subprocess-timeout': {'expected_outcome': 'Restores confirmed (not just suspected) rendering-gap '
                                                    'findings',
                                'implementation_detail': 'Re-run the audit. Check for bot detection on the '

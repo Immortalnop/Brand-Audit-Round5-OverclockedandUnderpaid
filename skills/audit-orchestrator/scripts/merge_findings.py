@@ -72,6 +72,35 @@ def find_matching_bucket(finding: dict, buckets: dict, similarity_threshold: flo
     return None
 
 
+# Checks from different skills that report one underlying problem with one fix.
+# Their findings merge into a single finding whatever their wording or pages:
+#   images: images with no alt attribute (engagement) and content images with no
+#     alt text, caption or link text (crawl-render) both mean "describe the image".
+#   primary-heading: no H1, no descriptive opening heading on content pages, and
+#     weak homepage orientation all mean "lead each page with a descriptive H1".
+_FAMILIES = {
+    "missing-alt": "image-text-alternative",
+    "image-context-missing": "image-text-alternative",
+    "h1": "primary-heading",
+    "page-orientation": "primary-heading",
+    "homepage-orientation": "primary-heading",
+}
+# Title of a merged family finding: true of every page the merged checks name.
+_FAMILY_TITLES = {
+    "image-text-alternative": "Images have no text alternative: no alt text, caption or link text says what they show",
+    "primary-heading": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+}
+_SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+
+
+def _family_key(finding: dict):
+    cid = finding.get("check_id") or (finding.get("provenance") or {}).get("rule_id")
+    family = _FAMILIES.get(cid)
+    # The first element never equals a real category, so a family bucket is
+    # matched only through this key.
+    return ("family", family, ("site-wide",)) if family else None
+
+
 def _evidence_key(item: dict) -> tuple:
     """Canonical, hashable key for one evidence entry, used to drop exact
     duplicates when merging evidence from multiple contributing findings."""
@@ -82,8 +111,14 @@ def _evidence_key(item: dict) -> tuple:
     )
 
 
-def merge_evidence(group: list) -> dict:
-    best = max(group, key=lambda f: (f.get("confidence", 0), 1 if f.get("check_id") == "robots-unreachable" else 0))
+def merge_evidence(group: list, by_severity: bool = False) -> dict:
+    """One finding from a group. The representative is the most confident one, or
+    for a family of related checks the most severe (then most confident) one, so a
+    merge never lowers the severity the reader sees."""
+    if by_severity:
+        best = max(group, key=lambda f: (_SEVERITY_RANK.get(f.get("severity"), 0), f.get("confidence", 0)))
+    else:
+        best = max(group, key=lambda f: (f.get("confidence", 0), 1 if f.get("check_id") == "robots-unreachable" else 0))
     evidence, provenance = [], []
     seen_evidence = set()
     for f in group:
@@ -117,8 +152,16 @@ def merge_findings(results: list) -> list:
     for finding in all_findings:
         if _is_robots_inaccessible_finding(finding):
             key = ("ai_discoverability", "robots-inaccessible-cascade", ("site-wide",))
+        elif _family_key(finding):
+            key = _family_key(finding)
         else:
             match = find_matching_bucket(finding, buckets, similarity_threshold=0.85)
             key = match or dedup_key(finding)
         buckets.setdefault(key, []).append(finding)
-    return [merge_evidence(group) for group in buckets.values()]
+    merged = []
+    for key, group in buckets.items():
+        finding = merge_evidence(group, by_severity=key[0] == "family")
+        if key[0] == "family" and len(finding["check_ids"]) > 1:
+            finding["title"] = _FAMILY_TITLES[key[1]]
+        merged.append(finding)
+    return merged

@@ -209,8 +209,11 @@ def test_real_noscript_fallback_is_not_a_gap():
 
 
 def test_page_without_noscript_keeps_the_old_behaviour():
-    assert _gap(page("<p>tiny</p>", url=SITE + "/t"))["metrics"]["raw_rendered_gap_pages"] == [SITE + "/t"]
-    assert _gap(page(LONG, url=SITE + "/ok"))["findings"] == []
+    script = '<script src="/static/app.js"></script>'
+    assert _gap(page("<p>tiny</p>" + script, url=SITE + "/t"))["metrics"]["raw_rendered_gap_pages"] == [SITE + "/t"]
+    assert _gap(page(LONG + script, url=SITE + "/ok"))["findings"] == []
+    # A short page that runs no script cannot gain content after load.
+    assert _gap(page("<p>tiny</p>", url=SITE + "/static"))["findings"] == []
 
 
 # ------------------------------------------- 17: canvas, inline SVG, icon fonts

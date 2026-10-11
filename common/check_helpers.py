@@ -1,8 +1,9 @@
 """Shared, network-free helpers for snapshot check modules."""
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 from check_catalog import get_entry
 from models import make_finding
+from structured_data import iter_nodes, types_of
 
 
 def eligible_pages(artifacts):
@@ -20,6 +21,7 @@ MIN_SUBSTANTIAL_CHARS = 200  # fallback for page types without a specific thresh
 MIN_SUBSTANTIAL_CHARS_BY_TYPE = {
     "home": 300,
     "category": 250,
+    "listing": 250,
     "product": 150,
     "article": 400,
     "contact": 80,
@@ -48,11 +50,27 @@ def noscript_state(page):
     return total - noscript, fallback, js_required
 
 
+def runs_scripts(page):
+    """True when the page loads or embeds JavaScript, or its <noscript> says
+    JavaScript is required (the page's own statement that it depends on scripts).
+    A page with no script (JSON-LD and other data blocks do not count) cannot
+    build content after load, so its raw HTML is the whole page. Unknown (older
+    observations) counts as True."""
+    features = page.features or {}
+    if "external_scripts" not in features and "inline_script_bytes" not in features:
+        return True
+    return (bool(features.get("external_scripts")) or bool(features.get("inline_script_bytes"))
+            or bool(features.get("noscript_js_required")))
+
+
 def script_dependent(page):
-    """True when the raw HTML carries too little visible text for the page type
-    and no substantial <noscript> fallback: the content is probably built by
-    JavaScript, so a check cannot conclude from the raw HTML that something is
-    missing from the page."""
+    """True when the page runs scripts and its raw HTML carries too little visible
+    text for the page type, with no substantial <noscript> fallback: the content
+    is probably built by JavaScript, so a check cannot conclude from the raw HTML
+    that something is missing from the page. A short page with no script is just
+    a short page."""
+    if not runs_scripts(page):
+        return False
     script_on, fallback, _ = noscript_state(page)
     threshold = substantial_threshold(page.page_type)
     return script_on < threshold and fallback < threshold
@@ -119,6 +137,80 @@ def organization_contact(pages, host):
     pick = lambda scores: max(sorted(scores), key=scores.get) if scores else None
     phone = pick(phone_score)
     return pick(email_score), phone_text[phone] if phone else None
+
+
+_COMMERCE_TYPES = frozenset({'Product', 'ProductGroup', 'IndividualProduct', 'ProductModel', 'Offer',
+                             'AggregateOffer'})
+_PRICE_TEXT = re.compile(r'(?:[$€£¥₹]|\b(?:USD|EUR|GBP|INR|AUD|CAD|Rs\.?))\s?\d[\d,]*(?:\.\d{2})?')
+_BUY_TEXT = re.compile(r'\b(?:add\s+to\s+(?:cart|bag|basket|trolley|order)|buy\s+(?:it\s+)?now|shop\s+now)\b', re.I)
+# A cart is a top-level path, optionally after a locale segment ("/cart",
+# "/en-gb/basket"); "/payments/checkout" is a product page about checkout.
+_CART_PATH = re.compile(r'^(?:/[a-z]{2}(?:[-_][a-z]{2})?)?/(?:cart|basket|bag|checkout)/?$', re.I)
+
+
+def _path_of(href):
+    try:
+        return urlsplit((href or '').strip()).path or ''
+    except ValueError:
+        return ''
+
+
+def commerce_evidence(page):
+    """What on one page shows that it sells something: Product or Offer markup,
+    a price, a buy or add-to-cart control, or a link to a cart. '' when nothing."""
+    f = page.features or {}
+    if any(types_of(n) & _COMMERCE_TYPES for n in iter_nodes(page.jsonld_blocks)) \
+            or set(f.get('microdata_types') or ()) & _COMMERCE_TYPES:
+        return 'product_markup'
+    if _PRICE_TEXT.search(page.visible_text or ''):
+        return 'price'
+    controls = list(f.get('buttons') or ()) + [t for _, t in (f.get('anchors') or ())]
+    if any(_BUY_TEXT.search(t or '') for t in controls):
+        return 'buy_control'
+    if any(_CART_PATH.search(_path_of(h)) for h, _ in (f.get('anchors') or ())):
+        return 'cart_link'
+    return ''
+
+
+# Organization types and wording that show a site does not sell to consumers:
+# news publishers and nonprofits (public bodies are recognized separately by
+# their types and host names in check_off_site_profiles.py).
+_PUBLISHER_TYPES = frozenset({'NewsMediaOrganization', 'NewsArticle', 'ReportageNewsArticle', 'AnalysisNewsArticle',
+                              'OpinionNewsArticle', 'BackgroundNewsArticle', 'ReviewNewsArticle', 'LiveBlogPosting'})
+_NONPROFIT_TYPES = frozenset({'NGO', 'NonprofitType', 'FundingScheme'})
+_DONATE = re.compile(r'^(?:donate|donations?|give|make\s+a\s+(?:gift|donation)|support\s+us)\b', re.I)
+_DONATE_PATH = re.compile(r'/(?:donate|donations?|give|support-us)(?:[/?#]|$)', re.I)
+
+
+def site_kind(pages):
+    """'publisher', 'nonprofit' or 'unknown' from positive evidence on the sampled
+    pages: news markup marks a publisher; nonprofit markup, or a donation link on
+    a site with no commerce evidence, marks a nonprofit. 'unknown' never
+    excludes a check."""
+    types = set()
+    nonprofit_status = False
+    for p in pages:
+        for node in iter_nodes(p.jsonld_blocks):
+            types |= types_of(node)
+            nonprofit_status = nonprofit_status or bool(hasattr(node, 'get') and node.get('nonprofitStatus'))
+    if types & _PUBLISHER_TYPES:
+        return 'publisher'
+    if types & _NONPROFIT_TYPES or nonprofit_status:
+        return 'nonprofit'
+    # A price alone counts only on a shop page: a salary on a jobs page or a fee
+    # in an article does not make a site a shop.
+    for p in pages:
+        found = commerce_evidence(p)
+        if found and (found != 'price' or p.page_type in ('product', 'category')):
+            return 'unknown'
+    # A donation link on the home page, or in navigation repeated on two or more
+    # pages (the home page may be a splash page with no navigation).
+    asks = [p for p in pages
+            if any(_DONATE.match((t or '').strip()) or _DONATE_PATH.search(h or '')
+                   for h, t in (p.features or {}).get('anchors') or ())]
+    if any(p.page_type == 'home' for p in asks) or len(asks) >= 2:
+        return 'nonprofit'
+    return 'unknown'
 
 
 def page_share(selected, population, noun='sampled page'):

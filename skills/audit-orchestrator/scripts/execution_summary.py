@@ -55,6 +55,27 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
                if coverage.get("sections_discovered") else "")
         )
 
+    moved = coverage.get("start_redirect")
+    if isinstance(moved, dict) and moved.get("audited_url"):
+        out.append(
+            f"The start URL {moved.get('requested_url')} redirects to another site; the audit followed that one "
+            f"redirect and audited {moved.get('audited_url')} instead, under that site's own robots.txt. Findings "
+            f"describe the site visitors actually reach."
+        )
+
+    if coverage.get("start_url_out_of_scope"):
+        out.append(
+            "The start URL is a login page. The audit never signs in, so that page was left out; audit a "
+            "public page such as the home page for a full result."
+        )
+    out_of_scope = coverage.get("pages_out_of_scope", 0)
+    if out_of_scope > 0:
+        out.append(
+            f"{out_of_scope} login or sign-in page(s) were fetched but left out of the analysis (see "
+            f"coverage.out_of_scope_pages): the audit never signs in, and judging a login form as content "
+            f"would produce false findings. Pages behind a login were not assessed."
+        )
+
     if coverage.get("pages_timed_out", 0) > 0:
         out.append(
             f"{coverage['pages_timed_out']} page fetch(es) timed out and were not analyzed for content."
@@ -194,35 +215,49 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     Priority 3 #19: "avoid false precision; document calculation").
 
     Method: the minimum of --
-      - sample_representativeness: how well the crawled sample stands for the
+      - sample_representativeness: how well the analyzed sample stands for the
         site. Every check looks for patterns that repeat across templates, so a
         bounded sample that reaches every section of a large site supports its
         conclusions far better than its raw page share suggests. It is the larger
         of:
-          * crawl_completeness = pages_fetched_attempted / pages_discovered
-            (1.0 if nothing was discovered -- nothing is incomplete), and
+          * crawl_completeness = pages_analyzed / pages_discovered (1.0 if
+            nothing was discovered and nothing failed; 0.0 when no page could be
+            analyzed: a fetched but unanalyzed page is no evidence), and
           * the smaller of section_coverage (sections with an analyzed page /
             sections discovered, a section being the first path segment) and
             sample_size (pages analyzed / min(pages discovered, 30)).
         Without section counts (an older or partial coverage block) it is
         crawl_completeness alone.
-      - identity_confidence, as resolved by entity resolution
       - an execution penalty: 1.0 normally, 0.7 if the run completed with
         timeouts or was degraded, 0.4 if the deadline was reached before
         finishing
-    take the minimum, not an average, because any one of these being poor should
-    pull overall confidence down -- a high identity_confidence should not paper
-    over a crawl that reached a small or one-sided sample of the site.
+    take the minimum, not an average, because either one being poor should pull
+    overall confidence down.
+
+    Brand identity is reported beside the score (components and reasons), not
+    inside it. A site with no Organization markup gets that as a finding; it does
+    not make a complete crawl less trustworthy. Identity only gates the checks
+    that depend on it (external corroboration, footprint and review search need
+    an identity confidence of 0.85), and those say so when they skip.
+
+    For a reader who is not an expert the result also carries `level` (high,
+    medium or low), `limiting_factor` (the part that set the score), `reasons`
+    (one plain-English sentence per part, identity included) and `explanation`
+    (a short paragraph built from them). The score itself is unchanged by these
+    fields.
     """
     discovered = coverage.get("pages_discovered", 0)
-    fetched = coverage.get("pages_fetched_attempted", 0)
-    crawl_completeness = 1.0 if discovered <= 0 else min(1.0, fetched / discovered)
+    analyzed = _analyzed_pages(coverage)
+    if not analyzed and (discovered > 0 or coverage.get("pages_fetched_attempted", 0) > 0):
+        crawl_completeness = 0.0
+    else:
+        crawl_completeness = 1.0 if discovered <= 0 else min(1.0, analyzed / discovered)
     components = {"crawl_completeness": round(crawl_completeness, 2)}
     representativeness = crawl_completeness
     sections = coverage.get("sections_discovered")
     if sections:
         section_coverage = min(1.0, coverage.get("sections_analyzed", 0) / sections)
-        sample_size = min(1.0, coverage.get("pages_analyzed", 0) / max(1, min(discovered, _ADEQUATE_SAMPLE_PAGES)))
+        sample_size = min(1.0, analyzed / max(1, min(discovered, _ADEQUATE_SAMPLE_PAGES)))
         representativeness = max(crawl_completeness, min(section_coverage, sample_size))
         components.update(section_coverage=round(section_coverage, 2), sample_size=round(sample_size, 2))
     identity_confidence = coverage.get("identity_confidence", 0.0)
@@ -231,18 +266,157 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
         "degraded": 0.7, "partial_deadline_reached": 0.4,
     }.get(execution_status, 0.5)
 
-    score = min(representativeness, identity_confidence, execution_penalty)
+    score = min(representativeness, execution_penalty)
     components.update(sample_representativeness=round(representativeness, 2),
                       identity_confidence=round(identity_confidence, 2),
                       execution_penalty=round(execution_penalty, 2))
+    parts = {"execution_penalty": execution_penalty,
+             "sample_representativeness": representativeness}
+    reasons = {
+        "sample_representativeness": _sample_reason(coverage, representativeness),
+        "identity_confidence": _identity_reason(coverage, identity_confidence),
+        "execution_penalty": _execution_reason(execution_status),
+    }
+    # The part that sets the score. On a tie the more basic cause is named first:
+    # an unfinished run, then a thin sample.
+    limiting = min(parts, key=lambda name: (parts[name], _PART_ORDER.index(name)))
     return {
         "score": round(score, 2),
-        "method": "min(sample_representativeness, identity_confidence, execution_penalty), where "
-                  "sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)) -- "
-                  "a weak link in any one dimension caps overall confidence rather than being averaged out",
+        "level": confidence_level(score),
+        "method": "min(sample_representativeness, execution_penalty), where "
+                  "sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)) and "
+                  "crawl_completeness = pages_analyzed / pages_discovered; a weak link caps the score rather than "
+                  "being averaged out. identity_confidence is reported beside the score, not in it: it gates only "
+                  "the checks that depend on the brand's identity",
         "components": components,
+        "limiting_factor": limiting,
+        "reasons": reasons,
+        "explanation": _explanation(score, limiting, _weak_parts(parts, coverage), reasons,
+                                    identity_confidence),
     }
 
 
 # Pages enough to see each repeated template more than once on a typical site.
 _ADEQUATE_SAMPLE_PAGES = 30
+
+# A part at or above this value does not need explaining as a weakness.
+_STRONG_PART = 0.8
+_PART_ORDER = ("execution_penalty", "sample_representativeness", "identity_confidence")
+_PART_LABELS = {"execution_penalty": "the audit run", "sample_representativeness": "the page sample",
+                "identity_confidence": "the brand identity"}
+
+_IDENTITY_REASONS = {
+    "resolved": "The brand identity is clear: the Organization markup names one brand.",
+    "parent_sub_brand": "The markup names related but different organizations (likely a parent brand and a "
+                        "sub-brand), so statements about the brand may mix the two.",
+    "multi_brand_conflict": "The markup names unrelated organizations, so it is unclear which brand the site "
+                            "represents.",
+    "conflicting_sameas": "The markup's sameAs links point to different profiles on the same platform, so the "
+                          "brand's identity is in doubt.",
+    "name_from_site_metadata": "No Organization markup was found; the brand name was read from the site's own "
+                               "metadata (site name, title suffix or copyright line), which is less certain. Adding "
+                               "Organization markup confirms it.",
+    "no_organization_markup": "No Organization or Product JSON-LD was found on the analyzed pages, so the audit "
+                              "could not confirm which brand the site belongs to. Adding Organization markup "
+                              "raises this part.",
+    "not_completed": "Brand identity could not be resolved in this run.",
+}
+
+_EXECUTION_REASONS = {
+    "completed": "The audit run completed normally.",
+    "completed_with_timeouts": "At least one analysis step ran out of time and was abandoned.",
+    "degraded": "Part of the audit could not complete (a failed analysis step, or robots.txt could not be "
+                "read, so pages were not fetched).",
+    "partial_deadline_reached": "The audit time limit was reached before every step finished.",
+}
+
+
+def confidence_level(score):
+    """Plain-English band for a confidence score."""
+    return "high" if score >= _STRONG_PART else "medium" if score >= 0.5 else "low"
+
+
+def identity_resolution(entity_result):
+    """One word for how entity resolution went, read from its result: resolved,
+    parent_sub_brand, multi_brand_conflict, conflicting_sameas,
+    no_organization_markup or not_completed."""
+    entity_result = entity_result or {}
+    data = entity_result.get("data") or {}
+    status = entity_result.get("status")
+    if status in ("success", "partial") and "confidence" in data:
+        return data.get("ambiguity_type") or "resolved"
+    if status == "insufficient_evidence" and data.get("entity_type") == "unknown":
+        return "no_organization_markup"
+    return "not_completed"
+
+
+def _sample_reason(coverage, value):
+    analyzed = _analyzed_pages(coverage)
+    discovered = coverage.get("pages_discovered", 0)
+    if not analyzed:
+        return "No page could be analyzed, so the site's content was not assessed."
+    detail = f"the crawl analyzed {analyzed} of {discovered} discovered page(s)"
+    if coverage.get("sections_discovered"):
+        detail += (f" and reached {coverage.get('sections_analyzed', 0)} of {coverage['sections_discovered']} "
+                   f"site section(s)")
+    if value >= _STRONG_PART:
+        return "The page sample stands for the site well: " + detail + "."
+    return "The page sample is small or one-sided: " + detail + "."
+
+
+def _identity_reason(coverage, value):
+    resolution = coverage.get("identity_resolution")
+    if resolution in _IDENTITY_REASONS:
+        return _IDENTITY_REASONS[resolution]
+    # Older coverage blocks carry only the number.
+    if value >= 0.85:
+        return _IDENTITY_REASONS["resolved"]
+    return "The brand identity was only partly confirmed." if value > 0 else _IDENTITY_REASONS["not_completed"]
+
+
+def _execution_reason(execution_status):
+    return _EXECUTION_REASONS.get(execution_status, f"The audit run ended with status '{execution_status}'.")
+
+
+def _analyzed_pages(coverage):
+    return coverage.get("pages_analyzed", coverage.get("pages_fetched_attempted", 0))
+
+
+def _weak_parts(parts, coverage):
+    """Parts worth naming as weak. A sample with no analyzed page is always weak."""
+    weak = {name for name, value in parts.items() if value < _STRONG_PART}
+    if not _analyzed_pages(coverage):
+        weak.add("sample_representativeness")
+    return weak
+
+
+def _explanation(score, limiting, weak, reasons, identity_confidence=None):
+    text = f"Confidence is {confidence_level(score)} ({score:.2f})."
+    if score >= _STRONG_PART and not weak:
+        text += " The page sample and the audit run both hold up."
+    else:
+        text += (f" The weaker of its two parts sets the score, here {_PART_LABELS[limiting]}. "
+                 f"{reasons[limiting]}")
+        others = [reasons[name] for name in _PART_ORDER if name != limiting and name in weak]
+        if others:
+            text += " Also weak: " + " ".join(others)
+    if identity_confidence is not None:
+        # Identity is context for the score, never part of it.
+        text += (" Brand identity (reported separately, not part of the score): "
+                 + reasons["identity_confidence"])
+    return (text + " The score rates how far the report speaks for the whole site; each finding has its own "
+                   "confidence and status, and a problem seen on a page is still real on that page.")
+
+
+def unfinished_confidence():
+    """Confidence block for an audit whose worker never returned a report."""
+    return {
+        "score": 0.0,
+        "level": "low",
+        "method": "no completed audit evidence",
+        "components": {},
+        "limiting_factor": "execution_penalty",
+        "reasons": {"execution_penalty": "The audit did not finish."},
+        "explanation": "Confidence is low (0.00). The audit did not finish, so there is no evidence to rate and "
+                       "no site-level conclusion can be drawn from this report.",
+    }

@@ -264,8 +264,13 @@ def test_site_search_missing_on_large_site_only():
 
 
 def test_shop_without_saved_state_and_with_wishlist():
-    shop = [page(TEXT, url=SITE + "/products/a"), page(TEXT, url=SITE + "/products/b")]
+    price = "<p>Price: $24.00</p>"
+    shop = [page(price + TEXT, url=SITE + "/products/a"), page(price + TEXT, url=SITE + "/products/b")]
     assert by_id(run(analyze_context_retention, *shop), "context-retention-missing")
+    # Product and category paths with nothing for sale (a news site filing audio
+    # by category) are not a shop.
+    unpriced = [page(TEXT, url=SITE + "/category/a"), page(TEXT, url=SITE + "/category/b")]
+    assert not by_id(run(analyze_context_retention, *unpriced), "context-retention-missing")
     saved = [page("<button>Add to wishlist</button>" + TEXT, url=SITE + "/products/a"), shop[1]]
     assert not by_id(run(analyze_context_retention, *saved), "context-retention-missing")
 

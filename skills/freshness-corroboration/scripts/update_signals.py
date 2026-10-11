@@ -43,6 +43,7 @@ _UPDATE_CATEGORY_BY_PAGE_TYPE = {
     "contact": "contact",
     "legal": "legal",
     "article": "editorial",
+    "listing": "editorial",
     "about": "editorial",
 }
 

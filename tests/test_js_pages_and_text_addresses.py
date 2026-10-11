@@ -128,7 +128,9 @@ def test_saved_state_widgets_left_for_javascript_count_as_saved_state(trace):
 def test_unrelated_script_configuration_is_not_saved_state():
     # Shopify themes name compare_at_price in every product script; that is a price, not a compare list.
     script = '<script>var product = {"compare_at_price": 1200, "price": 1000};</script>'
-    shop = [page(script + TEXT, url=SITE + "/products/a"), page(TEXT, url=SITE + "/products/b")]
+    # A shop is recognized from something for sale on its product pages (a price here).
+    price = "<p>Price: $10.00</p>"
+    shop = [page(script + price + TEXT, url=SITE + "/products/a"), page(price + TEXT, url=SITE + "/products/b")]
     finding = by_id(run(analyze_context_retention, *shop), "context-retention-missing")[0]
     assert "no mount point, data attribute or script" in finding["evidence"][0]["description"]
 
@@ -158,7 +160,8 @@ def test_comparison_table_is_not_judged_on_pages_built_by_javascript():
 
 def test_question_headings_and_tables_in_raw_html_are_still_judged_on_thin_pages():
     thin = page("<h2>How much does it cost?</h2><p>Great question.</p><h2>Plans</h2>"
-                "<table><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></table>")
+                "<table><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></table>"
+                '<script src="/static/app.js"></script>')
     assert script_dependent(thin)
     result = run(analyze_answer_format, thin)
     assert by_id(result, "question-answer-indirect") and by_id(result, "table-headers-missing")

@@ -134,17 +134,20 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
                 provenance={"skill": "engagement-audit", "script": "analyze_engagement.py", "rule_id": "homepage-orientation"},
                 affected_pages=[home.url]))
 
-    if len(artifacts.pages) >= 3:
+    # Navigation is judged on HTML pages only: a fetched Markdown or PDF file has no
+    # navigation to offer.
+    html_pages = [p for p in artifacts.pages if p.status_code == 200 and "non_html_content" not in p.warnings]
+    if len(html_pages) >= 3:
         # Do not infer a missing nav from flattened headings; use link density and
         # cross-page reachability instead, which is observable in this artifact model.
-        pages_with_links = sum(1 for p in artifacts.pages if p.internal_links)
+        pages_with_links = sum(1 for p in html_pages if p.internal_links)
         if pages_with_links == 0:
             findings.append(make_finding(
                 category="engagement", finding_type="defect", severity="medium",
                 status="confirmed", confidence=0.78,
                 title="Sampled pages expose no internal navigation links",
                 root_cause="Visitors landing on the sampled pages have no observed internal link path to related content",
-                evidence=[{"type": "navigation", "description": f"0/{len(artifacts.pages)} sampled pages contain internal links", "urls": [p.url for p in artifacts.pages[:10]]}],
+                evidence=[{"type": "navigation", "description": f"0/{len(html_pages)} sampled pages contain internal links", "urls": [p.url for p in html_pages[:10]]}],
                 suggested_action={
                     "summary": "Add persistent navigation and contextual next-step links",
                     "steps": ["Expose primary destinations in a semantic nav landmark", "Link related pages from body content", "Ensure every important landing page has a clear next step"],

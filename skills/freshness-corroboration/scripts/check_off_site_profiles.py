@@ -39,11 +39,12 @@ from dataclasses import replace
 from time import monotonic
 from urllib.parse import urlsplit
 
+from check_helpers import site_kind
 from external_lookup import ROBOTS_MAX_BYTES, ExternalLookup
 from html_features import Document
 from instrumentation import Instrumentation
 from models import make_finding, skill_result
-from platforms import host_of, review_platform
+from platforms import google_maps_link, host_of, review_platform
 from resolve_entity_identity import ORG_TYPES, _normalize_org_name
 from search_provider import SearchProviderError, is_configured, search
 from structured_data import iter_nodes, types_of
@@ -143,6 +144,8 @@ def static_problem(url, site_host):
         return "points back at the site itself, not at a profile on another platform"
     if _SHARE_PATH.search(parts.path):
         return "is a share or widget link, not a profile"
+    if google_maps_link(url) == "not_place":
+        return "is a map position, route or search, not a business profile"
     if parts.path.strip("/") == "" and not parts.query:
         return "points at the platform home page, not at a profile"
     return None
@@ -408,22 +411,29 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
     # --- review platform presence -----------------------------------------
     name = names[0] if names else ""
     searched, search_note = (None, None)
-    if kind == "public":
-        metrics["review_platform_check"] = "not_applicable_public_body"
-    if not linked and kind != "public" and identity_data.get("confidence", 0) >= 0.85:
+    # Public bodies, news publishers and nonprofits are not reviewed on consumer
+    # review platforms, so the review check does not apply to them. Publishers and
+    # nonprofits are recognized from positive evidence only (check_helpers.site_kind);
+    # a site with no such evidence is still checked.
+    html_pages = [p for p in artifacts.pages if p.status_code == 200 and "non_html_content" not in p.warnings]
+    exempt = {"public": "public body"}.get(kind) or {"publisher": "news publisher",
+                                                     "nonprofit": "nonprofit"}.get(site_kind(html_pages))
+    if exempt:
+        metrics["review_platform_check"] = "not_applicable_" + exempt.replace(" ", "_")
+    if not linked and not exempt and identity_data.get("confidence", 0) >= 0.85:
         searched, search_note = _search_review_platforms(name, limits, instrumentation, deadline)
         if search_note:
             warnings.append(f"Review-platform search not completed ({search_note}).")
     metrics["review_platform_search"] = ("not_run" if searched is None else sorted(searched))
-    if not linked and kind != "public" and artifacts.pages:
-        pages = [p.url for p in artifacts.pages if p.status_code == 200][:10] or [artifacts.site_url]
+    if not linked and not exempt and html_pages:
+        pages = [p.url for p in html_pages][:10]
         if searched:
             description = ("Search found the brand on " + ", ".join(sorted(searched)) +
                            ", but no crawled page or sameAs link points to those profiles")
             title = "Review profiles exist but the site does not link them"
             status, confidence = "confirmed", 0.7
         else:
-            description = (f"None of the {len(artifacts.pages)} crawled page(s) or the sameAs links point to a "
+            description = (f"None of the {len(html_pages)} crawled page(s) or the sameAs links point to a "
                            f"review or directory profile"
                            + (" and a search for the brand's reviews found none" if searched is not None else
                               "; whether profiles exist off-site was not searched"))

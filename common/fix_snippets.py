@@ -42,7 +42,7 @@ _NOTE = ("Generated from the audited pages. Check every value against the live p
 
 _SCHEMA_FOR_TYPE = {
     "product": "Product", "article": "Article", "service": "Service", "software": "SoftwareApplication",
-    "about": "AboutPage", "contact": "ContactPage", "category": "CollectionPage",
+    "about": "AboutPage", "contact": "ContactPage", "category": "CollectionPage", "listing": "CollectionPage",
 }
 
 
@@ -324,8 +324,8 @@ def _twitter_lines(pages, facts):
 
 def _llms_txt(artifacts, facts):
     pages = [p for p in artifacts.pages if p.status_code == 200 and p.features and p.page_type != "legal"]
-    order = {"home": 0, "about": 1, "product": 2, "service": 2, "software": 2, "category": 3, "article": 4,
-             "contact": 5}
+    order = {"home": 0, "about": 1, "product": 2, "service": 2, "software": 2, "category": 3, "listing": 3,
+             "article": 4, "contact": 5}
     pages.sort(key=lambda p: (order.get(p.page_type, 6), p.url))
     lines = [f"# {facts['name']}", "", f"> {facts['description']}", "", "## Key pages", ""]
     seen = set()

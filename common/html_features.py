@@ -22,8 +22,55 @@ _ICON_CLASS = re.compile(r'(?:^|\s)(?:fa[srlbdk]?|fa-[\w-]+|glyphicon[\w-]*|icon
 CONSENT_TOKEN = re.compile(r'onetrust|cookiebot|cybotcookiebot|cookie[-_]?(?:consent|banner|notice|law|bar|popup|wall)'
                            r'|gdpr|cc-window|cc-banner|didomi|qc-cmp|truste|usercentrics|osano|termly|cookieyes'
                            r'|cky-consent|iubenda|cmplz|klaro|borlabs|consent[-_]?(?:banner|manager|modal|popup|wall)', re.I)
-# Question-shaped heading text: ends with "?" or opens with a question word.
-QUESTION_HEADING = re.compile(r'\?$|^(how|what|why|when|where|who|can|does|is|are|should)\b', re.I)
+# Question-shaped heading text: it ends with a question mark, or it opens with a
+# question word followed by a verb that makes it a question ("What is", "How do",
+# "Can I"). A question word alone is not enough: "How it works", "How to style",
+# "What we offer" and "Who we are" are section labels, not questions.
+_QUESTION_MARK = re.compile('[?？]["\'’”)\\]]*$')
+_QUESTION_AUX = (r'(?:is|are|was|were|do|does|did|can|could|should|would|will|shall|may|might|must'
+                 r"|has|have|had|isn'?t|aren'?t|don'?t|doesn'?t|can'?t|won'?t)")
+_QUESTION_LEAD = re.compile(
+    r'^(?:(?:how|what|why|when|where|who|whom|whose|which)\s+' + _QUESTION_AUX + r'\b'
+    r'|how\s+(?:much|many|long|often|old|far|big|soon|fast)\b'
+    r'|' + _QUESTION_AUX + r'\s+(?:i|you|we|they|it|he|she|there|this|that|these|those|my|your|our|their|the|a|an)\b)',
+    re.I)
+
+
+# Client-side framework signs, for telling a page a script builds from a page
+# that is merely short: framework bundle paths and names, framework attributes,
+# and page state serialized for a script to render. A content hash in a file
+# name ("site-bundle.17bbc1da.js") is only cache busting and is not counted.
+_FRAMEWORK_SCRIPT = re.compile(r'/_next/|/_nuxt/|/static/js/|/_app/immutable/|/build/_assets/'
+                               r'|(?:^|[/._-])(?:react|react-dom|vue|angular|svelte|preact|ember|gatsby)'
+                               r'(?:[.\-_][\w.-]*)?\.m?js(?:[?#]|$)', re.I)
+_FRAMEWORK_ATTRS = ('ng-app', 'ng-version', 'data-reactroot', 'data-v-app', 'data-server-rendered',
+                    'data-sveltekit-hydrate')
+_STATE_SCRIPT_IDS = frozenset({'__NEXT_DATA__', '__NUXT_DATA__', '__APOLLO_STATE__', 'ng-state', 'serverApp-state'})
+_STATE_GLOBAL = re.compile(r'window\.__(?:INITIAL_STATE|PRELOADED_STATE|NUXT|APOLLO_STATE|REDUX_STATE|INITIAL_DATA)__\s*=')
+# A JSON string literal of at least 20 characters with no markup or URL in it.
+_STATE_PROSE = re.compile(r'"((?:[^"\\<>]|\\.){20,2000})"')
+
+
+# Wording that marks a form as an email subscription: on its submit control, in
+# its action URL, or in the id, class or name of the form or its email field.
+_SIGNUP_WORDS = re.compile(r'subscri|newsletter|sign[\s_-]?up|join\s+(?:our|the)\s+(?:list|mailing|newsletter|community)'
+                           r'|mailing[\s_-]?list|e-?mail[\s_-]?(?:updates|list|alerts)|stay\s+(?:in\s+touch|updated|informed)'
+                           r'|get\s+(?:updates|the\s+latest)|keep\s+me\s+(?:posted|updated)|notify\s+me|opt[\s_-]?in', re.I)
+
+
+def is_signup_form(form):
+    """True for an email subscription form: it has an email field, signup wording
+    of its own and no password field (a password makes it an account form)."""
+    if not form.get('email') or form.get('password'):
+        return False
+    words=' '.join([form.get('action',''),form.get('attrs',''),form.get('email_attrs','')]+list(form.get('labels') or ()))
+    return bool(_SIGNUP_WORDS.search(words))
+
+
+def is_question_heading(text):
+    """True when heading text is phrased as a question (see _QUESTION_LEAD)."""
+    text = ' '.join((text or '').split())
+    return bool(text) and bool(_QUESTION_MARK.search(text) or _QUESTION_LEAD.match(text))
 _HEADING_TAGS = frozenset({'h1','h2','h3','h4','h5','h6'})
 # Field names that site-search forms conventionally use.
 _SEARCH_FIELD_NAMES = {'q','s','query','search','keyword','keywords','term','searchterm','search_query','search-term'}
@@ -321,6 +368,9 @@ class Document(HTMLParser):
         # them), location and site-search observations, and icon links for the logo.
         self.tables=[];self.definition_lists=0;self.unordered_lists=0
         self.question_answers=[];self._qa=None
+        # Question-shaped H2/H3 headings this page answers, and headings that are
+        # links to other pages (not counted as questions).
+        self.question_heading_count=0;self.linked_question_headings=0;self.linked_headings=0
         self.address_text=[];self.icon_links=[];self.search_form=False
         # Hints of features that JavaScript builds after load: a search box, and
         # saved-state widgets such as a wishlist or recently viewed items.
@@ -329,6 +379,44 @@ class Document(HTMLParser):
         self.flow=[]
         # Microdata or RDFa that states a telephone, email or contactPoint.
         self.contact_markup=False
+        # Visible password inputs and the forms that hold them, for telling login
+        # pages apart from public content (common/auth_pages.py).
+        self.password_inputs=0;self.password_forms=[]
+        # Every visible form (bounded), for telling a newsletter signup apart from
+        # contact, search and login forms that also hold an email field.
+        self.form_records=[]
+        # Signs that a client-side framework builds the page: framework attributes
+        # or bundle names, and page data serialized for a script to render.
+        self.framework_hint=False;self.state_blob=False;self.state_text_chars=0
+    def _observe_auth(self,tag,a,frame):
+        """Visible password inputs, and for each form that holds one: its action,
+        its id, class and name, its submit labels and whether it sits in the page
+        chrome (header, nav or footer). Runs after the frame is pushed."""
+        if tag=='form':
+            frame['form']={'action':a.get('action','').strip()[:300],
+                           'attrs':' '.join(a.get(k,'') for k in ('id','class','name')).strip()[:200],
+                           'labels':[],'in_chrome':any(f['tag'] in _CHROME_TAGS for f in self.stack[:-1])}
+            if not frame['hidden'] and len(self.form_records)<20:self.form_records.append(frame['form'])
+            return
+        if tag!='input' or frame['hidden']:return
+        kind=(a.get('type') or 'text').strip().lower()
+        owner=self._open('form')
+        form=owner.get('form') if owner is not None else None
+        if kind=='email' and form is not None:
+            form['email']=True
+            # The email field's own name, id, placeholder and label say what it is for.
+            words=' '.join(a.get(k,'') for k in ('name','id','placeholder','aria-label')).strip()
+            if words:form['email_attrs']=(form.get('email_attrs','')+' '+words)[:300]
+        if kind=='password':
+            self.password_inputs+=1
+            # Recorded when the password input is seen, so a form whose end tag
+            # never arrives is still kept.
+            if form is not None and not form.get('password'):
+                form['password']=True
+                if len(self.password_forms)<5:self.password_forms.append(form)
+        elif kind in ('submit','image') and form is not None and len(form['labels'])<10:
+            label=(a.get('value') or a.get('alt') or a.get('aria-label') or '').strip()
+            if label:form['labels'].append(label[:80])
     def _block_break(self):
         if self.flow and self.flow[-1]!='\n':self.flow.append('\n')
     def _add_saved_state_hint(self,text):
@@ -495,6 +583,7 @@ class Document(HTMLParser):
         self._observe_start(tag,a,frame,rel)
         self._observe_structure(tag,a,frame,rel)
         self._observe_hints(tag,a,rel)
+        self._observe_auth(tag,a,frame)
         if tag in _BLOCK_TAGS:self._block_break()
         if not self.contact_markup and re.search(r'(?:^|[\s:/#])(?:telephone|email|contactpoint)(?:$|\s)',
                                                  (a.get('itemprop','')+' '+a.get('property','')).lower()):
@@ -512,16 +601,20 @@ class Document(HTMLParser):
         if tag=='meta':self.meta.setdefault((a.get('name') or a.get('property') or '').lower(),[]).append(a.get('content',''))
         if tag=='link' and 'canonical' in rel:self.canonical=a.get('href')
         if tag=='script':
-            self.scripts+=1;self._script={'type':a.get('type','').lower(),'parts':[],'src':bool(a.get('src'))}
+            self.scripts+=1;self._script={'type':a.get('type','').lower(),'parts':[],'src':bool(a.get('src')),
+                                          'id':a.get('id','').strip()}
             if a.get('src'):
                 self.external_scripts+=1
                 src=a['src'].strip()
+                if not self.framework_hint and _FRAMEWORK_SCRIPT.search(src):self.framework_hint=True
                 if src.startswith(('http://','https://','//')) and len(self.script_hosts)<60:
                     try:host=(urlsplit(src if not src.startswith('//') else 'https:'+src).hostname or '').lower()
                     except ValueError:host=''
                     if host:self.script_hosts.add(host)
         if tag=='nav' or a.get('role')=='navigation':self.has_nav=True
         if a.get('id','').lower() in {'root','app','__next','___gatsby','app-root'}:self.spa=True
+        if not self.framework_hint and (tag in ('app-root',) or any(k in a for k in _FRAMEWORK_ATTRS)):
+            self.framework_hint=True
         if 'itemscope' in a or 'typeof' in a:self.microdata=True
         if a.get('itemtype') and len(self.microdata_types)<30:
             for value in a['itemtype'].split()[:5]:
@@ -636,6 +729,18 @@ class Document(HTMLParser):
                 self.inline_script_bytes+=sum(len(part) for part in self._script['parts'])
             if not self._script['src'] and self._script['type'] in _JS_TYPES+('application/json',):
                 self._add_saved_state_hint(''.join(self._script['parts'])[:100000])
+            if not self._script['src'] and self._script['type']!='application/ld+json' and self.state_text_chars<20000:
+                body=''.join(self._script['parts'])
+                # Page data serialized for a script to render: a framework state
+                # object, or a large JSON data block.
+                if (self._script['id'] in _STATE_SCRIPT_IDS or _STATE_GLOBAL.search(body[:200000])
+                        or (self._script['type']=='application/json' and len(body)>=2000)):
+                    self.state_blob=True
+                    # Prose inside it: string values of four or more words, the text a
+                    # script will put on the page.
+                    for m in _STATE_PROSE.finditer(body[:200000]):
+                        if self.state_text_chars>=20000:break
+                        if len(m.group(1).split())>=4:self.state_text_chars+=len(m.group(1))
             self._script=None
         if tag in _BLOCK_TAGS:self._block_break()
         idx=next((i for i in range(len(self.stack)-1,-1,-1) if self.stack[i]['tag']==tag),None)
@@ -649,17 +754,36 @@ class Document(HTMLParser):
         if tag=='address' and text and not frame['hidden'] and len(self.address_text)<5:
             self.address_text.append(text[:200])
         if not frame['hidden']:
-            if tag=='a' and a.get('href'):self.links.append((a['href'],text))
+            if tag=='a' and a.get('href'):
+                self.links.append((a['href'],text))
+                # Link text inside a heading, so a heading that is a link to another
+                # page (a headline teaser on a news or listing page) can be told apart.
+                heading=next((f for f in reversed(self.stack[:idx]) if f['tag'] in _HEADING_TAGS),None)
+                if heading is not None:heading['link_chars']=heading.get('link_chars',0)+len(text)
             if re.fullmatch('h[1-6]',tag):
                 self.headings.append(text);self.heading_levels.append(int(tag[1]))
+                # A heading inside a link, or one whose text is mostly a link, names
+                # another page; it is not a question this page answers.
+                linked=(any(f['tag']=='a' and f['a'].get('href') for f in self.stack[:idx])
+                        or (bool(text) and frame.get('link_chars',0)>=0.6*len(text)))
+                if linked:self.linked_headings+=1
                 # Collect the text after a question-shaped H2 or H3 until the next heading.
-                if tag in ('h2','h3') and QUESTION_HEADING.search(text.strip()) and len(self.question_answers)<20:
-                    self._qa={'question':text[:200],'parts':[],'chars':0,'level':int(tag[1]),'next_level':None}
-                    self.question_answers.append(self._qa)
+                if tag in ('h2','h3') and is_question_heading(text):
+                    if linked:self.linked_question_headings+=1
+                    else:
+                        self.question_heading_count+=1
+                        if len(self.question_answers)<20:
+                            self._qa={'question':text[:200],'parts':[],'chars':0,'level':int(tag[1]),'next_level':None}
+                            self.question_answers.append(self._qa)
             if tag=='p':
                 self.paragraphs.append(len(text))
                 if len(self.paragraph_text)<12:self.paragraph_text.append(text[:600])
-            if tag=='button':self.buttons.append(text)
+            if tag=='button':
+                self.buttons.append(text)
+                owner=self._open('form')
+                if owner is not None and 'form' in owner and len(owner['form']['labels'])<10:
+                    label=text or (a.get('aria-label') or a.get('value') or '').strip()
+                    if label:owner['form']['labels'].append(label[:80])
             if tag in ('a','span') and any('breadcrumb' in str(f['a']).lower() for f in self.stack):self.breadcrumb.append(text)
             if frame.get('capture') and text and len(self.bylines)<10:self.bylines.append(text[:160])
             control=frame.get('control')
@@ -691,7 +815,9 @@ class Document(HTMLParser):
                 'opening_paragraphs':self.paragraph_text,
                 'full_visible_chars':len(' '.join(self.text)),
                 'full_visible_bytes':len(' '.join(self.text).encode('utf-8')),
-                'question_headings':sum(bool(QUESTION_HEADING.search(h.strip())) for h,l in zip(self.headings,self.heading_levels) if l in (2,3)),
+                'question_headings':self.question_heading_count,
+                'linked_question_headings':self.linked_question_headings,
+                'linked_headings':self.linked_headings,
                 'viewport':self.meta.get('viewport',[]),'lang':self.lang,'has_nav':self.has_nav,
                 'h1_count':self.heading_levels.count(1),'subheadings':sum(x>1 for x in self.heading_levels),
                 'heading_levels':self.heading_levels[:200],'paragraph_lengths':self.paragraphs[:400],
@@ -706,6 +832,12 @@ class Document(HTMLParser):
                 'blocking_stylesheets':self.blocking_stylesheets,'preload_images':self.preload_images,
                 'script_hosts':sorted(self.script_hosts),'external_scripts':self.external_scripts,
                 'inline_script_bytes':self.inline_script_bytes,'embeds_missing_dims':self.embeds_missing_dims,
+                'password_inputs':self.password_inputs,
+                'signup_forms':sum(1 for f in self.form_records if is_signup_form(f)),
+                'framework_hint':self.framework_hint,'state_blob':self.state_blob,
+                'state_text_chars':self.state_text_chars,
+                'password_forms':[{k:(list(v) if k=='labels' else v) for k,v in f.items() if k!='password'}
+                                  for f in self.password_forms],
                 **self._extended_features()}
     def _extended_features(self):
         noscript=' '.join(self.noscript_parts)

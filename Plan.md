@@ -81,7 +81,9 @@ Suggested-action quality
  - Full suite: python -m pytest -q. (Done.)
  - Re-run python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in;
    compare sampled sections, runtime (must stay well under 270 s) and confidence
-   against the 86 s / 0.06 baseline. (NOT DONE YET.)
+   against the 86 s / 0.06 baseline. (Done 2026-10-11: 77.5 s, completed,
+   49 of 826 pages analyzed, 21 of 40 sections reached, confidence 0.53 medium,
+   limited by section coverage, with identity 0.55 from a multi-brand conflict.)
 
 ## FIXED Issues
 
@@ -95,6 +97,10 @@ Suggested-action quality
 - <br> inside an element now separates words ("12 High Street<br>Springfield" no longer reads "StreetSpringfield").
 - New check contact-markup-missing: an email or phone is shown (mailto:/tel: links, emails in text, labelled phone numbers) but no page states email, telephone or contactPoint in JSON-LD, microdata or RDFa. Its snippet fills the Organization email (generic mailbox on the site's own domain preferred) and telephone (number shown on most pages).
 - Text scans (addresses, contact details) read up to 500,000 characters per page (first and last 250,000 beyond that), up from 60,000.
+- Point 4: login pages are out of scope. A fetched page is not analyzed only when it has a visible password input AND at most 1,500 characters of visible text AND no entity structured data (Organization, Product, Article...; page boilerplate such as WebPage or BreadcrumbList does not count) AND a login signal (an auth path segment matched whole, so /author/ never matches; a login title or H1; or a login form outside the header, nav and footer). A page with real copy or entity markup is always audited. It is listed in coverage.out_of_scope_pages with its signals, counts toward the page cap and pages_fetched_attempted, and adds a limitation. A login start URL adds a warning and a limitation. A home page with a login box in its header stays in scope. Code: common/auth_pages.py, html_features.py (password inputs and forms), acquire_site.py. Live check: https://github.com/login is marked out of scope with all five signals.
+- Point 12: Markdown report, built from the JSON report rather than by the audit command, so the audit and its stdout JSON are unchanged and a Markdown file can be made from any saved report without re-crawling. common/report_markdown.py: render(report) and a command line (python common/report_markdown.py results.json [out.md|-]); reads UTF-8, UTF-8 with BOM and UTF-16 (PowerShell's > redirect), writes UTF-8, refuses to overwrite the JSON. Sections: header, confidence with reasons, summary, start here, top actions, quick wins, findings table, per-finding evidence, steps and fix snippet, other recommendations, what could not be checked (with skipped login pages), notes. Site text is escaped (HTML, | ` * _ [ ] ~ #, block starts); links only for http(s) URLs as encoded autolinks; snippets in fences longer than any backtick run inside. Standard library only. Tests: tests/test_report_markdown.py.
+- Point 15: offline corpus of site archetypes. tests/archetype_sites.py builds six sites (single-page app, e-commerce shop, local business, documentation site, blog, multi-language site), each with planted defects and good practice. tests/test_archetype_fixtures.py audits each one end to end with every external lookup off and asserts the check IDs that must fire (with their pages), the check IDs that must not fire, zero external fetches, GET only, completion and a valid report. The corpus found four false positives, now fixed: (1) render-gap, and the JS-page skip of absence checks, applied to short pages that run no script (common/check_helpers.py runs_scripts; a <noscript> saying JavaScript is required still counts); (2) Organization subtypes such as Plumber or CollegeOrUniversity did not satisfy the home, contact and about markup checks, and a site marked up only with a subtype had identity 0 (shared ORGANIZATION_TYPES in common/structured_data.py; identity falls back to subtypes on the home page only, so business listings elsewhere never look like a multi-brand conflict); (3) brand-definition missed definitions using "sells", "runs", "repairs" and similar verbs; (4) an editorial section index such as /blog/ or /news was held to article markup (now page type listing: no article markup expected, dates still editorial, and never treated as a shop category). A shop index such as /products is still typed product; left as before so stale-price severity does not change.
+- Point 13: confidence explains itself. The score is still the plain min(); the block adds level (high, medium, low), limiting_factor, reasons (one sentence per part) and explanation. coverage.identity_resolution says why identity is low (for example no_organization_markup). An audit that did not finish gets an explanation too. Tests for points 4 and 13: tests/test_login_pages_and_confidence.py.
 
 ___________________________________________
 
@@ -107,19 +113,12 @@ ___________________________________________
 ## List 2: rubric improvements still open
 
 Detection accuracy
-4. Don't audit login and authenticated pages. The sample run audited /login, /login/faculty and /login/guest. Detect password inputs and auth paths, mark those pages out of scope, and warn when the start URL is a login page. The handout bans authenticated-area actions, and findings like "no JSON-LD on a login page" are false positives.
 5. Gate the email-summary check. F-004 says "Review outbound email text" on a site with no newsletter evidence. That is padding, and the rubric penalises false positives. Emit it only if a newsletter or signup form exists.
    (Partial: it now needs an email input and a form, and the title no longer claims a signup. It still fires on contact and login forms with an email field.)
 
 Output design
-12. Add --format md (and HTML). The report is JSON only. A Markdown report would have a summary, the top 5 actions, a table of findings, and "what we could not check". The rubric names "a non-expert could act on".
-13. Explain the confidence score. The sample shows score: 0.0 because identity_confidence is 0, so min() reduces the whole report to 0. A non-expert reads that as "this report is worthless". Show the components with a plain-English reason, or use a floor-weighted score.
-   (Partial: components and a method string are in the report. The score is still a plain min() with no plain-English reason or floor.)
 14. Add a grouped "what's working" section. Passed checks support the claim of no false positives and make the report credible.
 
-Generalization
-15. Add an offline fixture corpus of varied site archetypes: SPA, e-commerce, local business, docs site, blog and multi-language site. Each fixture should assert the expected check IDs. This is generalization tested by construction, which is exactly what the rubric says.
-   (Partial: tests/test_scenario_fixtures.py covers multi-brand, stale facts and broken navigation, not these archetypes.)
 
 ## Known bugs and limitations
 

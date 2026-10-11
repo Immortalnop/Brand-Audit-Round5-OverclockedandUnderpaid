@@ -13,6 +13,16 @@ LOCAL_BUSINESS_TYPES = frozenset({
     "DaySpa", "ExerciseGym", "HealthClub", "ClothingStore", "GroceryStore", "HardwareStore", "FurnitureStore",
     "ElectronicsStore", "BookStore", "AutomotiveBusiness", "VeterinaryCare", "Hospital", "MedicalClinic",
 })
+# schema.org Organization and its common subtypes, LocalBusiness ones included:
+# a Plumber or a CollegeOrUniversity is an Organization for every check that
+# asks whether a page names its organization.
+ORGANIZATION_TYPES = frozenset({
+    "Organization", "Corporation", "OnlineStore", "OnlineBusiness", "NGO", "EducationalOrganization",
+    "CollegeOrUniversity", "School", "HighSchool", "MiddleSchool", "ElementarySchool", "Preschool",
+    "GovernmentOrganization", "NewsMediaOrganization", "MedicalOrganization", "SportsOrganization", "SportsTeam",
+    "PerformingGroup", "Airline", "Consortium", "LibrarySystem", "ResearchOrganization", "WorkersUnion",
+    "Cooperative",
+}) | LOCAL_BUSINESS_TYPES
 # Properties that state where an organization is or which area it serves.
 LOCATION_PROPERTIES = ("address", "geo", "areaServed", "serviceArea", "location", "hasMap")
 LOCATION_TYPES = frozenset({"PostalAddress", "GeoCoordinates", "GeoShape", "Place", "City", "State", "Country",
