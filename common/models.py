@@ -235,6 +235,21 @@ def make_evidence_text(evidence) -> str:
     return "; ".join(p for p in parts if p).strip()
 
 
+def join_steps(steps) -> str:
+    """Join action steps into one readable paragraph. Each step becomes its own
+    sentence: a bare space join would run "Identify page types" into "Add
+    matching blocks" with no break between them."""
+    sentences = []
+    for step in steps or ():
+        text = " ".join(str(step).split())
+        if not text:
+            continue
+        if text[-1] not in ".!?":
+            text += "."
+        sentences.append(text)
+    return " ".join(sentences)
+
+
 def make_finding(category, finding_type, severity, status, confidence, title,
                   root_cause, evidence, suggested_action, provenance,
                   affected_pages=None, evidence_text=None) -> dict:
@@ -259,6 +274,6 @@ def make_finding(category, finding_type, severity, status, confidence, title,
     finding = enrich_finding(finding)
     finding.setdefault("mechanism", root_cause)
     action = finding["suggested_action"]
-    action.setdefault("implementation_detail", " ".join(action.get("steps", [])))
+    action.setdefault("implementation_detail", join_steps(action.get("steps", [])))
     action.setdefault("expected_outcome", action.get("expected_benefit", "Review and verify the proposed improvement"))
     return apply_invariant_i1(finding)

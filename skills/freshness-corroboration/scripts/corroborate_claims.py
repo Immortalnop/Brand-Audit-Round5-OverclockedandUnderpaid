@@ -120,14 +120,14 @@ def corroborate_claims(facts, entity_identity, artifacts, deadline, limits, inst
         if deadline is not None and deadline.expired():
             deadline_exceeded = True
             break
-        if instrumentation is not None and instrumentation.external_fetches_attempted >= limits.MAX_EXTERNAL_FETCHES:
+        if instrumentation is not None and instrumentation.search_queries_attempted >= limits.MAX_EXTERNAL_FETCHES:
             break
         checked += 1
         query = f"{name} {fact.get('value', '')}".strip()
         try:
             results = search(query, max_results=3, timeout_s=limits.PER_FETCH_TIMEOUT_MS / 1000)
             if instrumentation is not None:
-                instrumentation.record_external_fetch(ok=True)
+                instrumentation.record_external_fetch(ok=True, search=True)
             outcome, detail = _compare_claim_to_results(fact, results)
             if outcome == "corroborated":
                 corroborated += 1
@@ -139,7 +139,7 @@ def corroborate_claims(facts, entity_identity, artifacts, deadline, limits, inst
                 queries_issued.append({"query": query, "outcome": outcome})
         except SearchProviderError:
             if instrumentation is not None:
-                instrumentation.record_external_fetch(ok=False)
+                instrumentation.record_external_fetch(ok=False, search=True)
             provider_failed = True
             break  # bounded: stop on first provider failure rather than retry-storming
 

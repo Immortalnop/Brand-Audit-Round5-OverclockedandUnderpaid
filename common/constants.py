@@ -36,6 +36,15 @@ class Limits:
     MAX_PDF_BYTES: int = 1_500_000
     PDF_PARSE_BUDGET_S: float = 4.0
     MAX_IMAGE_RECORDS_PER_PAGE: int = 60
+    # llms.txt companion file and link checks. Same origin only; links already
+    # crawled reuse the crawl result and cost no request.
+    LLMS_FULL_PROBE_BYTES: int = 65_536
+    MAX_LLMS_LINK_CHECKS: int = 8
+    LLMS_LINK_CHECK_BYTES: int = 32_768
+    # Image weight: a Range GET of the first bytes of the largest same-origin
+    # content images reads their total size, format and pixel dimensions.
+    MAX_IMAGE_WEIGHT_PROBES: int = 4
+    IMAGE_WEIGHT_PROBE_BYTES: int = 32_768
 
 
 DEFAULT_LIMITS = Limits()

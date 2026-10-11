@@ -65,3 +65,46 @@ naming the site.
 - The scripts never search for namesakes: robots.txt for wikidata.org and
   wikipedia.org disallows their search and API endpoints. The agent stage does
   that with its own web search (AG-05, `kg-namesake-ambiguity`).
+
+Off-site profiles (check_off_site_profiles.py): sameAs and profile links tell
+assistants where else the brand lives.
+- Without network: a sameAs value that is not an absolute http(s) URL, that
+  points back at the site, that is a share or widget link, or that points at a
+  platform home page is `profile-link-broken` (confirmed). Wikidata and
+  Wikipedia links are left to the knowledge-graph check.
+- With network (off with `OFF_SITE_LOOKUP=0`): each remaining sameAs profile and
+  each review-platform profile linked from a crawled page, at most 8 and 2 per
+  host, is fetched by GET after reading its host's robots.txt (fail closed),
+  within 18 seconds, 4 hosts in parallel. A 404 or 410 is `profile-link-broken`
+  (confirmed, medium); a "not found" page or a redirect to the platform home
+  page is the same check, suspected (low). A page that mentions the site's
+  domain, names the brand, or whose handle contains the brand name verifies
+  the profile. A page clearly about its handle that names neither the brand nor
+  the site is `profile-identity-mismatch` (suspected, medium).
+- Robots-disallowed profiles (X, LinkedIn, Facebook, Instagram, Pinterest and
+  Yelp disallow crawlers), bot challenges (HTTP 403 or 429), login walls,
+  cross-origin redirects and timeouts are unverified: a warning and a
+  limitation, never a finding.
+
+Review and directory platforms: `common/platforms.py` recognizes Trustpilot,
+G2, Capterra, Google Business Profile (Maps place and short links), Yelp,
+Tripadvisor, BBB, Crunchbase, Glassdoor and others. When no crawled page and no
+sameAs link points to one, `review-platform-missing` (low) is reported:
+suspected when nothing was searched, confirmed when a configured search provider
+ran one "<brand> reviews" query and found no review platform, and reworded to
+"exists but is not linked" when that search found one. The advice names
+platforms that fit the business (local, software or general, from the markup
+types). Public bodies (government, education and non-profit markup types, or a
+.gov, .mil, .edu, .int, .gov.xx, .ac.xx or .edu.xx host) are not held to this
+check. Review sites block automated clients, so a name search of them is the
+agent stage's job (AG-06).
+
+Authorship (analyze_authorship.py, no requests): on article pages (Article,
+BlogPosting, NewsArticle or similar markup, or a blog or news path with a slug
+and at least 300 words), `author-missing` (medium) when there is no byline, meta
+author, rel=author link or Article author, and `author-credentials-weak` (low)
+when the author is a plain string or an Organization rather than a Person, a
+Person has no url or sameAs (and no author page is linked) or no credentials
+(jobTitle, description, knowsAbout, alumniOf, award, hasCredential), the markup
+author is not named on the page, or a visible byline has no markup. `@id`
+references to a Person elsewhere in the page's graph are resolved.

@@ -50,6 +50,9 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
             f"budget constraints; out of {coverage.get('pages_discovered', 0)} discovered); findings "
             f"reflect only the {coverage.get('pages_fetched_attempted', 0)} page(s) actually crawled, "
             f"not the whole site."
+            + (f" The sample reached {coverage.get('sections_analyzed', 0)} of "
+               f"{coverage['sections_discovered']} site sections (first path segment)."
+               if coverage.get("sections_discovered") else "")
         )
 
     if coverage.get("pages_timed_out", 0) > 0:
@@ -101,6 +104,71 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
             "brand name up; namesake ambiguity is unassessed."
         )
 
+    off_site = coverage.get("off_site_profiles") or {}
+    if off_site.get("lookup") == "disabled":
+        out.append(
+            "Linked sameAs and review profiles were not fetched (OFF_SITE_LOOKUP=0), so whether they resolve "
+            "and belong to the brand was not checked."
+        )
+    elif off_site.get("profiles_unverified"):
+        out.append(
+            f"{off_site['profiles_unverified']} linked off-site profile(s) could not be verified: the platform's "
+            f"robots.txt forbids crawlers, it answered with a bot challenge or login wall, or the per-audit cap "
+            f"was reached (see coverage.off_site_profiles). They are unchecked, not broken."
+        )
+    if off_site.get("review_platform_search") == "not_run" and not off_site.get("review_platforms_linked") \
+            and off_site.get("business_kind") != "public" \
+            and coverage.get("agent_corroboration_stage") != "ingested":
+        out.append(
+            "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not "
+            "searched for the brand: they block automated clients, no search provider was configured, and the "
+            "agent stage (AG-06) was not supplied. Only profiles linked from the site were considered."
+        )
+
+    vitals = coverage.get("web_vitals") or {}
+    if vitals and vitals.get("web_vitals_mode") != "field_data":
+        lookup = vitals.get("web_vitals_field_lookup", "not_configured")
+        reason = ("no PAGESPEED_API_KEY is configured" if lookup == "not_configured"
+                  else f"the field-data lookup did not complete ({lookup})")
+        out.append(
+            f"Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and {reason}. "
+            f"Web-vitals findings are estimates from markup patterns, not measurements."
+        )
+
+    llms_links = (coverage.get("llms_txt") or {}).get("llms_txt_link_outcomes") or {}
+    unchecked_links = sum(v for k, v in llms_links.items() if k not in ("ok", "broken"))
+    if unchecked_links:
+        out.append(
+            f"{unchecked_links} link(s) listed in llms.txt were not checked (another domain, robots rules, the "
+            f"per-audit cap or a fetch error; see coverage.llms_txt)."
+        )
+
+    if (coverage.get("accessibility") or {}).get("accessibility_pages_analyzed"):
+        out.append(
+            "Colour contrast and tap-target size were judged only where inline styles set them; colours and "
+            "sizes from stylesheets need a browser to compute and were not assessed."
+        )
+    weight = coverage.get("non_text_media") or {}
+    unmeasured = weight.get("image_weight_candidates", 0) - weight.get("image_weight_probes", 0)
+    if unmeasured > 0:
+        out.append(
+            f"{unmeasured} same-origin content image(s) were not measured for file size (per-audit cap of "
+            f"{weight.get('image_weight_probe_cap', 0)} or remaining budget); cross-origin images are never "
+            f"requested, so their weight is unassessed."
+        )
+    hreflang = coverage.get("hreflang") or {}
+    if hreflang.get("hreflang_alternates_unverified"):
+        out.append(
+            f"{hreflang['hreflang_alternates_unverified']} hreflang alternate URL(s) were not crawled, so whether "
+            f"they link back was not checked."
+        )
+    if (coverage.get("overlays") or {}).get("overlay_blocking_pages") or \
+            (coverage.get("overlays") or {}).get("overlay_class_only_pages"):
+        out.append(
+            "Overlays were judged from the delivered HTML only; when and whether they appear on screen was not "
+            "measured, so overlay findings are suspected."
+        )
+
     if artifacts.sitemap_data.get("status") not in ("ok", "absent"):
         out.append(
             f"sitemap.xml could not be checked (status: '{artifacts.sitemap_data.get('status')}'); "
@@ -126,33 +194,55 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     Priority 3 #19: "avoid false precision; document calculation").
 
     Method: the minimum of --
-      - crawl_completeness = pages_fetched_attempted / pages_discovered (1.0 if
-        nothing was discovered at all -- there is nothing incomplete to report)
+      - sample_representativeness: how well the crawled sample stands for the
+        site. Every check looks for patterns that repeat across templates, so a
+        bounded sample that reaches every section of a large site supports its
+        conclusions far better than its raw page share suggests. It is the larger
+        of:
+          * crawl_completeness = pages_fetched_attempted / pages_discovered
+            (1.0 if nothing was discovered -- nothing is incomplete), and
+          * the smaller of section_coverage (sections with an analyzed page /
+            sections discovered, a section being the first path segment) and
+            sample_size (pages analyzed / min(pages discovered, 30)).
+        Without section counts (an older or partial coverage block) it is
+        crawl_completeness alone.
       - identity_confidence, as resolved by entity resolution
       - an execution penalty: 1.0 normally, 0.7 if the run completed with
         timeouts or was degraded, 0.4 if the deadline was reached before
         finishing
     take the minimum, not an average, because any one of these being poor should
     pull overall confidence down -- a high identity_confidence should not paper
-    over a crawl that only reached 10% of the site.
+    over a crawl that reached a small or one-sided sample of the site.
     """
     discovered = coverage.get("pages_discovered", 0)
     fetched = coverage.get("pages_fetched_attempted", 0)
     crawl_completeness = 1.0 if discovered <= 0 else min(1.0, fetched / discovered)
+    components = {"crawl_completeness": round(crawl_completeness, 2)}
+    representativeness = crawl_completeness
+    sections = coverage.get("sections_discovered")
+    if sections:
+        section_coverage = min(1.0, coverage.get("sections_analyzed", 0) / sections)
+        sample_size = min(1.0, coverage.get("pages_analyzed", 0) / max(1, min(discovered, _ADEQUATE_SAMPLE_PAGES)))
+        representativeness = max(crawl_completeness, min(section_coverage, sample_size))
+        components.update(section_coverage=round(section_coverage, 2), sample_size=round(sample_size, 2))
     identity_confidence = coverage.get("identity_confidence", 0.0)
     execution_penalty = {
         "completed": 1.0, "completed_with_timeouts": 0.7,
         "degraded": 0.7, "partial_deadline_reached": 0.4,
     }.get(execution_status, 0.5)
 
-    score = min(crawl_completeness, identity_confidence, execution_penalty)
+    score = min(representativeness, identity_confidence, execution_penalty)
+    components.update(sample_representativeness=round(representativeness, 2),
+                      identity_confidence=round(identity_confidence, 2),
+                      execution_penalty=round(execution_penalty, 2))
     return {
         "score": round(score, 2),
-        "method": "min(crawl_completeness, identity_confidence, execution_penalty) -- "
+        "method": "min(sample_representativeness, identity_confidence, execution_penalty), where "
+                  "sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)) -- "
                   "a weak link in any one dimension caps overall confidence rather than being averaged out",
-        "components": {
-            "crawl_completeness": round(crawl_completeness, 2),
-            "identity_confidence": round(identity_confidence, 2),
-            "execution_penalty": round(execution_penalty, 2),
-        },
+        "components": components,
     }
+
+
+# Pages enough to see each repeated template more than once on a typical site.
+_ADEQUATE_SAMPLE_PAGES = 30

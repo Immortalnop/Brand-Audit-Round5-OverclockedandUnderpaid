@@ -1,7 +1,7 @@
 ---
 name: engagement-audit
 description: >-
-  Builds a site graph from crawled pages and audits on-site engagement -- orphan pages, dead ends, navigation structure, and breadcrumb consistency between visible markup and structured data. Called by audit-orchestrator; not intended to be invoked standalone.
+  Builds a site graph from crawled pages and audits on-site engagement -- orphan pages, dead ends, navigation structure, breadcrumb consistency between visible markup and structured data, accessibility beyond alt text (form labels, control names, inline contrast, target size), blocking overlays and cookie-consent text, and context retention (site search, saved state, query parameters kept through redirects). Called by audit-orchestrator; not intended to be invoked standalone.
 license: MIT
 allowed-tools: Bash(python3:*) Read
 ---
@@ -20,8 +20,9 @@ no optional/fallback capability (unlike rendering or external search).
 `SkillResult` (`rendering_result`).
 
 ## Procedure
-`build_site_graph` runs in the independent batch; `analyze_engagement` runs in
-the dependent batch. See `references/engagement-checklist.md`.
+`build_site_graph`, `analyze_accessibility`, `analyze_overlays` and
+`analyze_context_retention` (site search, saved state, query parameters kept
+through redirects) run in the independent batch; `analyze_engagement` runs in the dependent batch. See `references/engagement-checklist.md`.
 
 ## Output
 A `SkillResult` with engagement findings and metrics.

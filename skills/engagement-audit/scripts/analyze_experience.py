@@ -2,6 +2,7 @@
 import re
 from collections import Counter
 from models import make_finding,skill_result
+from check_helpers import page_share
 
 def analyze_experience(artifacts,deadline):
     pages=[p for p in artifacts.pages if p.status_code==200 and 'html_parse_incomplete' not in p.warnings and p.features and 'response_truncated_at_byte_budget' not in p.warnings and 'non_html_content' not in p.warnings]
@@ -20,11 +21,14 @@ def analyze_experience(artifacts,deadline):
     counts=Counter(p.title for p in pages if p.title)
     add('duplicate-titles','Different sampled URLs share page titles',[p for p in pages if p.title and counts[p.title]>1], 'Multiple sampled URLs share the same title; verify canonical duplicates before editing.', ['Give distinct content pages descriptive, distinct titles','Preserve intentional canonical variants'])
     add('missing-alt','Images lack alt attributes',[p for p in pages if p.features['missing_alt']>=3], 'At least three images per affected page lack alt attributes; empty decorative alt attributes were not counted.', ['Describe informative images and keep decorative alt text empty','Repeat essential image-only facts in nearby text'])
-    add('overlay','Review potential overlay interference',[p for p in pages if p.features['overlay_pattern']], 'Visible markup contains overlay-related class names; timing and visual obstruction were not measured.', ['Inspect whether the overlay obstructs arrival content','If obstructive, delay promotion and provide a dismiss control'])
+    # Overlays and cookie banners are judged by analyze_overlays.py.
     add('hash-routing','Navigation uses client-only route fragments',[p for p in pages if sum(h.startswith(('#/','#!')) for h,t in p.features['anchors'])>=2], 'Route fragments are not sent in HTTP requests. Browser deep links may still work; raw-HTML retrieval may lose destination-specific content.', ['Verify direct arrival and raw HTML for each destination','Prefer server-resolvable paths where route-specific content needs indexing'])
-    add('email-summary','Review outbound email text for summarizers',[p for p in pages if p.features['email_capture'] and p.features['forms']], 'An email form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
+    # email_capture means any type="email" input, so contact and login forms count too; the title must not claim a signup.
+    signup=[p for p in pages if p.features['email_capture'] and p.features['forms']]
+    add('email-summary','Email form on '+page_share(signup,pages)+'; outbound email text was not checked',signup, 'An email form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
     commercial=[p for p in pages if p.page_type in ('product','category')]
-    add('next-step','Review the next step on commercial landing pages',[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links], 'No form, button or internal next-step link was observed on these commercial pages.', ['Add a relevant purchase, inquiry or comparison route if missing'])
+    stuck=[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links]
+    add('next-step','No button, form or internal link on '+page_share(stuck,commercial,'commercial page'),stuck, 'No form, button or internal next-step link was observed on these commercial pages.', ['Add a relevant purchase, inquiry or comparison route if missing'])
     # 2.3 Generic anchor text (ported from donor EN-15, re-plumbed onto the immutable
     # snapshot). Descriptive anchors tell both visitors and machines what a target
     # page is about; the check runs only when enough internal anchors are sampled to

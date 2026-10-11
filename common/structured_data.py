@@ -1,6 +1,24 @@
 """Shared JSON-LD normalization for raw and immutable acquisition artifacts."""
 from collections.abc import Mapping
 
+# schema.org LocalBusiness and its common subtypes: a business with a physical
+# place or service area, for which Google requires an address.
+LOCAL_BUSINESS_TYPES = frozenset({
+    "LocalBusiness", "Restaurant", "Store", "Hotel", "LodgingBusiness", "FoodEstablishment", "MedicalBusiness",
+    "Dentist", "AutoDealer", "AutoRepair", "HealthAndBeautyBusiness", "HomeAndConstructionBusiness",
+    "ProfessionalService", "LegalService", "Attorney", "RealEstateAgent", "SportsActivityLocation", "TravelAgency",
+    "FinancialService", "EntertainmentBusiness", "CafeOrCoffeeShop", "Bakery", "BarOrPub", "ChildCare",
+    "DryCleaningOrLaundry", "EmergencyService", "EmploymentAgency", "GovernmentOffice", "InsuranceAgency",
+    "Library", "Physician", "Pharmacy", "Optician", "Plumber", "Electrician", "HairSalon", "BeautySalon",
+    "DaySpa", "ExerciseGym", "HealthClub", "ClothingStore", "GroceryStore", "HardwareStore", "FurnitureStore",
+    "ElectronicsStore", "BookStore", "AutomotiveBusiness", "VeterinaryCare", "Hospital", "MedicalClinic",
+})
+# Properties that state where an organization is or which area it serves.
+LOCATION_PROPERTIES = ("address", "geo", "areaServed", "serviceArea", "location", "hasMap")
+LOCATION_TYPES = frozenset({"PostalAddress", "GeoCoordinates", "GeoShape", "Place", "City", "State", "Country",
+                            "AdministrativeArea"})
+
+
 def normalize_type(value):
     return value.strip().rsplit('/', 1)[-1].rsplit('#', 1)[-1].rsplit(':', 1)[-1] if isinstance(value, str) else ''
 

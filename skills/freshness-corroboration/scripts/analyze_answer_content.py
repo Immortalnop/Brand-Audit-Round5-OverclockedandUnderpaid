@@ -5,7 +5,7 @@ likelihood, app-store metadata or independent brand facts are invented here.
 """
 import re
 from collections import Counter
-from check_helpers import eligible_pages, observation
+from check_helpers import eligible_pages, observation, page_share
 from models import skill_result
 from structured_data import iter_nodes, types_of
 
@@ -39,11 +39,11 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
             if count/len(body_words)>.06:
                 repeated.append(p)
                 details[p.url+'#repeat']=f"Term '{term}' occurs {count} times among {len(body_words)} words. Repetition alone is not proof of spam."
-    emit('title-body-alignment','Review literal title and body topic alignment',mismatch,lambda p:details[p.url])
-    emit('term-repetition','Review unusually repeated terms',repeated,lambda p:details[p.url+'#repeat'])
+    emit('title-body-alignment','Title words do not appear in the body text on '+page_share(mismatch,lexical),mismatch,lambda p:details[p.url])
+    emit('term-repetition','One word makes up more than 6% of the text on '+page_share(repeated,lexical),repeated,lambda p:details[p.url+'#repeat'])
     content=[p for p in lexical if p.page_type in ('article','product','service','software') and len(p.visible_text.split())>=200]
     if len(content)>=3 and not any(p.features.get('question_headings',0) for p in content):
-        emit('answer-headings','Consider answer-oriented sections where useful',content,
+        emit('answer-headings','No question-shaped headings on '+page_share(content,content,'content page'),content,
              lambda p:'No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.')
     identity=entity_identity.get('data',{})
     name=identity.get('canonical_name','')
@@ -55,7 +55,7 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
             candidates=re.split(r'(?<=[.!?])\s+',p.visible_text)+[p.meta_description or '']
             return any(20<=len(s)<=250 and name_pattern.search(s) and verb.search(s) for s in candidates)
         if not any(defines(p) for p in identity_pages):
-            emit('brand-definition','Review whether the brand has a concise factual definition',identity_pages,
+            emit('brand-definition','No one-sentence definition of the brand on the home or About page',identity_pages,
                  lambda p:f"No short English sentence naming '{name}' and using a common descriptive verb was matched. This lexical heuristic may miss valid wording.")
     apps=[];app_details={}
     for p in pages:
@@ -65,7 +65,7 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
             missing.update(k for k in ('name','applicationCategory','operatingSystem') if not node.get(k))
         if missing:
             apps.append(p);app_details[p.url]='Observed software markup omits: '+', '.join(sorted(missing))+'. App-store listings and rankings were not inspected.'
-    emit('app-identity','Review observed software application identity fields',apps,lambda p:app_details[p.url])
+    emit('app-identity','Software markup lacks name, category or operating system on '+page_share(apps,pages),apps,lambda p:app_details[p.url])
     skipped=len(pages)-len(lexical)
     return skill_result('freshness-corroboration',findings=out,
         metrics={'answer_pages_analyzed':len(pages),'english_lexical_pages':len(lexical),

@@ -1,7 +1,7 @@
 # Execution policy (v6)
 
-Validate -> acquire once -> independent batch (11 jobs) -> identify important
-facts -> dependent batch (5 jobs) -> merge -> prioritize -> recommendations ->
+Validate -> acquire once -> independent batch (21 jobs) -> identify important
+facts -> dependent batch (9 jobs) -> merge -> prioritize -> recommendations ->
 validate -> JSON. Snapshot data stays immutable until report serialization.
 
 The public API runs the complete audit in an isolated process with a 270-second

@@ -32,7 +32,8 @@ def check_ai_crawler_access(artifacts, deadline):
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect" if search_blocked else "proactive_improvement", severity="high" if search_blocked else "low",
             status="confirmed", confidence=0.9,
-            title="AI crawlers are blocked by robots.txt" if search_blocked else "Review training and user-fetch crawler policies",
+            title="AI crawlers are blocked by robots.txt" if search_blocked
+            else "robots.txt blocks training or user-fetch AI crawlers: " + ", ".join(blocked),
             root_cause=f"robots.txt disallows: {', '.join(blocked)}. Search, model-training and user-triggered retrieval controls have different effects; training exclusions do not establish search exclusion.",
             evidence=[{"type": "robots", "description": "AI crawler directives disallow access",
                        "urls": [artifacts.site_url]}],

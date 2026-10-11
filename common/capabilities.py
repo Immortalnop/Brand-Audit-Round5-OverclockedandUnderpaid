@@ -14,6 +14,8 @@ import importlib.util
 import os
 from types import MappingProxyType
 
+from field_vitals import lookup_enabled as field_lookup_enabled
+
 CHECK_TIERS = MappingProxyType({
     "robots_and_ai_crawler_access": "executable",
     "crawlability": "executable",
@@ -31,12 +33,37 @@ CHECK_TIERS = MappingProxyType({
     "sitemap_lastmod_and_last_modified_freshness": "executable",
     "knowledge_graph_link_check": "executable",
     "knowledge_graph_entity_verification": "fallback",
+    "alt_text_quality": "executable",
+    "media_transcripts_and_schema": "executable",
+    "citation_schema_types": "executable",
+    "author_eeat_signals": "executable",
+    "llms_txt_structure_and_links": "executable",
+    "llms_full_txt_probe": "executable",
+    "same_as_static_validation": "executable",
+    "review_platform_links": "executable",
+    "web_vitals_static_estimate": "executable",
+    "hreflang_annotations": "executable",
+    "noscript_fallback": "executable",
+    "canvas_svg_icon_font_text": "executable",
+    "image_caption_context": "executable",
+    "image_weight_measurement": "executable",
+    "accessibility_html_checks": "executable",
+    "overlay_and_consent_detection": "executable",
+    "answer_format_checks": "executable",
+    "location_and_audience_signals": "executable",
+    "context_retention_checks": "executable",
+    "fix_snippets": "executable",
+    "impact_effort_matrix": "executable",
+    "same_as_profile_verification": "fallback",
+    "review_platform_search": "fallback",
+    "web_vitals_field_data": "fallback",
     "rendering_headless_browser": "fallback",
     "external_corroboration": "fallback",
     "external_footprint_search": "fallback",
     "agent_entity_corroboration": "optional",
     "agent_image_vision": "optional",
     "agent_knowledge_graph_search": "optional",
+    "agent_review_platform_search": "optional",
 })
 
 
@@ -74,4 +101,6 @@ def capability_report(capabilities: dict) -> dict:
         "capabilities_detected": dict(capabilities),
         "rendering_mode": "headless_browser" if capabilities.get("headless_rendering") else "heuristic_only",
         "external_analysis_mode": "search_provider" if capabilities.get("external_search") else "unavailable",
+        # Core Web Vitals: real-user field data only with a PageSpeed Insights key.
+        "web_vitals_mode": "field_data" if field_lookup_enabled() else "static_estimate",
     }

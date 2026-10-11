@@ -46,10 +46,12 @@ from constants import DEFAULT_LIMITS
 from models import make_deadline, _jsonable
 from instrumentation import Instrumentation
 from capabilities import detect_capabilities, capability_report
+from field_vitals import start_field_lookup
 
 from acquire_site import acquire_site
 from merge_findings import merge_findings
-from prioritize_findings import prioritize_findings
+from prioritize_findings import prioritize_findings, annotate_action_plan, top_actions, quick_wins
+from fix_snippets import attach_fix_snippets
 from generate_recommendations import generate_recommendations
 from validate_report import validate_report
 from execution_summary import derive_execution_status, derive_limitations, overall_confidence
@@ -64,6 +66,15 @@ from analyze_machine_readability import analyze_machine_readability
 from check_ai_crawler_access import check_ai_crawler_access
 from check_llms_txt import check_llms_txt
 from analyze_non_text import analyze_non_text
+from analyze_media_text import analyze_media_text
+from analyze_citation_schema import analyze_citation_schema
+from analyze_web_vitals import analyze_web_vitals
+from analyze_international import analyze_international
+from analyze_graphics_text import analyze_graphics_text
+from analyze_image_context import analyze_image_context
+from analyze_image_weight import analyze_image_weight
+from analyze_answer_format import analyze_answer_format
+from analyze_context_signals import analyze_context_signals
 
 from extract_claims import extract_claims
 from identify_important_facts import identify_important_facts
@@ -72,9 +83,14 @@ from assess_freshness import assess_freshness
 from corroborate_claims import corroborate_claims
 from assess_external_footprint import assess_external_footprint
 from check_knowledge_graph import check_knowledge_graph
+from check_off_site_profiles import check_off_site_profiles
+from analyze_authorship import analyze_authorship
 
 from build_site_graph import build_site_graph
 from analyze_engagement import analyze_engagement
+from analyze_accessibility import analyze_accessibility
+from analyze_overlays import analyze_overlays
+from analyze_context_retention import analyze_context_retention
 
 from ingest_agent_findings import ingest_agent_findings
 
@@ -140,9 +156,21 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
         "ai_crawler_access": lambda: check_ai_crawler_access(artifacts, deadline),
         "llms_txt": lambda: check_llms_txt(artifacts, deadline),
         "non_text": lambda: analyze_non_text(artifacts, deadline),
+        "media_text": lambda: analyze_media_text(artifacts, deadline),
+        "citation_schema": lambda: analyze_citation_schema(artifacts, deadline),
+        "authorship": lambda: analyze_authorship(artifacts, deadline),
         "claims": lambda: extract_claims(artifacts, deadline),
         "entity_identity": lambda: resolve_entity_identity(artifacts, deadline),
         "site_graph": lambda: build_site_graph(artifacts, deadline),
+        "international": lambda: analyze_international(artifacts, deadline),
+        "graphics_text": lambda: analyze_graphics_text(artifacts, deadline),
+        "image_context": lambda: analyze_image_context(artifacts, deadline),
+        "image_weight": lambda: analyze_image_weight(artifacts, deadline),
+        "accessibility": lambda: analyze_accessibility(artifacts, deadline),
+        "overlays": lambda: analyze_overlays(artifacts, deadline),
+        "answer_format": lambda: analyze_answer_format(artifacts, deadline),
+        "context_signals": lambda: analyze_context_signals(artifacts, deadline),
+        "context_retention": lambda: analyze_context_retention(artifacts, deadline),
     }
     results = _run_jobs(jobs, deadline, limits, instrumentation, "independent_batch")
     instrumentation.end_stage("independent_batch")
@@ -150,7 +178,7 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
 
 
 def run_dependent_batch(facts, entity_identity, artifacts, site_graph, rendering_result,
-                         deadline, limits, instrumentation, capabilities, claims=None):
+                         deadline, limits, instrumentation, capabilities, claims=None, field_handle=None):
     instrumentation.start_stage("dependent_batch")
     jobs = {
         "freshness": lambda: assess_freshness(facts, artifacts, deadline, claims),
@@ -158,6 +186,8 @@ def run_dependent_batch(facts, entity_identity, artifacts, site_graph, rendering
         "corroboration": lambda: corroborate_claims(facts, entity_identity, artifacts, deadline, limits, instrumentation),
         "footprint": lambda: assess_external_footprint(artifacts, entity_identity, deadline, limits, instrumentation),
         "knowledge_graph": lambda: check_knowledge_graph(artifacts, entity_identity, deadline, limits, instrumentation),
+        "off_site_profiles": lambda: check_off_site_profiles(artifacts, entity_identity, deadline, limits, instrumentation),
+        "web_vitals": lambda: analyze_web_vitals(artifacts, deadline, field_handle),
         "engagement": lambda: analyze_engagement(artifacts, site_graph, rendering_result, deadline),
         "agent_corroboration": lambda: ingest_agent_findings(artifacts, entity_identity, deadline, capabilities),
     }
@@ -174,6 +204,10 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     deadline = make_deadline(limits)
     instrumentation = Instrumentation()
     capabilities = detect_capabilities()
+    # Optional Core Web Vitals field data: started now so the API's latency
+    # overlaps the crawl. None unless PAGESPEED_API_KEY is configured.
+    field_handle = start_field_lookup(site_url, deadline, limits, instrumentation,
+                                      allow_private_targets=allow_private_targets)
 
     _progress("acquiring " + site_url)
     artifacts = acquire_site(site_url, deadline, limits, instrumentation,
@@ -191,7 +225,7 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     dependent = run_dependent_batch(
         facts, independent["entity_identity"], artifacts,
         independent["site_graph"], independent["rendering"], deadline, limits, instrumentation,
-        capabilities, claims=independent["claims"],
+        capabilities, claims=independent["claims"], field_handle=field_handle,
     )
     _progress("analysis complete; merging and validating report")
 
@@ -199,9 +233,15 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         independent["metadata"], independent["performance"], dependent["answer_content"],
         independent["crawlability"], independent["directives"], independent["rendering"], independent["machine_readability"],
         independent["ai_crawler_access"], independent["llms_txt"], independent["non_text"],
+        independent["media_text"], independent["citation_schema"], independent["authorship"],
         dependent["freshness"], dependent["corroboration"], dependent["footprint"], dependent["knowledge_graph"],
+        dependent["off_site_profiles"], dependent["web_vitals"],
         dependent["engagement"],
         dependent["agent_corroboration"],
+        independent["international"], independent["graphics_text"], independent["image_context"],
+        independent["image_weight"], independent["accessibility"],
+        independent["overlays"], independent["answer_format"], independent["context_signals"],
+        independent["context_retention"],
     ]
 
     merged = merge_findings(skill_results)
@@ -223,6 +263,9 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "pages_fetched_ok": acq_coverage.get("urls_fetched_ok", len(artifacts.pages)),
         "pages_analyzed": acq_coverage.get("urls_analyzed", len(artifacts.pages)),
         "pages_blocked": acq_coverage.get("urls_blocked", 0),
+        "sections_discovered": acq_coverage.get("sections_discovered", 0),
+        "sections_analyzed": acq_coverage.get("sections_analyzed", 0),
+        "page_types_analyzed": acq_coverage.get("page_types_analyzed", []),
         "robots_permission": "unknown" if artifacts.robots_data.get("conservative_fail_closed") else "disallowed" if artifacts.robots_data.get("general_disallow") else "evaluated" if artifacts.robots_data.get("status") in ("ok","absent") else "unknown",
         "transport_diagnostics": artifacts.acquisition_metadata.get("transport_diagnostics", []),
         "transport_environment": artifacts.acquisition_metadata.get("transport_environment", {}),
@@ -239,9 +282,27 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "knowledge_graph": {k: v for k, v in dependent["knowledge_graph"].get("metrics", {}).items()
                             if k in ("lookup", "organization_pages", "declared_wikidata", "declared_wikipedia",
                                      "verdict", "entity", "robots", "lookup_failures")},
+        "llms_txt": {k: v for k, v in independent["llms_txt"].get("metrics", {}).items()
+                     if k.startswith(("llms_txt", "llms_full_txt"))},
+        "off_site_profiles": {k: v for k, v in dependent["off_site_profiles"].get("metrics", {}).items()
+                              if k in ("lookup", "same_as_links", "profile_outcomes", "profiles", "profiles_unverified",
+                                       "review_platforms_linked", "review_platform_search", "robots",
+                                       "business_kind", "review_platform_check")},
+        "web_vitals": {k: v for k, v in dependent["web_vitals"].get("metrics", {}).items()
+                       if k.startswith("web_vitals")},
         "freshness_update_signals": {k: v for k, v in dependent["freshness"].get("metrics", {}).items()
                                      if k.startswith(("sitemap_lastmod", "update_dates_from", "last_modified",
                                                       "pages_with_update_date", "page_update_date"))},
+        "hreflang": dict(independent["international"].get("metrics", {})),
+        "noscript": {k: v for k, v in independent["rendering"].get("metrics", {}).items() if k.startswith("noscript")},
+        "graphics_text": dict(independent["graphics_text"].get("metrics", {})),
+        "image_context": dict(independent["image_context"].get("metrics", {})),
+        "image_weight": dict(independent["image_weight"].get("metrics", {})),
+        "accessibility": dict(independent["accessibility"].get("metrics", {})),
+        "overlays": dict(independent["overlays"].get("metrics", {})),
+        "answer_format": dict(independent["answer_format"].get("metrics", {})),
+        "context_signals": dict(independent["context_signals"].get("metrics", {})),
+        "context_retention": dict(independent["context_retention"].get("metrics", {})),
         "agent_corroboration_stage": dependent["agent_corroboration"].get("metrics", {}).get("agent_stage", "not_supplied"),
         "external_fetches": telemetry["external_fetches_attempted"],
         "identity_confidence": independent["entity_identity"].get("data", {}).get("confidence", 0.0),
@@ -274,8 +335,14 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     report["confidence"] = overall_confidence(coverage, execution_status)
 
     report["coverage_limited"] = {"sample_only": True, "pages_not_analyzed": max(0, coverage["pages_discovered"]-coverage["pages_analyzed"]), "unassessed_capabilities": [k for k,v in capabilities.items() if not v]}
-    report["top_actions"] = [{"finding_id": f["id"], "summary": f["suggested_action"]["summary"], "priority": f["suggested_action"]["priority"]} for f in prioritized if f["finding_type"] == "defect"][:3]
-    return _jsonable(validate_report(report, strict_catalog=True))
+    validated = validate_report(report, strict_catalog=True)
+    # Ready-to-paste fixes and the impact x effort plan are added after
+    # validation: enrichment rewrites suggested_action from the catalog.
+    attach_fix_snippets(validated["findings"], validated["recommendations"], artifacts, independent["entity_identity"])
+    annotate_action_plan(validated["findings"] + validated["recommendations"], coverage["pages_analyzed"])
+    validated["top_actions"] = top_actions(validated["findings"])
+    validated["quick_wins"] = quick_wins(validated["findings"], validated["recommendations"])
+    return _jsonable(validated)
 
 
 def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False) -> dict:
@@ -305,6 +372,27 @@ def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False)
         "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
 
 
+# Hard ceiling for --max-pages. Above it a polite, paced crawl (crawl-delay, a
+# 0.2-second gap, 3.5-second fetch timeout) no longer fits the acquisition budget
+# of the 5-minute audit limit on an ordinary site.
+MAX_PAGES_CEILING = 100
+
+
+def limits_for_pages(limits, max_pages):
+    """Limits for a crawl of max_pages pages. A larger crawl gets proportionally
+    more requests and bytes, so pages do not starve the robots, sitemap, llms.txt,
+    image and PDF requests that share the budget. A smaller one keeps the default
+    budgets. The wall-clock limits never change."""
+    from dataclasses import replace as _dc_replace
+    max_pages = max(1, min(MAX_PAGES_CEILING, int(max_pages)))
+    extra = max(0, max_pages - DEFAULT_LIMITS.MAX_PAGES_CRAWLED)
+    scale = max(1.0, max_pages / DEFAULT_LIMITS.MAX_PAGES_CRAWLED)
+    return _dc_replace(limits, MAX_PAGES_CRAWLED=max_pages,
+                       MAX_TOTAL_HTTP_REQUESTS=max(limits.MAX_TOTAL_HTTP_REQUESTS,
+                                                   DEFAULT_LIMITS.MAX_TOTAL_HTTP_REQUESTS + extra),
+                       MAX_TOTAL_BYTES=max(limits.MAX_TOTAL_BYTES, int(DEFAULT_LIMITS.MAX_TOTAL_BYTES * scale)))
+
+
 def main(argv=None):
     import argparse
     import json
@@ -316,6 +404,10 @@ def main(argv=None):
                         help="Override the total audit wall-clock cap in seconds "
                              "(default 270, handout limit 300). Lower it for a quick "
                              "interactive run on a large site.")
+    parser.add_argument("--max-pages", type=int, default=None,
+                        help=f"Pages to crawl (default {DEFAULT_LIMITS.MAX_PAGES_CRAWLED}, at most "
+                             f"{MAX_PAGES_CEILING}). The request and byte budgets grow with it; the "
+                             "270-second limit does not, so a slow site may stop early.")
     parser.add_argument("-v", "--progress", action="store_true",
                         help="Print stage progress to stderr (stdout stays pure JSON).")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress on stderr; JSON output is unchanged.")
@@ -327,10 +419,14 @@ def main(argv=None):
         os.environ["AUDIT_PROGRESS"] = "1"
     else:
         os.environ["AUDIT_PROGRESS"] = "0"
+    if parsed.max_pages is not None and not 1 <= parsed.max_pages <= MAX_PAGES_CEILING:
+        parser.error(f"--max-pages must be between 1 and {MAX_PAGES_CEILING}")
     active_limits = DEFAULT_LIMITS
     if parsed.timeout is not None:
         from dataclasses import replace as _dc_replace
         active_limits = _dc_replace(DEFAULT_LIMITS, TOTAL_AUDIT_TIMEOUT_S=parsed.timeout)
+    if parsed.max_pages is not None:
+        active_limits = limits_for_pages(active_limits, parsed.max_pages)
     try:
         report=run_audit(parsed.site, limits=active_limits)
         print(json.dumps(report, indent=2, default=str))

@@ -4,53 +4,14 @@ No new requests. Missing hints are opportunities, not proof of ranking failure.
 Canonical and preview URLs are examined as strings and are never dereferenced.
 """
 import re
-import urllib.request
-import urllib.error
 from urllib.parse import urlsplit, urljoin
-from check_helpers import eligible_pages, observation
+from check_helpers import eligible_pages, observation, page_share
 from models import skill_result
-from url_safety import same_origin, classify_url
-from tls_context import create_context
+from url_safety import same_origin
 
 CHECK_IDS = frozenset({'http-transport','redirect-chain','missing-title','missing-description',
     'missing-canonical','invalid-canonical','cross-origin-canonical','missing-language',
     'missing-landmarks','heading-hierarchy','social-metadata','social-url','twitter-card','title-length'})
-
-
-def probe_https_available(host: str, timeout: float = 2.0) -> tuple[bool, str | None]:
-    if not host:
-        return False, None
-    test_url = f"https://{host}/"
-    try:
-        check = classify_url(test_url)
-        if not check.safe:
-            return False, None
-    except Exception:
-        return False, None
-    req = urllib.request.Request(
-        test_url,
-        headers={"User-Agent": "BrandAIReadinessAuditBot/2.0 (read-only audit)"},
-        method="HEAD",
-    )
-    ctx = create_context()
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-            return True, f"status {resp.status}"
-    except urllib.error.HTTPError as e:
-        return True, f"status {e.code}"
-    except Exception:
-        try:
-            req_get = urllib.request.Request(
-                test_url,
-                headers={"User-Agent": "BrandAIReadinessAuditBot/2.0 (read-only audit)"},
-            )
-            with urllib.request.urlopen(req_get, timeout=timeout, context=ctx) as resp:
-                resp.read(512)
-                return True, f"status {resp.status}"
-        except urllib.error.HTTPError as e:
-            return True, f"status {e.code}"
-        except Exception:
-            return False, None
 
 
 def valid_http_url(value):
@@ -67,18 +28,22 @@ def analyze_metadata(artifacts, deadline):
     pages = eligible_pages(artifacts)
     out = []
     def emit(rid,title,selected,detail,**kw):
+        # A callable title is built from the selection, so it can state the
+        # concrete gap ("og:image missing on 3/3 sampled pages").
         if selected:
-            out.append(observation(rid,title,selected,{p.url:detail(p) for p in selected},**kw))
+            out.append(observation(rid,title(selected) if callable(title) else title,selected,
+                                   {p.url:detail(p) for p in selected},**kw))
+    share=lambda s,population=None:page_share(s,pages if population is None else population)
     if deadline.expired():
         return skill_result('crawl-render-audit', status='insufficient_evidence', warnings=['Metadata checks skipped: deadline reached.'])
     http_pages = [p for p in pages if urlsplit(p.final_url or p.url).scheme=='http']
     if http_pages:
-        host = urlsplit(http_pages[0].final_url or http_pages[0].url).hostname
-        https_ok, status_detail = probe_https_available(host) if host else (False, None)
-        if https_ok:
+        # HTTPS availability was probed once during acquisition (acquire_site._probe_https).
+        probe = artifacts.acquisition_metadata.get('https_probe') or {}
+        if probe.get('status') == 'available':
             emit('http-transport','HTTPS is available but not enforced (missing HTTP to HTTPS redirect)',
                  http_pages,
-                 lambda p:f"HTTPS connection to https://{host}/ succeeded ({status_detail}), but page was retrieved over unencrypted HTTP: {p.final_url or p.url}",
+                 lambda p:f"A verified HTTPS GET of {probe.get('url')} answered HTTP {probe.get('http_status')}, but the page was retrieved over unencrypted HTTP: {p.final_url or p.url}",
                  confirmed=True,severity='high')
         else:
             emit('http-transport','Sampled content was retrieved over HTTP',
@@ -89,17 +54,17 @@ def analyze_metadata(artifacts, deadline):
          lambda p:f"Observed {p.features['redirect_hops']} hops; final URL: {p.final_url}",confirmed=True,severity='medium')
     emit('missing-title','Pages lack a document title',[p for p in pages if not (p.title or '').strip()],
          lambda p:'No nonempty title was parsed from the complete HTML response.',confirmed=True,severity='medium')
-    emit('missing-description','Review missing page descriptions',[p for p in pages if not (p.meta_description or '').strip()],
+    emit('missing-description',lambda s:'No meta description on '+share(s),[p for p in pages if not (p.meta_description or '').strip()],
          lambda p:'No nonempty meta description was observed; a search engine can still extract a summary.')
     emit('missing-language','Pages omit an explicit document language',[p for p in pages if not (p.features.get('lang') or '').strip()],
          lambda p:'The html lang attribute is absent or empty.',confirmed=True,severity='low')
-    emit('missing-landmarks','Review primary content landmarks',
+    emit('missing-landmarks',lambda s:'No main or article landmark on '+share(s),
          [p for p in pages if len(p.visible_text.split())>=100 and not p.features.get('landmarks')],
          lambda p:'No main or article landmark observed on a page with substantial text.')
-    emit('heading-hierarchy','Review skipped heading levels',
+    emit('heading-hierarchy',lambda s:'Heading levels are skipped on '+share(s),
          [p for p in pages if len(p.features['heading_levels'])>=3 and any(b>a+1 for a,b in zip(p.features['heading_levels'],p.features['heading_levels'][1:]))],
          lambda p:'Observed heading levels: '+str(list(p.features['heading_levels'][:20])))
-    emit('title-length','Review unusually short or long titles',
+    emit('title-length',lambda s:'Title shorter than 15 or longer than 70 characters on '+share(s),
          [p for p in pages if p.title and not 15<=len(p.title)<=70],
          lambda p:f'Title has {len(p.title)} characters: {p.title[:100]}. Display width was not measured.')
     missing,invalid,external=[],[],[]
@@ -115,20 +80,25 @@ def analyze_metadata(artifacts, deadline):
             invalid.append(p);canon_details[p.url]='Declared canonical values: '+str(list(values))[:500]
         elif resolved and not same_origin(resolved[0],p.final_url or p.url):
             external.append(p);canon_details[p.url]='External canonical hint: '+resolved[0]
-    emit('missing-canonical','Review preferred URL declarations',missing,
+    emit('missing-canonical',lambda s:'No rel=canonical tag on '+share(s),missing,
          lambda p:'No rel=canonical declaration observed. Duplicate content was not established.')
     emit('invalid-canonical','Canonical declarations are unusable or conflicting',invalid,
          lambda p:canon_details[p.url],confirmed=True,severity='medium')
-    emit('cross-origin-canonical','Review external canonical targets',external,lambda p:canon_details[p.url])
+    emit('cross-origin-canonical',lambda s:'Canonical tag points to another site on '+share(s),external,lambda p:canon_details[p.url])
     shareable=[p for p in pages if p.page_type not in ('legal',)]
     og_required=('og:title','og:description','og:image','og:url')
-    emit('social-metadata','Review incomplete Open Graph preview metadata',
-         [p for p in shareable if any(not any(v.strip() for v in p.features['meta'].get(k,())) for k in og_required)],
-         lambda p:'Missing nonempty fields: '+', '.join(k for k in og_required if not any(v.strip() for v in p.features['meta'].get(k,()))))
-    emit('social-url','Open Graph URL fields need review',
+    def og_missing(p):
+        return [k for k in og_required if not any(v.strip() for v in p.features['meta'].get(k,()))]
+    def og_title(selected):
+        # Name each missing field with its own count, worst first.
+        counts=sorted(((sum(k in og_missing(p) for p in selected),k) for k in og_required),key=lambda c:(-c[0],c[1]))
+        return 'Open Graph tags missing: '+', '.join(f'{k} on {page_share(n,shareable)}' for n,k in counts if n)
+    emit('social-metadata',og_title,[p for p in shareable if og_missing(p)],
+         lambda p:'Missing nonempty fields: '+', '.join(og_missing(p)))
+    emit('social-url',lambda s:'og:image or og:url is not a full http(s) URL on '+share(s,shareable),
          [p for p in shareable if any(not valid_http_url(v) for k in ('og:image','og:url') for v in p.features['meta'].get(k,()))],
          lambda p:'One or more og:image or og:url values are not absolute HTTP(S) URLs. Assets were not fetched.')
-    emit('twitter-card','Review Twitter Card declarations',
+    emit('twitter-card',lambda s:'No valid twitter:card tag on '+share(s,shareable),
          [p for p in shareable if not any(v.strip().lower() in ('summary','summary_large_image','app','player') for v in p.features['meta'].get('twitter:card',()))],
          lambda p:'No supported nonempty twitter:card declaration observed. Platform fallback was not tested.')
     return skill_result('crawl-render-audit', findings=out, metrics={'metadata_pages_analyzed':len(pages)},

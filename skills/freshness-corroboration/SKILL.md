@@ -11,8 +11,9 @@ allowed-tools: Bash(python3:*) Read
 Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`, and
 `build_site_graph`-adjacent data steps run in the independent batch;
 `identify_important_facts` runs once, sequentially, between the two batches;
-`assess_freshness`, `corroborate_claims`, `assess_external_footprint`, and
-`check_knowledge_graph` run in the dependent batch.
+`analyze_authorship` also runs in the independent batch;
+`assess_freshness`, `corroborate_claims`, `assess_external_footprint`,
+`check_knowledge_graph` and `check_off_site_profiles` run in the dependent batch.
 
 ## Dependencies
 `extract_claims`, `identify_important_facts`, `resolve_entity_identity`, and
@@ -21,7 +22,13 @@ Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`, and
 link without network access; it verifies a declared link with at most a few
 robots-checked GETs to the public `/wiki/` paths of wikidata.org and
 wikipedia.org (15-second budget, off with `KNOWLEDGE_GRAPH_LOOKUP=0`). A failed
-lookup is a warning, never a finding. `corroborate_claims` and
+lookup is a warning, never a finding. `check_off_site_profiles` reports
+invalid sameAs values without network access, then fetches each remaining
+sameAs or linked review profile (at most 8, 2 per host, 18-second budget, each
+host's robots.txt read first and failing closed; off with `OFF_SITE_LOOKUP=0`).
+Profiles that robots.txt forbids, or that answer with a bot challenge or login
+wall, are reported as unverified, never as broken. `analyze_authorship` is
+pure-Python, no network. `corroborate_claims` and
 `assess_external_footprint` call the pluggable `common/search_provider.py`
 (optional capability, standard-library) -- gated on `SEARCH_API_URL` being set;
 unset or failing degrades to `insufficient_evidence`, never a confirmed
@@ -64,3 +71,27 @@ repetition, optional question sections and conditional brand-definition review.
 Observed software schema supports app-identity review; app-store rankings and
 external listing content are never inferred. Rule guidance comes from the central
 common/check_catalog.py catalog.
+
+## Off-site profiles and review platforms
+
+`check_off_site_profiles.py` reports `profile-link-broken` (a sameAs value that
+is a share link, a platform home page, the site itself or not an absolute URL,
+or a profile that answers 404 or 410, confirmed; a "not found" page or a
+redirect to the platform home page, suspected), `profile-identity-mismatch`
+(a profile page about its handle that names neither the brand nor the site,
+suspected) and `review-platform-missing` (no review or directory profile, such
+as Trustpilot, G2, Capterra, Google Business Profile or Yelp, is linked from the
+site or sameAs; with a search provider, one "<brand> reviews" query adds
+platforms found by search; not applied to government, education or non-profit
+bodies). Review sites block automated clients, so searching them by name is the
+agent stage's job (AG-06).
+
+## Authorship (E-E-A-T)
+
+`analyze_authorship.py` checks article pages (Article-type markup, or a blog or
+news path with a slug and a substantial body). `author-missing`: no byline, meta
+author, rel=author link or Article author. `author-credentials-weak`: the author
+is a plain string or an Organization rather than a Person, the Person has no
+profile link or credentials (jobTitle, description, knowsAbout, alumniOf, award,
+hasCredential), the markup author is not shown on the page, or a visible byline
+has no markup.

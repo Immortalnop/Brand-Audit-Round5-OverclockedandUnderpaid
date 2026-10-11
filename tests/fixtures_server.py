@@ -264,6 +264,116 @@ _MEDIA_SCAN_PDF = image_only_pdf()
 _MEDIA_PNG = png_header(1200, 900)
 
 
+# ---------------------------------------------------------------------------
+# Rich-content fixture (alt text, video, FAQ/HowTo/rating markup, authorship,
+# llms.txt links, sameAs profiles and Core Web Vitals patterns). Every page has a
+# known problem that one of those checks must report.
+# ---------------------------------------------------------------------------
+_RICH_ORG = ('<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization",'
+             '"name":"Rich Brand","url":"http://HOST/","sameAs":["https://github.com/rich-brand",'
+             '"https://twitter.com/intent/tweet?text=hello","/about"]}</script>')
+_RICH_NAV = ('<nav><a href="/">Home</a> <a href="/gallery">Gallery</a> <a href="/video">Video</a> '
+             '<a href="/faq">FAQ</a> <a href="/blog/how-we-test">How we test</a> '
+             '<a href="/blog/tutorial">Tutorial</a> <a href="/product">Product</a></nav>')
+_RICH_FOOTER = '<footer><a href="https://www.trustpilot.com/review/rich.example">Read our reviews</a></footer>'
+_LOREM = ("Rich Brand builds sturdy workshop tools and tests every one of them on real benches before it "
+          "ships. Each tool is measured, weighed and checked against the published specification, and the "
+          "results are written up so buyers can compare them. ")
+
+
+def _rich_page(title, body, head=""):
+    return ('<html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<title>' + title + '</title>' + head + '</head><body><header>' + _RICH_NAV + '</header><main>'
+            + body + '</main>' + _RICH_FOOTER + '</body></html>')
+
+
+_RICH_PAGES = {
+    "/": _rich_page("Rich Brand workshop tools", "<h1>Rich Brand</h1><p>" + _LOREM + "</p>", _RICH_ORG),
+    "/gallery": _rich_page("Gallery of workshop tools", (
+        "<h1>Gallery</h1><p>Our tools at work.</p>"
+        '<img src="/img/image1.jpg" alt="image1.jpg" width="400" height="300">'
+        '<img src="/img/b.jpg" alt="banner" width="400" height="300">'
+        '<img src="/img/c.jpg" alt="IMG_2041" width="400" height="300">'
+        '<img src="/img/d.jpg" alt="" width="400" height="300">'
+        '<img src="/img/e.jpg" alt="Red bench vise clamped to an oak workbench" width="400" height="300">'
+        '<img src="/img/pixel.gif" alt="pixel" width="1" height="1">')),
+    "/video": _rich_page("Video tour of the workshop", (
+        "<h1>Video tour</h1><p>Watch the tour of our test workshop.</p>"
+        '<iframe src="https://www.youtube.com/embed/abc123" title="Workshop tour"></iframe>'
+        '<video src="/media/tour.mp4" controls width="640" height="360"></video>')),
+    "/faq": _rich_page("Frequently asked questions", (
+        "<h1>FAQ</h1><h2>Do you ship abroad?</h2><p>Yes, to most countries.</p>"),
+        '<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":['
+        '{"@type":"Question","name":"What is the warranty period?"},'
+        '{"@type":"Question","name":"Can I return a tool?","acceptedAnswer":{"@type":"Answer","text":"Yes."}}]}'
+        '</script>'),
+    "/blog/how-we-test": _rich_page("How we test our tools", (
+        "<h1>How we test our tools</h1>" + "<p>" + _LOREM * 4 + "</p>"),
+        '<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting",'
+        '"headline":"How we test our tools"}</script>'),
+    "/blog/tutorial": _rich_page("Sharpening a chisel", (
+        '<h1>Sharpening a chisel</h1><p class="byline">By Jane Doe</p><p>' + _LOREM * 4 + "</p>"),
+        '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article",'
+        '"headline":"Sharpening a chisel","author":"Jane Doe"}</script>'),
+    "/product": _rich_page("Bench vise", (
+        '<h1>Bench vise</h1><img src="/img/vise.jpg" alt="Bench vise" loading="lazy">'
+        "<p>Rated 4.8 out of 5 by 120 customers. " + _LOREM + "</p>"),
+        '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product",'
+        '"name":"Bench vise"}</script>'
+        + "".join(f'<link rel="stylesheet" href="/css/{n}.css">' for n in range(8))),
+}
+_RICH_LLMS = ("# Rich Brand\n\n> Workshop tools, tested on real benches.\n\n## Pages\n\n"
+              "- [Gallery](/gallery): photos of the tools\n"
+              "- [Old catalogue](/old-catalogue): the previous catalogue\n"
+              "- [Partner](https://partner.example.test/tools): a partner site\n")
+
+
+# ---------------------------------------------------------------------------
+# Extras fixture (points 15 to 21). The English home page lists a German version
+# that does not link back (hreflang), carries a blocking consent dialog with a
+# scroll lock and cookie wording in its meta description, a canvas with no text,
+# a price that exists only in inline SVG, an icon-only link, an unlabeled field, a
+# low-contrast inline style, a 16 px inline target and a 400 KB photo with no alt
+# text or caption. /app is a script shell whose <noscript> only says JavaScript is
+# required.
+# ---------------------------------------------------------------------------
+_EXTRAS_ROBOTS = "User-agent: *\nDisallow:\n"
+_EXTRAS_SITEMAP = ("<?xml version='1.0' encoding='UTF-8'?>"
+                   "<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"
+                   "<url><loc>{origin}/</loc></url><url><loc>{origin}/de/</loc></url>"
+                   "<url><loc>{origin}/app</loc></url></urlset>")
+_EXTRAS_TEXT = ("Extras Brand repairs and services commercial espresso machines for cafes and restaurants "
+                "across the region, with same-week visits, loan machines during repairs and fixed-price "
+                "descaling plans for busy kitchens. ") * 3
+_EXTRAS_HOME = """<html lang="en"><head><title>Extras Brand espresso machine repair</title>
+<meta name="description" content="We use cookies to improve your experience on our website.">
+<link rel="alternate" hreflang="en" href="http://HOST/">
+<link rel="alternate" hreflang="de" href="http://HOST/de/">
+</head><body style="overflow:hidden">
+<header><a href="/"><img src="/img/logo.png" alt="Extras Brand"></a></header>
+<main><h1>Espresso machine repair for cafes</h1><p>""" + _EXTRAS_TEXT + """</p>
+<img src="/img/team-photo.jpg" width="800" height="600">
+<canvas id="chart" width="600" height="300"></canvas>
+<svg width="300" height="80"><text x="0" y="20">Descaling plan $29 per month</text></svg>
+<a href="/de/" class="fa fa-globe"></a>
+<form><input type="email" name="email"><button>Book a visit</button></form>
+<p style="color:#aaaaaa;background-color:#ffffff">Prices exclude VAT.</p>
+<a href="/app" style="width:16px;height:16px">i</a>
+</main>
+<div id="onetrust-banner-sdk" role="dialog" aria-modal="true">We use cookies. Accept all cookies to continue.</div>
+</body></html>"""
+_EXTRAS_DE = """<html lang="de"><head><title>Extras Brand Reparatur von Espressomaschinen</title>
+<link rel="alternate" hreflang="de" href="http://HOST/de/">
+</head><body><main><h1>Reparatur von Espressomaschinen</h1><p>Extras Brand repariert und wartet
+gewerbliche Espressomaschinen fuer Cafes und Restaurants in der ganzen Region, mit Besuchen in
+derselben Woche, Leihmaschinen waehrend der Reparatur und Entkalkungsplaenen zum Festpreis.</p>
+<a href="/">English</a></main></body></html>"""
+_EXTRAS_APP = """<html lang="en"><head><title>Extras Brand booking app</title></head><body>
+<noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div>
+<script src="/static/app.js"></script></body></html>"""
+_EXTRAS_PHOTO = png_header(2400, 1600) + b"\0" * 400_000
+
+
 class FixtureHandler(BaseHTTPRequestHandler):
     server_version = "FixtureHTTP/1.0"
     robots_body = _ROBOTS_ALLOW_ALL
@@ -275,6 +385,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
     multi_brand = False  # if True, home page carries a second, unrelated Organization block
     clean = False  # if True, serve the well-built site (Step 3 false-positive guard)
     media = False  # if True, serve the non-text media site (images and PDFs)
+    rich = False  # if True, serve the rich-content site (alt text, video, markup, authors, llms.txt)
+    extras = False  # if True, serve the points 15 to 21 site (hreflang, noscript, graphics, a11y, overlays)
     requests_seen = None  # optional per-server list of request paths, set by start_server
 
     def log_message(self, fmt, *args):  # silence test output
@@ -298,6 +410,35 @@ class FixtureHandler(BaseHTTPRequestHandler):
         if self.requests_seen is not None:
             self.requests_seen.append(path)
         origin = f"http://{self.headers.get('Host', '127.0.0.1')}"
+        if self.extras:
+            host = self.headers.get("Host", "127.0.0.1")
+            pages = {"/": _EXTRAS_HOME, "/de/": _EXTRAS_DE, "/app": _EXTRAS_APP}
+            if path == "/robots.txt":
+                self._send(200, _EXTRAS_ROBOTS, {"Content-Type": "text/plain"})
+            elif path == "/sitemap.xml":
+                self._send(200, _EXTRAS_SITEMAP.format(origin=origin), {"Content-Type": "application/xml"})
+            elif path in pages:
+                self._send(200, pages[path].replace("HOST", host))
+            elif path == "/img/team-photo.jpg":
+                # Ignores Range like many servers; Content-Length gives the full size.
+                self._send(200, _EXTRAS_PHOTO, {"Content-Type": "image/png",
+                                                "Content-Length": str(len(_EXTRAS_PHOTO))})
+            else:
+                self._send(404, "<html><body>not found</body></html>")
+            return
+        if self.rich:
+            if path == "/robots.txt":
+                self._send(200, _ROBOTS_ALLOW_ALL, {"Content-Type": "text/plain"})
+            elif path == "/llms.txt":
+                self._send(200, _RICH_LLMS, {"Content-Type": "text/plain"})
+            elif path == "/llms-full.txt":
+                # A soft 404: an HTML page answered with status 200.
+                self._send(200, "<html><body><h1>Page not found</h1></body></html>")
+            elif path in _RICH_PAGES:
+                self._send(200, _RICH_PAGES[path].replace("HOST", self.headers.get("Host", "127.0.0.1")))
+            else:
+                self._send(404, "<html><body>not found</body></html>")
+            return
         if self.media:
             routes = {
                 "/robots.txt": (_MEDIA_ROBOTS, "text/plain"),
@@ -402,15 +543,15 @@ def start_server(robots_body: str = _ROBOTS_ALLOW_ALL, slow_delay_s: float = 0.0
                   robots_mode: str = "ok", sitemap_mode: str = "absent",
                   llms_txt_mode: str = "absent", big_body_bytes: int = 0,
                   multi_brand: bool = False, clean: bool = False, media: bool = False,
-                  requests_seen: list = None):
+                  rich: bool = False, requests_seen: list = None, extras: bool = False):
     """Starts a background server on 127.0.0.1 with an OS-assigned port. Returns
     (base_url, shutdown_fn). Pass a list as requests_seen to record every path
     the server is asked for."""
     handler = type("BoundFixtureHandler", (FixtureHandler,), {
         "robots_body": robots_body, "slow_delay_s": slow_delay_s, "robots_mode": robots_mode,
         "sitemap_mode": sitemap_mode, "llms_txt_mode": llms_txt_mode, "big_body_bytes": big_body_bytes,
-        "multi_brand": multi_brand, "clean": clean, "media": media,
-        "requests_seen": requests_seen,
+        "multi_brand": multi_brand, "clean": clean, "media": media, "rich": rich,
+        "requests_seen": requests_seen, "extras": extras,
     })
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)

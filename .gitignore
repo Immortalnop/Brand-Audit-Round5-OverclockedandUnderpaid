@@ -35,3 +35,5 @@ Thumbs.db
 *.log
 tmp/
 temp/
+.claude/
+Plan.md/

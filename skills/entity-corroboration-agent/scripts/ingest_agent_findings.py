@@ -5,8 +5,9 @@ marketplace: the calling agent, not a deterministic script, judges About-page
 concreteness (AG-01) and cross-web agreement or contradiction (AG-02 / AG-03)
 using its own reading and web_search tools, per the handout's explicit allowance
 to query public community platforms such as Reddit and Quora, and reads facts
-drawn inside raster images with its own vision (AG-04), and searches knowledge
-graphs for entities that share the brand name (AG-05). That judgment is
+drawn inside raster images with its own vision (AG-04), searches knowledge
+graphs for entities that share the brand name (AG-05), and searches review and
+directory platforms for the brand's profiles (AG-06). That judgment is
 handed back as a small JSON array; this module ingests it in-process and returns
 a SkillResult in exactly the same shape as every other v6 specialist.
 
@@ -119,6 +120,25 @@ _AG_RULES = {
                   "State distinguishing facts on the site: category, location and founding year",
                   "Use the same name and description in markup and on the About page"),
         "expected_benefit": "Assistants stop merging facts about same-named entities into the brand",
+    },
+    # AG-06 is the search half of the review-platform check. Review and directory
+    # sites (Trustpilot, G2, Capterra, Google Business Profile, Yelp) block
+    # automated clients or forbid them in robots.txt, so the scripts only see the
+    # profiles the site links; the agent searches those platforms, plus Reddit and
+    # Quora, by name with its own tools and reports where the brand has no profile.
+    "AG-06": {
+        "rule_id": "review-platform-missing",
+        "category": "off_site_presence",
+        "default_severity": "low",
+        "default_status": "confirmed",
+        "default_type": "proactive_improvement",
+        "root_cause_from_catalog": True,
+        "title": "The brand has no profile on the review platforms that fit its business",
+        "summary": "Claim and link review profiles on the platforms that fit the business",
+        "steps": ("Claim or create profiles on the review and directory platforms the agent found missing",
+                  "Link them from the site and list them in Organization sameAs",
+                  "Ask real customers for reviews and answer them publicly"),
+        "expected_benefit": "Independent ratings and reviews corroborate the brand in assistant answers",
     },
 }
 

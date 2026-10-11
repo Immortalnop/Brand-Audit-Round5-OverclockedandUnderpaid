@@ -13,41 +13,46 @@ Two tiers, matching common/capabilities.py:
     MAX_RENDERED_PAGES and PER_FETCH_TIMEOUT_MS; a single page's render failure
     never aborts the batch.
 
+<noscript> fallback: text inside <noscript> is excluded from the raw-text count,
+because a visitor whose browser runs scripts never sees it. Substantial fallback
+text still counts as content for crawlers that do not run scripts, so such a page
+is not a gap. A <noscript> that only says JavaScript is required is the page's own
+statement that it depends on scripts; it is cited in the evidence and raises the
+heuristic's confidence.
+
 Returns gap pages only via SkillResult.metrics; never writes back into PageArtifact.
 """
 from models import (skill_result, make_finding, insufficient_evidence_result, apply_invariant_i1,
                      coverage_ratio, scale_confidence, step_down_severity)
-
-_MIN_SUBSTANTIAL_CHARS = 200  # fallback for page types without a specific threshold
-
-# A single flat "substantial content" threshold treats a contact page (legitimately
-# short: an address, a phone number, a form) the same as an article page (expected
-# to carry a real body of text), which produces both false positives (flagging
-# short-but-complete contact pages as rendering gaps) and false negatives (letting
-# a thin article page pass). Thresholds are calibrated per page_type instead, using
-# the same acquisition-owned classification used by analyze_machine_readability.py.
-_MIN_SUBSTANTIAL_CHARS_BY_TYPE = {
-    "home": 300,
-    "category": 250,
-    "product": 150,
-    "article": 400,
-    "contact": 80,
-    "about": 200,
-    "legal": 150,
-    "other": _MIN_SUBSTANTIAL_CHARS,
-}
-
-
-def _threshold_for(page_type) -> int:
-    return _MIN_SUBSTANTIAL_CHARS_BY_TYPE.get(page_type, _MIN_SUBSTANTIAL_CHARS)
+# The per-page-type thresholds and the <noscript> reading live in check_helpers.py,
+# so the checks that skip pages built by JavaScript use the same test as this one.
+from check_helpers import (MIN_SUBSTANTIAL_CHARS as _MIN_SUBSTANTIAL_CHARS,
+                           MIN_SUBSTANTIAL_CHARS_BY_TYPE as _MIN_SUBSTANTIAL_CHARS_BY_TYPE,
+                           substantial_threshold as _threshold_for, noscript_state as _noscript_state,
+                           script_dependent)
 
 
 def _heuristic_gap_pages(pages):
     """Executable today: raw HTML with very little visible text, judged against a
-    page-type-appropriate threshold rather than one flat number."""
+    page-type-appropriate threshold rather than one flat number. <noscript> text
+    does not count as content, unless it is a real fallback of substantial size."""
     return [p.url for p in pages
-            if len((p.visible_text or "").strip()) < _threshold_for(p.page_type)
-            and p.status_code == 200 and "non_html_content" not in p.warnings]
+            if p.status_code == 200 and "non_html_content" not in p.warnings and script_dependent(p)]
+
+
+def _noscript_summary(pages):
+    """Per-page noscript observations for evidence and metrics."""
+    js_required, fallback = [], []
+    for p in pages:
+        if p.status_code != 200:
+            continue
+        script_on, chars, required = _noscript_state(p)
+        threshold = _threshold_for(p.page_type)
+        if required:
+            js_required.append(p.url)
+        elif script_on < threshold <= chars:
+            fallback.append(p.url)
+    return js_required, fallback
 
 
 def _render_with_headless_browser(urls: list, limits, timeout_s: float = None) -> dict:
@@ -152,6 +157,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
         )
 
     heuristic_gap_pages = _heuristic_gap_pages(artifacts.pages)
+    js_required_pages, noscript_fallback_pages = _noscript_summary(artifacts.pages)
     findings = []
     confirmed_gap_pages = []
     rendered_count = 0
@@ -236,13 +242,22 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
             ))
     elif heuristic_gap_pages:
         # No headless browser available: the heuristic alone can only suspect, not confirm.
+        # A <noscript> that says JavaScript is required is the page's own statement
+        # that it depends on scripts, so it raises confidence (still not confirmed:
+        # nothing was rendered).
+        stated = [u for u in heuristic_gap_pages if u in js_required_pages]
+        evidence = [{"type": "render_gap", "description": "Static fetch returns near-empty content",
+                     "urls": heuristic_gap_pages[:10]}]
+        if stated:
+            evidence.append({"type": "noscript", "description": "The page's <noscript> text says JavaScript is "
+                                                                "required and offers no fallback content",
+                             "urls": stated[:10]})
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect", severity="high",
-            status="suspected", confidence=0.6,
+            status="suspected", confidence=0.75 if stated else 0.6,
             title="Content appears to require JavaScript rendering",
             root_cause="Raw HTML shows near-empty visible content consistent with client-side rendering",
-            evidence=[{"type": "render_gap", "description": "Static fetch returns near-empty content",
-                       "urls": heuristic_gap_pages[:10]}],
+            evidence=evidence,
             suggested_action={
                 "summary": "Server-side render or pre-render key content",
                 "steps": ["Add SSR or static generation for key pages",
@@ -258,5 +273,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
     return skill_result(
         "crawl-render-audit", findings=findings,
         metrics={"rendered_pages": rendered_count, "raw_rendered_gap_pages": confirmed_gap_pages or heuristic_gap_pages,
-                 "rendering_mode": "headless_browser" if headless_available else "heuristic_only"},
+                 "rendering_mode": "headless_browser" if headless_available else "heuristic_only",
+                 "noscript_js_required_pages": len(js_required_pages),
+                 "noscript_fallback_pages": noscript_fallback_pages[:10]},
     )

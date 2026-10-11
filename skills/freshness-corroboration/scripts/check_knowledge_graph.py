@@ -34,12 +34,12 @@ from dataclasses import replace
 from time import monotonic
 from urllib.parse import quote, unquote, urlsplit
 
+from external_lookup import ROBOTS_MAX_BYTES as _ROBOTS_MAX_BYTES, ExternalLookup
 from instrumentation import Instrumentation
 from models import insufficient_evidence_result, make_finding, skill_result
 from resolve_entity_identity import ORG_TYPES, _normalize_org_name
-from robots_policy import RobotsPolicy
 from structured_data import iter_nodes, types_of
-from transport import USER_AGENT, Transport
+from transport import Transport
 
 WIKIDATA_ORIGIN = "https://www.wikidata.org"
 LOOKUP_ENV = "KNOWLEDGE_GRAPH_LOOKUP"
@@ -54,7 +54,6 @@ _NON_ARTICLE_PREFIXES = ("special:", "file:", "category:", "help:", "wikipedia:"
 # remaining audit budget is.
 _LOOKUP_BUDGET_S = 15.0
 _FETCH_TIMEOUT_MS = 6000
-_ROBOTS_MAX_BYTES = 512_000
 _ENTITY_MAX_BYTES = 2_000_000
 _ARTICLE_HEAD_BYTES = 65_536
 _MAX_NAMES = 300
@@ -148,64 +147,6 @@ def _default_transport(origin, deadline_monotonic, limits):
                       PER_FETCH_TIMEOUT_MS=max(limits.PER_FETCH_TIMEOUT_MS, _FETCH_TIMEOUT_MS))
     # Never allow private targets here: these are public third-party hosts.
     return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False)
-
-
-class _Lookup:
-    """Robots-checked GETs to knowledge-graph hosts, one transport per origin."""
-
-    def __init__(self, deadline_monotonic, limits, instrumentation, transport_factory):
-        self.deadline = deadline_monotonic
-        self.limits = limits
-        self.instrumentation = instrumentation
-        self.factory = transport_factory or _default_transport
-        self.transports = {}
-        self.robots = {}
-        self.requests = []
-
-    def _record(self, url, status, http_status=None):
-        self.requests.append({"url": url, "status": status, "http_status": http_status})
-        if self.instrumentation is not None and status not in ("deadline", "budget_exhausted",
-                                                                "robots_disallowed", "robots_unavailable"):
-            self.instrumentation.record_external_fetch(ok=status == "ok")
-
-    def _transport(self, origin):
-        if origin in self.transports:
-            return self.transports[origin]
-        tr = self.factory(origin, self.deadline, self.limits)
-        self.transports[origin] = tr
-        robots_url = origin + "/robots.txt"
-        resp, status = tr.get(robots_url, robots_exempt=True, max_bytes=_ROBOTS_MAX_BYTES)
-        self._record(robots_url, status, resp.status_code if resp else None)
-        text = None
-        if status == "ok" and resp.status_code == 404:
-            text = ""
-        elif status == "ok" and resp.status_code == 200 and not resp.truncated:
-            try:
-                text = resp.content.decode("utf-8")
-            except UnicodeDecodeError:
-                text = None
-            if text is not None and text.lstrip().lower().startswith(("<html", "<!doctype")):
-                text = None
-        if text is None:
-            # Fail closed: without readable robots rules nothing else is requested.
-            self.robots[origin] = "unavailable"
-            tr.robots = RobotsPolicy("User-agent: *\nDisallow: /")
-        else:
-            self.robots[origin] = "ok"
-            tr.robots = RobotsPolicy(text)
-            tr.delay = max(tr.delay, tr.robots.crawl_delay(USER_AGENT))
-        return tr
-
-    def get(self, url, max_bytes):
-        parts = urlsplit(url)
-        origin = f"{parts.scheme}://{parts.netloc}"
-        tr = self._transport(origin)
-        if self.robots.get(origin) != "ok":
-            self._record(url, "robots_unavailable")
-            return None, "robots_unavailable"
-        resp, status = tr.get(url, max_bytes=max_bytes, headers={"Accept-Encoding": "gzip"})
-        self._record(url, status, resp.status_code if resp else None)
-        return resp, status
 
 
 def _fetch_article_item(lookup, lang, title):
@@ -389,7 +330,7 @@ def check_knowledge_graph(artifacts, identity, deadline, limits, instrumentation
     end = now + _LOOKUP_BUDGET_S
     if deadline is not None:
         end = min(end, deadline.deadline_monotonic)
-    lookup = _Lookup(end, limits, instrumentation, transport_factory)
+    lookup = ExternalLookup(end, limits, instrumentation, transport_factory or _default_transport)
     problems, confirmed, failures = [], False, []
     qid, link = (wikidata[0][1], wikidata[0][0]) if wikidata else (None, None)
 

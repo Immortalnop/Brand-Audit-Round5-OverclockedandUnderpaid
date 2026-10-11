@@ -53,6 +53,90 @@ def _score(finding: dict) -> tuple:
     return (sev, stat, conf, pages, effort)
 
 
+_IMPACT_LEVELS = ("low", "medium", "high")
+# Impact x effort quadrants. A quick win is worth doing first: real value for
+# little work.
+_QUADRANT_LABELS = {
+    "quick_win": "Quick win: real value for little work; start here",
+    "major_project": "Major project: real value, plan the work",
+    "fill_in": "Fill-in: small value, small work; do when convenient",
+    "deprioritize": "Deprioritize: more work than the value it brings for now",
+}
+
+
+def impact_of(finding: dict, pages_analyzed: int = 0) -> str:
+    """Expected impact of fixing one item, from evidence the item carries:
+      - severity sets the base: critical and high are high, medium is medium,
+        low is low;
+      - an item that is only suspected is capped at medium, and one with
+        insufficient evidence is low, so impact never outruns the evidence;
+      - a confirmed low-severity item on at least half of the analyzed pages
+        (and on two or more pages) rises to medium: one fix helps the whole site."""
+    severity = finding.get("severity")
+    level = 2 if severity in ("critical", "high") else 1 if severity == "medium" else 0
+    status = finding.get("status")
+    if status == "insufficient_evidence":
+        return "low"
+    if status != "confirmed":
+        level = min(level, 1)
+    pages = len(finding.get("affected_pages") or ())
+    if status == "confirmed" and level == 0 and pages >= 2 and pages_analyzed and pages * 2 >= pages_analyzed:
+        level = 1
+    return _IMPACT_LEVELS[level]
+
+
+def quadrant_of(impact: str, effort: str) -> str:
+    """Two-by-two matrix: medium and high impact count as valuable, medium and
+    high effort count as real work."""
+    valuable = impact in ("high", "medium")
+    if effort == "low":
+        return "quick_win" if valuable else "fill_in"
+    return "major_project" if valuable else "deprioritize"
+
+
+def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
+    """Add impact, effort, quadrant and quick_win to each item's suggested_action."""
+    for item in items:
+        action = dict(item.get("suggested_action") or {})
+        effort = action.get("effort") if action.get("effort") in ("low", "medium", "high") else "medium"
+        impact = impact_of(item, pages_analyzed)
+        quadrant = quadrant_of(impact, effort)
+        action.update(effort=effort, impact=impact, quadrant=quadrant, quadrant_label=_QUADRANT_LABELS[quadrant],
+                      quick_win=quadrant == "quick_win")
+        item["suggested_action"] = action
+
+
+def top_actions(findings: list, limit: int = 5) -> list:
+    """The defects to act on first, in priority order, each with its impact x
+    effort placement. A quick win among them is marked start_here."""
+    defects = [f for f in findings if f.get("finding_type") == "defect"][:limit]
+    rows = []
+    for f in defects:
+        action = f.get("suggested_action") or {}
+        rows.append({"finding_id": f["id"], "title": f.get("title"), "summary": action.get("summary"),
+                     "priority": action.get("priority"), "impact": action.get("impact"),
+                     "effort": action.get("effort"), "quadrant": action.get("quadrant"),
+                     "quick_win": bool(action.get("quick_win")), "start_here": False})
+    first = next((r for r in rows if r["quick_win"]), rows[0] if rows else None)
+    if first is not None:
+        first["start_here"] = True
+    return rows
+
+
+def quick_wins(findings: list, recommendations: list, limit: int = 5) -> list:
+    """Every quick win in the report, defects first, then suggestions."""
+    out = []
+    for item in [f for f in findings if f.get("finding_type") == "defect"] + \
+            [f for f in findings if f.get("finding_type") != "defect"] + list(recommendations):
+        action = item.get("suggested_action") or {}
+        if action.get("quick_win") and not any(o["summary"] == action.get("summary") for o in out):
+            out.append({"id": item["id"], "title": item.get("title"), "summary": action.get("summary"),
+                        "impact": action.get("impact"), "effort": action.get("effort")})
+        if len(out) >= limit:
+            break
+    return out
+
+
 def prioritize_findings(findings: list) -> list:
     # Defense-in-depth re-check: Invariant I-1 is already enforced at finding
     # creation time (make_finding / apply_invariant_i1).

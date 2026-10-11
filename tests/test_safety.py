@@ -244,7 +244,11 @@ def test_llms_txt_present_is_actually_fetched():
         limits = Limits()
         deadline = make_deadline(limits)
         artifacts = acquire_site(base_url + "/", deadline, limits, allow_private_targets=True)
-        assert artifacts.llms_txt_data == {"present": True, "status": "ok"}
+        data = artifacts.llms_txt_data
+        assert (data["present"], data["status"]) == (True, "ok")
+        # The file is parsed, and the companion llms-full.txt is probed too.
+        assert data["title"] == "Example Brand"
+        assert data["full"]["status"] == "absent"
     finally:
         shutdown()
 
@@ -255,7 +259,9 @@ def test_llms_txt_absent_is_actually_checked():
         limits = Limits()
         deadline = make_deadline(limits)
         artifacts = acquire_site(base_url + "/", deadline, limits, allow_private_targets=True)
-        assert artifacts.llms_txt_data == {"present": False, "status": "absent"}
+        data = artifacts.llms_txt_data
+        assert (data["present"], data["status"]) == (False, "absent")
+        assert data["full"]["status"] == "absent"
     finally:
         shutdown()
 

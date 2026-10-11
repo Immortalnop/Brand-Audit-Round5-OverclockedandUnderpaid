@@ -54,20 +54,20 @@ def assess_external_footprint(artifacts, identity, deadline, limits, instrumenta
             break
         # MAX_EXTERNAL_FETCHES is a combined budget shared with corroborate_claims,
         # which runs concurrently in the same dependent batch.
-        if instrumentation is not None and instrumentation.external_fetches_attempted >= limits.MAX_EXTERNAL_FETCHES:
+        if instrumentation is not None and instrumentation.search_queries_attempted >= limits.MAX_EXTERNAL_FETCHES:
             break
         attempted += 1
         try:
             hits = search(q, max_results=5, timeout_s=limits.PER_FETCH_TIMEOUT_MS / 1000)
             if instrumentation is not None:
-                instrumentation.record_external_fetch(ok=True)
+                instrumentation.record_external_fetch(ok=True, search=True)
             completed += 1
             new_matches = [h for h in hits if identity["data"]["domain"] not in h.get("url", "")]
             matched_hits.extend(new_matches)
             queries_issued.append({"query": q, "hits_matched": len(new_matches)})
         except SearchProviderError:
             if instrumentation is not None:
-                instrumentation.record_external_fetch(ok=False)
+                instrumentation.record_external_fetch(ok=False, search=True)
             queries_issued.append({"query": q, "hits_matched": None, "error": "provider_failed"})
             break  # bounded: stop on first failure, don't retry-storm
 

@@ -1,4 +1,4 @@
-# Agent-stage checks (AG-01 to AG-05)
+# Agent-stage checks (AG-01 to AG-06)
 
 These three checks are deliberately not automated. Each requires judging natural
 language, which a fixed threshold cannot do without producing false positives on
@@ -8,7 +8,7 @@ factory, so catalog wording and Invariant I-1 apply exactly as for script findin
 
 Catalog rule IDs used after ingest: AG-01 maps to about-concreteness, AG-02 to
 no-independent-mention, AG-03 to independent-contradiction, AG-04 to
-facts-in-images, AG-05 to kg-namesake-ambiguity.
+facts-in-images, AG-05 to kg-namesake-ambiguity, AG-06 to review-platform-missing.
 
 - AG-01 (medium) About-page self-description is not concrete enough to quote.
   Fires when the opening of the About page (or homepage, if there is no About page)
@@ -53,6 +53,17 @@ facts-in-images, AG-05 to kg-namesake-ambiguity.
   (kg-link-missing, kg-entity-mismatch); robots.txt for both hosts disallows their
   search endpoints, so the name lookup is this agent step. Having no Wikidata entry
   at all is not a defect and records nothing.
+
+- AG-06 (low, confirmed) The brand has no profile on the review platforms that
+  fit its business. Fires when searches of the fitting review and directory
+  platforms (Trustpilot, G2, Capterra, Google Business Profile, Yelp,
+  Tripadvisor, Crunchbase and similar) ran and found no profile of the brand;
+  status suspected when a profile exists but the site does not link it.
+  Mechanism: assistants judge a brand partly from independent ratings and
+  reviews; profiles the site does not link are harder to tie to the brand, and
+  missing ones leave nothing to corroborate. The scripts only see linked
+  profiles, because review sites block automated clients, so the name search is
+  this agent step.
 
 ## The three-outcome rule
 

@@ -27,6 +27,9 @@ class Instrumentation:
     pages_skipped_reasons: list = field(default_factory=list)
     external_fetches_attempted: int = 0
     external_fetches_completed: int = 0
+    # Search-provider queries only. MAX_EXTERNAL_FETCHES budgets these; robots-checked
+    # lookups of declared profiles and entities are bounded by their own caps.
+    search_queries_attempted: int = 0
     worker_timeout_events: list = field(default_factory=list)  # [{"stage":..,"worker":..,"at":..}]
     requests_retried: int = 0
     requests_timed_out: int = 0
@@ -112,9 +115,11 @@ class Instrumentation:
             if len(self.safety_blocks) < self._SAFETY_BLOCKS_CAP:
                 self.safety_blocks.append({"url": url, "reason": reason})
 
-    def record_external_fetch(self, ok: bool) -> None:
+    def record_external_fetch(self, ok: bool, search: bool = False) -> None:
         with self._lock:
             self.external_fetches_attempted += 1
+            if search:
+                self.search_queries_attempted += 1
             if ok:
                 self.external_fetches_completed += 1
 
@@ -162,6 +167,7 @@ class Instrumentation:
             "safety_blocks": self.safety_blocks,
             "external_fetches_attempted": self.external_fetches_attempted,
             "external_fetches_completed": self.external_fetches_completed,
+            "search_queries_attempted": self.search_queries_attempted,
             "worker_timeout_events": self.worker_timeout_events,
             "memory_peak_mb": memory_peak_mb,  # Python allocation peak
             "process_rss_mb": self.process_rss_mb(),  # best-effort process RSS; may be None

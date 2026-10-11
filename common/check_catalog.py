@@ -88,14 +88,16 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                   'breadcrumbs',
                          'mechanism': 'Breadcrumb navigation is visible but not machine-readable'},
  'broken-pages': {'expected_outcome': 'Improves crawl completeness',
-                  'implementation_detail': 'Audit error pages Add 301 redirects or restore content',
-                  'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                               'pages.'},
+                  'implementation_detail': 'List the URLs that answer with an error. Restore the content, or '
+                                           'add a 301 redirect to the closest live page, and update the links '
+                                           'that point at the old URL.',
+                  'mechanism': 'A page that answers 404 or 5xx returns no content, so crawlers drop it and '
+                               'visitors who follow a link to it leave.'},
  'contradicted-claim': {'expected_outcome': 'Reduces risk of assistants surfacing conflicting facts',
-                        'implementation_detail': 'Compare the on-site value to the external source Correct '
-                                                 'whichever is stale or update the other listing',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
+                        'implementation_detail': 'Compare the on-site value to the external source. Correct '
+                                                 'whichever is stale, or ask the other listing to update.',
+                        'mechanism': 'When the site and an independent source state different values, '
+                                     'assistants cannot tell which is right and may repeat the wrong one.'},
  'cross-origin-canonical': {'expected_outcome': 'Avoids unintended consolidation while preserving legitimate '
                                                 'syndication.',
                             'implementation_detail': 'Verify ownership and content equivalence; correct the '
@@ -103,7 +105,7 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                             'mechanism': 'An external canonical can nominate another origin as the preferred '
                                          'copy.'},
  'dead-ends': {'expected_outcome': 'Keeps visitors engaged longer',
-               'implementation_detail': 'Add related-content links Add a clear next-step call-to-action',
+               'implementation_detail': 'Add related-content links. Add a clear next-step call to action.',
                'mechanism': 'Pages provide no next step for the visitor'},
  'duplicate-titles': {'expected_outcome': 'Helps readers distinguish the sampled pages.',
                      'implementation_detail': 'Give distinct content pages descriptive titles; retain '
@@ -115,8 +117,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                    'mechanism': 'An email capture form does not reveal the readability of outbound '
                                 'messages.'},
  'fetch-failure': {'expected_outcome': 'Restores reliable access when the failure is reproducible',
-                   'implementation_detail': 'Check the failure from another client Repair confirmed '
-                                            'certificate or server failures',
+                   'implementation_detail': 'Check the failure from another client. Repair confirmed '
+                                            'certificate or server failures.',
                    'mechanism': 'A fetch failure limits this audit; it does not establish a permanent '
                                 'site-wide outage.'},
  'fetch-latency': {'expected_outcome': 'Can improve retrieval reliability; audit pacing and retries are '
@@ -153,8 +155,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
  'homepage-orientation': {'expected_outcome': 'Visitors arriving from an AI answer can orient quickly and '
                                               'continue to a relevant action',
                           'implementation_detail': 'State what the organization offers and for whom in the '
-                                                   'first viewport Use a descriptive H1 and scannable H2 '
-                                                   'sections Place one relevant CTA near the opening content',
+                                                   'first viewport. Use a descriptive H1 and scannable H2 '
+                                                   'sections. Place one relevant call to action near the '
+                                                   'opening content.',
                           'mechanism': 'The sampled homepage contains substantial text but no short heading '
                                        'signal was observed in its first heading entries'},
  'http-transport': {'expected_outcome': 'Protects transport confidentiality and integrity; ranking gains are '
@@ -176,13 +179,13 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                        'mechanism': 'An unusable or conflicting canonical declaration weakens the '
                                     'preferred-URL hint.'},
  'isolated-clusters': {'expected_outcome': 'Makes an entire section reachable instead of one page at a time',
-                       'implementation_detail': 'Identify which cluster(s) contain valuable content Add '
-                                                'navigation or contextual links connecting them to the main '
-                                                'site',
-                       'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                                    'pages.'},
+                       'implementation_detail': 'Identify which clusters contain valuable content. Add '
+                                                'navigation or contextual links that connect them to the main '
+                                                'site.',
+                       'mechanism': 'A group of pages that links only to itself cannot be reached from the rest '
+                                    'of the site, so crawlers and visitors rarely find it.'},
  'llms-txt-unchecked': {'expected_outcome': 'Enables a real presence/absence verdict',
-                        'implementation_detail': 'Check that /llms.txt responds Re-run the audit',
+                        'implementation_detail': 'Check that /llms.txt responds. Re-run the audit.',
                         'mechanism': 'The observed condition can limit retrieval or visitor access on '
                                      'sampled pages.'},
  'long-paragraphs': {'expected_outcome': 'Improves readability of the observed long passages.',
@@ -190,9 +193,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                               'tables.',
                      'mechanism': 'Dense paragraphs can hide important answers.'},
  'malformed-jsonld': {'expected_outcome': 'Prevents parsers from dropping important entity and product facts',
-                      'implementation_detail': 'Validate each JSON-LD block as strict JSON Preserve valid '
-                                               '@graph nodes and required properties Re-run a '
-                                               'structured-data validator after deployment',
+                      'implementation_detail': 'Validate each JSON-LD block as strict JSON. Preserve valid '
+                                               '@graph nodes and required properties. Re-run a '
+                                               'structured-data validator after deployment.',
                       'mechanism': 'One or more sampled pages contain JSON-LD that could not be parsed, so '
                                    'structured facts may be discarded by automated readers'},
  'markup-ratio': {'expected_outcome': 'Reduces document overhead if the sampled ratio reflects avoidable '
@@ -240,21 +243,24 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                'mechanism': 'Commercial pages without an observed action path can leave visitors unsure how '
                             'to proceed.'},
  'no-headings': {'expected_outcome': 'Improves text extraction quality',
-                 'implementation_detail': 'Add an h1 per page Structure sections with h2/h3',
+                 'implementation_detail': 'Add one h1 per page. Structure sections with h2 and h3.',
                  'mechanism': 'Pages have no h1-h6 elements'},
  'no-internal-navigation': {'expected_outcome': 'Reduces dead ends and helps both visitors and crawlers '
                                                 'discover deeper content',
-                            'implementation_detail': 'Expose primary destinations in a semantic nav landmark '
-                                                     'Link related pages from body content Ensure every '
-                                                     'important landing page has a clear next step',
+                            'implementation_detail': 'Expose primary destinations in a semantic nav '
+                                                     'landmark. Link related pages from body content. Give '
+                                                     'every important landing page a clear next step.',
                             'mechanism': 'Visitors landing on the sampled pages have no observed internal '
                                          'link path to related content'},
  'no-jsonld': {'expected_outcome': 'Facts become machine-extractable',
-               'implementation_detail': 'Identify page types Add matching schema.org JSON-LD blocks',
-               'mechanism': 'The observed condition can limit retrieval or visitor access on sampled pages.'},
+               'implementation_detail': 'Identify the type of each key page. Add a matching schema.org '
+                                        'JSON-LD block (Organization and WebSite on the home page; Product, '
+                                        'Article or Service on inner pages) and validate it.',
+               'mechanism': 'Without JSON-LD, crawlers and assistants must infer names, prices and dates from '
+                            'layout, so explicit facts are missed or attributed wrongly.'},
  'no-llms-txt': {'expected_outcome': 'Offers an optional guide to tools that support this convention; not a '
                                      'search eligibility requirement',
-                 'implementation_detail': 'Create /llms.txt List key pages and a short site summary',
+                 'implementation_detail': 'Create /llms.txt. List the key pages and a short site summary.',
                  'mechanism': 'Site does not publish an llms.txt guidance file'},
  'noindex': {'expected_outcome': 'Restores indexing eligibility for the specified crawler, without '
                                  'guaranteeing indexing.',
@@ -269,10 +275,10 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                          'implementation_detail': 'Remove max-snippet:0 or raise it to a positive value, and restore max-image-preview from none, only where the suppression is unintended; keep deliberate controls.',
                          'mechanism': 'max-snippet:0 and max-image-preview:none keep a page indexed but remove the snippet or preview an assistant or search result would quote, so a plainly visible fact is far less likely to be surfaced.'},
  'orphan-pages': {'expected_outcome': 'Improves discoverability and visitor navigation',
-                  'implementation_detail': 'Identify high-value orphan pages Link them from navigation or '
-                                           'related content',
-                  'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                               'pages.'},
+                  'implementation_detail': 'Identify the high-value orphan pages. Link them from navigation '
+                                           'or related content.',
+                  'mechanism': 'A page no other page links to is found only through the sitemap, so crawlers '
+                               'treat it as unimportant and visitors cannot reach it.'},
  'overlay': {'expected_outcome': 'Reduces interference only if confirmed in a browser.',
              'implementation_detail': 'Inspect actual behavior and provide a dismiss control if the overlay '
                                       'obstructs content.',
@@ -334,9 +340,10 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                              'unnecessary redirect hops.',
                     'mechanism': 'Multiple redirect hops consume request budget and add latency.'},
  'render-gap': {'expected_outcome': 'Content becomes machine-readable without JS',
-                'implementation_detail': 'Add SSR or static generation for key pages',
-                'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                             'pages.'},
+                'implementation_detail': 'Add server-side rendering or static generation for key pages, so '
+                                         'the facts are in the HTML response.',
+                'mechanism': 'Most AI crawlers do not run JavaScript, so content that appears only after scripts '
+                             'run is invisible to them.'},
  'render-gap-unconfirmed': {'expected_outcome': 'Clarifies whether a real rendering fix is needed',
                             'implementation_detail': 'Open the page in a browser and compare to the raw HTML',
                             'mechanism': 'Headless rendering also returned little content, or failed, for '
@@ -344,8 +351,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                          'dependency'},
  'render-subprocess-timeout': {'expected_outcome': 'Restores confirmed (not just suspected) rendering-gap '
                                                    'findings',
-                               'implementation_detail': 'Re-run the audit Check for bot-detection on the '
-                                                        'target site',
+                               'implementation_detail': 'Re-run the audit. Check for bot detection on the '
+                                                        'target site.',
                                'mechanism': 'The isolated rendering subprocess exceeded its wall-clock '
                                             'deadline and was terminated; rendering-gap pages fall back to '
                                             'the static-only heuristic'},
@@ -356,8 +363,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                   'mechanism': 'The observed robots policy disallows this audit crawler for the evaluated '
                                'URL.'},
  'robots-unreachable': {'expected_outcome': 'Enables a real crawl-permission verdict',
-                        'implementation_detail': 'Check robots.txt responds quickly with a 200 or a clean '
-                                                 '404 Re-run the audit once robots.txt is reachable',
+                        'implementation_detail': 'Check that robots.txt responds quickly with a 200 or a '
+                                                 'clean 404. Re-run the audit once robots.txt is reachable.',
                         'mechanism': 'The observed condition can limit retrieval or visitor access on '
                                      'sampled pages.'},
  'scannability': {'expected_outcome': 'Makes individual topics easier to locate and summarize.',
@@ -515,6 +522,236 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                            'mechanism': 'When other knowledge-graph entities share the brand name, '
                                         'assistants can merge their facts into the brand unless the site '
                                         'states clearly which entity it is.'},
+ 'alt-text-quality': {'expected_outcome': 'Crawlers, assistants and screen readers can tell what each '
+                                          'informative image shows.',
+                      'implementation_detail': 'Replace file names and placeholder words in alt text with a '
+                                               'short description of the image, use an empty alt for '
+                                               'decorative images, and fix the template default that fills '
+                                               'alt text automatically.',
+                      'mechanism': 'Alt text is the only description of an image that text-based crawlers, '
+                                   'assistants and screen readers receive; a file name or a word such as '
+                                   'banner describes nothing.'},
+ 'media-transcript-missing': {'expected_outcome': 'What is said in videos and podcasts becomes quotable text.',
+                              'implementation_detail': 'Publish a transcript on the page or link it next to '
+                                                       'the player, add a captions track to native players and '
+                                                       'enable captions on embeds.',
+                              'mechanism': 'Crawlers and assistants do not watch video or listen to audio, so '
+                                           'spoken content is invisible to them unless it is also text.'},
+ 'media-schema-missing': {'expected_outcome': 'Each video and audio clip has a machine-readable title, '
+                                              'description, thumbnail and date.',
+                          'implementation_detail': 'Add VideoObject markup with name, description, '
+                                                   'thumbnailUrl, uploadDate and duration, or AudioObject or '
+                                                   'PodcastEpisode markup for audio.',
+                          'mechanism': 'Search engines and assistants rely on VideoObject and AudioObject '
+                                       'markup to identify and describe embedded media.'},
+ 'citation-schema-invalid': {'expected_outcome': 'Questions, steps and ratings are reliably read as explicit '
+                                                 'facts.',
+                             'implementation_detail': 'Complete the FAQPage, HowTo, Review and AggregateRating '
+                                                      'markup: questions with accepted answers that are shown '
+                                                      'on the page, steps with text, ratings with a value, a '
+                                                      'count and an item they rate.',
+                             'mechanism': 'Parsers discard FAQ, HowTo and rating markup that is missing '
+                                          'required parts or contradicts the page, so the facts it states are '
+                                          'lost.'},
+ 'citation-schema-opportunity': {'expected_outcome': 'Visible questions, steps and ratings are also stated as '
+                                                     'explicit structured facts.',
+                                 'implementation_detail': 'Add FAQPage, HowTo or AggregateRating markup only '
+                                                          'where the page really shows that content; Google '
+                                                          'limits FAQ and HowTo rich results, so the gain is '
+                                                          'machine readability, not a search feature.',
+                                 'mechanism': 'Question-and-answer pairs, numbered steps and ratings are the '
+                                              'passages assistants quote most; markup states them as explicit '
+                                              'structure.'},
+ 'author-missing': {'expected_outcome': 'Each article has a named author that assistants can credit and '
+                                        'check.',
+                    'implementation_detail': 'Show a byline on every article and add the author to the Article '
+                                             'markup as a Person with name and url.',
+                    'mechanism': 'Assistants and search engines weigh who wrote a page (experience, expertise, '
+                                 'authority and trust); an unattributed article gives them nothing to weigh.'},
+ 'author-credentials-weak': {'expected_outcome': 'The expertise behind each article is explicit and '
+                                                 'checkable.',
+                             'implementation_detail': 'Type the Article author as a Person with a url to an '
+                                                      'author page, sameAs profile links and jobTitle, '
+                                                      'description or knowsAbout, and show the same name in the '
+                                                      'byline.',
+                             'mechanism': 'An author given only as a plain name or as the organization, '
+                                          'without a profile or credentials, cannot be connected to real '
+                                          'expertise.'},
+ 'llms-txt-invalid': {'expected_outcome': 'Tools that support llms.txt can follow it to the key pages.',
+                      'implementation_detail': 'Start llms.txt with one H1 title, add a short summary, list '
+                                               'key pages as Markdown links under H2 sections, and serve '
+                                               'llms-full.txt as plain text or not at all.',
+                      'mechanism': 'Tools that read llms.txt expect its Markdown structure; a file without a '
+                                   'title or links, or an HTML page served as llms-full.txt, cannot be '
+                                   'followed.'},
+ 'llms-txt-broken-links': {'expected_outcome': 'Every page llms.txt lists can be read.',
+                           'implementation_detail': 'Update or remove each llms.txt entry that answers 404 or '
+                                                    '410, and regenerate the file when pages move.',
+                           'mechanism': 'llms.txt is a map for assistants; entries that lead to missing pages '
+                                        'send them to dead ends instead of the promised content.'},
+ 'profile-link-broken': {'expected_outcome': 'Every sameAs and profile link resolves to a live profile the '
+                                             'brand owns.',
+                         'implementation_detail': 'Replace invalid, deleted or share links in sameAs and on '
+                                                  'the site with full addresses of the brand\'s own profile '
+                                                  'pages.',
+                         'mechanism': 'Assistants follow sameAs and profile links to confirm who a brand is; a '
+                                      'link that is not a profile or leads to a missing page breaks that '
+                                      'chain.'},
+ 'profile-identity-mismatch': {'expected_outcome': 'Linked profiles and the site confirm each other.',
+                               'implementation_detail': 'Confirm the brand owns each listed profile, replace '
+                                                        'links to other accounts, and name the brand and the '
+                                                        'site on each profile.',
+                               'mechanism': 'A profile linked as the brand\'s that names neither the brand '
+                                            'nor the site can lead assistants to attribute another account\'s '
+                                            'content to the brand.'},
+ 'review-platform-missing': {'expected_outcome': 'Independent ratings and reviews corroborate the brand in '
+                                                 'assistant answers.',
+                             'implementation_detail': 'Claim profiles on review and directory platforms that '
+                                                      'fit the business, link them from the site and list them '
+                                                      'in Organization sameAs.',
+                             'mechanism': 'Assistants judge a brand partly from review and directory '
+                                          'platforms; profiles the site does not link are harder to tie to '
+                                          'the brand, and missing ones leave nothing to corroborate.'},
+ 'cwv-field-poor': {'expected_outcome': 'Pages load fast, stay stable and respond quickly for real '
+                                        'visitors.',
+                    'implementation_detail': 'Fix the Core Web Vitals that field data rates below good, '
+                                             'starting with the worst, then recheck the field data after 28 '
+                                             'days.',
+                    'mechanism': 'Chrome UX Report field data shows real visitors waiting for content, seeing '
+                                 'layout shift or waiting for input responses; Google uses these metrics as a '
+                                 'page experience signal.'},
+ 'cwv-risk': {'expected_outcome': 'Lower risk of poor Core Web Vitals; confirm with a browser or field data.',
+              'implementation_detail': 'Remove the listed markup patterns (lazy-loaded first image, '
+                                       'render-blocking resources, unsized embeds, heavy scripts) and measure '
+                                       'the page with PageSpeed Insights.',
+              'mechanism': 'Some markup patterns reliably worsen LCP, CLS or INP; without a browser the audit '
+                           'can only estimate the risk from them, not measure it.'},
+ 'hreflang-invalid': {'expected_outcome': 'Each language version is shown and cited to readers of that language.',
+                      'implementation_detail': 'Use language or language-REGION codes with absolute URLs, list every '
+                                               'version including the page itself, and make every alternate link back.',
+                      'mechanism': 'Search engines drop hreflang annotations that are malformed, relative or not '
+                                   'confirmed by a return link, so the wrong language version can be served or cited.'},
+ 'hreflang-missing': {'expected_outcome': 'Readers are sent to and quoted from the version in their language.',
+                      'implementation_detail': 'Add reciprocal hreflang annotations for every language version, '
+                                               'plus an x-default alternate.',
+                      'mechanism': 'Without hreflang, search engines and assistants guess which language version '
+                                   'to show and may cite one the reader cannot read.'},
+ 'canvas-text': {'expected_outcome': 'What each canvas shows is available as text.',
+                 'implementation_detail': 'Add fallback text or a data table inside or next to the canvas, '
+                                          'role="img" with an aria-label for informative canvases, and aria-hidden '
+                                          'for decorative ones.',
+                 'mechanism': 'Script-drawn canvas content exists only as pixels, so chart values and labels on it '
+                              'are invisible to crawlers, assistants and screen readers.'},
+ 'svg-inline-facts': {'expected_outcome': 'Facts shown in graphics are also readable as page text.',
+                      'implementation_detail': 'Repeat the values drawn in inline SVG as HTML text near the graphic '
+                                               'and give the SVG a title.',
+                      'mechanism': 'Some text extractors drop inline SVG, so facts that exist only as SVG text may '
+                                   'never reach an assistant.'},
+ 'icon-font-text': {'expected_outcome': 'Extracted page text carries no stray glyphs or icon names.',
+                    'implementation_detail': 'Mark icon elements aria-hidden="true", label icon-only controls, and '
+                                             'prefer inline SVG icons with a title.',
+                    'mechanism': 'Icon fonts draw icons from private-use characters or ligature words that leak '
+                                 'into extracted text as meaningless symbols or stray words.'},
+ 'image-context-missing': {'expected_outcome': 'Every informative image has text that says what it shows.',
+                           'implementation_detail': 'Write descriptive alt text, add a figcaption where context is '
+                                                    'needed, and use alt="" for decorative images.',
+                           'mechanism': 'Crawlers, assistants and screen readers learn what an image shows only from '
+                                        'alt text, captions or nearby link text; an image with none says nothing.'},
+ 'image-weight': {'expected_outcome': 'Images load faster, especially the largest image of each page.',
+                  'implementation_detail': 'Serve AVIF or WebP, resize each image to its displayed size with srcset, '
+                                           'and compress large photos.',
+                  'mechanism': 'Large, oversized or legacy-format image files delay the largest paint and cost '
+                               'mobile visitors data.'},
+ 'responsive-images': {'expected_outcome': 'Each screen downloads an image no larger than it needs.',
+                       'implementation_detail': 'Add srcset and sizes, or picture sources, to the main image of '
+                                                'each page.',
+                       'mechanism': 'Without responsive variants, phones download the same large file as desktops.'},
+ 'form-label-missing': {'expected_outcome': 'Every form field can be identified and filled in with assistive '
+                                            'technology or by an AI agent.',
+                        'implementation_detail': 'Tie a visible label element to every field, or use aria-label '
+                                                 'where a visible label is impossible.',
+                        'mechanism': 'A field with no label has no name in the accessibility tree, so screen-reader '
+                                     'users and AI agents cannot tell what it asks for.'},
+ 'control-name-missing': {'expected_outcome': 'Every link and button says where it leads or what it does.',
+                          'implementation_detail': 'Add an aria-label or visually hidden text to icon-only links and '
+                                                   'buttons, and hide the icon itself.',
+                          'mechanism': 'A link or button with no text or label is announced only as "link" or '
+                                       '"button", so it cannot be understood or chosen reliably.'},
+ 'low-contrast-text': {'expected_outcome': 'Text is readable for visitors with low vision and on bright screens.',
+                       'implementation_detail': 'Adjust the listed colour pairs to at least 4.5:1, or 3:1 for large '
+                                                'text.',
+                       'mechanism': 'Text below the WCAG AA contrast ratio is hard to read for many visitors.'},
+ 'tap-target-small': {'expected_outcome': 'Controls are easy to hit on a touch screen.',
+                      'implementation_detail': 'Make each control at least 24 by 24 CSS pixels or give it enough '
+                                               'space from its neighbours.',
+                      'mechanism': 'Targets smaller than 24 by 24 CSS pixels are easy to miss on touch screens.'},
+ 'consent-text-leak': {'expected_outcome': 'Previews, results and assistants describe the page, not the cookie '
+                                           'notice.',
+                       'implementation_detail': 'Write page-specific descriptions and place consent banner markup '
+                                                'after the main content.',
+                       'mechanism': 'Cookie-consent wording in the description or at the start of the HTML is read '
+                                    'and quoted as if it summarised the page.'},
+ 'question-answer-indirect': {'expected_outcome': 'The sentence under each question heading can be quoted as '
+                                                  'a complete answer.',
+                              'implementation_detail': 'Open the text under each question heading with a direct '
+                                                       'answer of 40 words or fewer, then add detail and caveats.',
+                              'mechanism': 'Assistants lift the passage right after a question heading; a missing, '
+                                           'very long or filler first sentence is not a liftable answer.'},
+ 'table-headers-missing': {'expected_outcome': 'Every value in a data table is tied to a labelled row and column.',
+                           'implementation_detail': 'Use th cells with scope for the header row and row labels, '
+                                                    'and add a caption that says what the table compares.',
+                           'mechanism': 'Parsers map table values to their meaning through th header cells; a '
+                                        'table of td cells only leaves values without labels.'},
+ 'comparison-table-missing': {'expected_outcome': 'Comparison questions can be answered from labelled rows.',
+                              'implementation_detail': 'Summarize each comparison in an HTML table with one column '
+                                                       'per option and one row per attribute, above the prose.',
+                              'mechanism': 'Comparison answers pair each attribute with each option; prose forces '
+                                           'the assistant to rebuild that pairing and invites errors.'},
+ 'spec-list-missing': {'expected_outcome': 'Each product specification is stated once, with its label.',
+                       'implementation_detail': 'List key specifications as a definition list or two-column table '
+                                                'and mirror them in Product JSON-LD.',
+                       'mechanism': 'Specification questions are answered from labelled facts; prose spreads a '
+                                    'fact across sentences where it is easy to miss.'},
+ 'location-markup-missing': {'expected_outcome': 'The brand can be matched to questions about a place.',
+                             'implementation_detail': 'Add a PostalAddress, geo coordinates and areaServed to the '
+                                                      'Organization or LocalBusiness JSON-LD, matching the '
+                                                      'visible address.',
+                             'mechanism': 'Assistants tailor answers to the asker\'s location using '
+                                          'machine-readable addresses and service areas; a location shown only '
+                                          'as text or a map is easy to miss.'},
+ 'local-business-incomplete': {'expected_outcome': 'The LocalBusiness markup qualifies for local answers.',
+                               'implementation_detail': 'Give every LocalBusiness node an address, plus geo for a '
+                                                        'storefront or areaServed for a service-area business.',
+                               'mechanism': 'Google requires an address on LocalBusiness markup, and without geo '
+                                            'or areaServed it cannot be matched to where the asker is.'},
+ 'audience-segment-missing': {'expected_outcome': 'Assistants have a page to match to the asker\'s stated '
+                                                  'role or need.',
+                              'implementation_detail': 'Publish one page per main audience, naming it in the '
+                                                       'title and H1, and link those pages from the navigation.',
+                              'mechanism': 'Assistants weight answers toward who is asking; without pages for named '
+                                           'audiences there is nothing to match that context to.'},
+ 'contact-markup-missing': {'expected_outcome': 'Assistants can give the brand\'s own email and phone number '
+                                                'when asked how to reach it.',
+                            'implementation_detail': 'Add email, telephone and a contactPoint to the Organization '
+                                                     'JSON-LD, matching the contact page.',
+                            'mechanism': 'Assistants read contact details from email, telephone and contactPoint '
+                                         'properties; details shown only as text or links are easy to miss or to '
+                                         'attribute to another organization.'},
+ 'site-search-missing': {'expected_outcome': 'Visitors can restate their need in one step on a large site.',
+                         'implementation_detail': 'Add a labelled search form to the shared header, with linkable '
+                                                  'result URLs and a WebSite SearchAction.',
+                         'mechanism': 'Visitors arriving from an AI answer often have a follow-up need; on a large '
+                                      'site without search they must browse menus or leave.'},
+ 'context-retention-missing': {'expected_outcome': 'Returning visitors resume their task where they left it.',
+                               'implementation_detail': 'Add save-for-later or wishlist controls and a recently '
+                                                        'viewed list that persists across visits.',
+                               'mechanism': 'Without saved state each visit starts from zero, so a returning '
+                                            'visitor must find the same items again.'},
+ 'deep-link-params-dropped': {'expected_outcome': 'Deep links land visitors on the exact view they promise.',
+                              'implementation_detail': 'Make each redirect append the original query string, and '
+                                                       'link to final URLs with their parameters.',
+                              'mechanism': 'A redirect that strips query parameters turns a link to a filtered '
+                                           'or preselected view into a link to a generic page.'},
  'viewport': {'expected_outcome': 'Improves responsive layout configuration; actual layout still requires '
                                   'testing.',
               'implementation_detail': 'Add a responsive viewport declaration and verify real mobile layout.',

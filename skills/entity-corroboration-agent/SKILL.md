@@ -1,7 +1,7 @@
 ---
 name: entity-corroboration-agent
 description: >-
-  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources across the wider web corroborate (AG-02) or contradict (AG-03) what the site claims about itself. Unlike every other skill in this marketplace it runs no deterministic script: the calling agent performs it with its own reading and web_search tools, then hands structured findings back to the entrypoint, which ingests them in-process. Use when diagnosing entity confusion, hallucinated brand attributes, or a lack of multi-source consensus. It also reads facts drawn inside raster images with the agent's own vision (AG-04), the one part of the facts-in-images check a script cannot do, and searches knowledge graphs for entities that share the brand name (AG-05), which robots.txt stops a script from doing.
+  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources across the wider web corroborate (AG-02) or contradict (AG-03) what the site claims about itself. Unlike every other skill in this marketplace it runs no deterministic script: the calling agent performs it with its own reading and web_search tools, then hands structured findings back to the entrypoint, which ingests them in-process. Use when diagnosing entity confusion, hallucinated brand attributes, or a lack of multi-source consensus. It also reads facts drawn inside raster images with the agent's own vision (AG-04), the one part of the facts-in-images check a script cannot do, searches knowledge graphs for entities that share the brand name (AG-05), which robots.txt stops a script from doing, and searches review and directory platforms for the brand's profiles (AG-06), which those platforms block scripts from doing.
 license: MIT
 allowed-tools: Read WebSearch WebFetch
 ---
@@ -40,7 +40,7 @@ findings; the agent supplies only what it observed.
   only for images on paths robots.txt allows). AG-05 uses web search plus at
   most 4 GETs to public `/wiki/` pages of wikidata.org or wikipedia.org (never
   `/w/api.php`, `/w/rest.php`, `/api/` or `Special:Search`, which their
-  robots.txt disallows). Read
+  robots.txt disallows). AG-06 uses web search only. Read
   the brand name from the resolved identity (Organization JSON-LD name, og:site_name
   or title).
 
@@ -100,6 +100,28 @@ entity in sameAs. List the namesakes with their Wikidata IDs in evidence. If
 every match is the brand itself, or nothing matches, record nothing: having no
 Wikidata entry is not a defect for a small organization.
 
+Step 2d, review and directory platforms (AG-06). Only if a web_search tool is
+available, and only when the report has a review-platform-missing finding or
+coverage.off_site_profiles.review_platforms_linked is empty. The scripts see only
+the review profiles the site links: Trustpilot, G2, Capterra, Yelp and similar
+sites answer automated clients with a challenge page or forbid them in
+robots.txt, and Google Business Profile has no stable public page. Search the
+platforms that fit the business (coverage.off_site_profiles.business_kind:
+local, software or general), for example:
+
+```
+"<brand name>" site:trustpilot.com OR site:g2.com OR site:capterra.com
+"<brand name>" reviews
+"<brand name>" site:reddit.com OR site:quora.com
+```
+
+Fire AG-06 only when the searches ran and found no profile of the brand on any
+platform that fits its business; list the platforms searched in evidence. When a
+profile exists but the site does not link it, fire AG-06 with status suspected
+and name the profile URLs in evidence, so the site can link them and add them to
+sameAs. A platform that does not fit the business (Yelp for a software company)
+records nothing.
+
 Step 3, graceful fallback. If no search tool exists, it errors, or it is
 rate-limited: do not abort, and do not report absence of corroboration. Supply
 nothing (or a single entry with status insufficient_evidence). The distinction
@@ -116,7 +138,7 @@ together.
 ## Output
 
 The file named by AGENT_FINDINGS_PATH: a JSON array of findings (or an object with
-a findings array). Useful keys per finding: check (AG-01, AG-02, AG-03, AG-04 or AG-05), title,
+a findings array). Useful keys per finding: check (AG-01 to AG-06), title,
 severity, status, evidence, and suggested_action with summary and steps. mechanism,
 implementation_detail and expected_outcome are filled automatically from
 common/check_catalog.py, so supply only what you observed.
@@ -144,6 +166,6 @@ Both are valid; the stage records not_supplied when the variable is unset.
 
 Read-only. Does not crawl the audited site (it reads the already-acquired
 snapshot); AG-04 views at most 8 images by plain GET; AG-05 opens at most 4
-robots-allowed knowledge-graph pages by plain GET. Never reports an unavailable capability as a site defect: the absence of
+robots-allowed knowledge-graph pages by plain GET; AG-06 uses web search only. Never reports an unavailable capability as a site defect: the absence of
 the stage is recorded as insufficient_evidence, capped low and advisory by
 Invariant I-1.

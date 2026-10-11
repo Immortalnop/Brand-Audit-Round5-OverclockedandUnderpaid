@@ -15,6 +15,7 @@ from html_features import Document
 from structured_data import iter_nodes,types_of,normalize_type
 from non_text import image_tokens,fact_keywords,is_excluded_image,image_kind,raster_dimensions,svg_text
 from pdf_text import extract_pdf_text
+from llms_txt import parse_llms_txt
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -27,6 +28,25 @@ def normalize_url(url,base=None):
     if p.scheme not in ('http','https') or not p.hostname:return None
     # Preserve query parameters: they may identify real content. Strip only fragments.
     return urlunsplit((p.scheme.lower(),p.netloc.lower(),p.path or '/',p.query,''))
+
+def site_section(url):
+    """First path segment of a URL ('/about/team' -> 'about'), '' for the root."""
+    try:path=urlsplit(url).path
+    except ValueError:return ''
+    return next((s.lower() for s in path.split('/') if s),'')
+
+def stratify_by_section(urls):
+    """Reorder URLs round-robin across site sections, keeping each section's own
+    order. A sitemap listed section by section would otherwise fill a bounded
+    crawl with one section; this samples every section once before any section
+    gets a second page, so the sample covers more templates."""
+    groups={}
+    for u in urls:groups.setdefault(site_section(u),[]).append(u)
+    out=[];lanes=list(groups.values());i=0
+    while lanes:
+        lanes=[lane for lane in lanes if len(lane)>i]
+        out.extend(lane[i] for lane in lanes);i+=1
+    return out
 
 def _classify_page_type(url,origin,jsonld_blocks,path):
     types=set().union(*(types_of(n) for n in iter_nodes(jsonld_blocks)))
@@ -99,6 +119,22 @@ def _collect_lastmod(tree,origin,lastmods,url_entries,cap=200):
         except ValueError:continue
         if key:lastmods.setdefault(key,lastmod)
 
+def _collect_sitemap_hreflang(tree,origin,out,cap=200):
+    """xhtml:link rel="alternate" hreflang annotations per <url> entry, keyed by
+    normalized <loc>. Kept as written; the international check judges them."""
+    for entry in tree:
+        if not isinstance(entry.tag,str) or entry.tag.rsplit('}',1)[-1]!='url' or len(out)>=cap:continue
+        loc=None;alternates=[]
+        for child in entry:
+            name=child.tag.rsplit('}',1)[-1] if isinstance(child.tag,str) else ''
+            if name=='loc' and child.text:loc=child.text.strip()
+            elif name=='link' and child.get('rel','').strip().lower()=='alternate' and child.get('hreflang') is not None and len(alternates)<20:
+                alternates.append({'hreflang':child.get('hreflang','').strip()[:40],'href':(child.get('href') or '').strip()[:500]})
+        if not loc or not alternates:continue
+        try:key=normalize_url(loc,origin)
+        except ValueError:continue
+        if key:out.setdefault(key,alternates)
+
 def _ai_crawler_directives(rp,origin,conservative):
     if conservative:return {}
     return {a:'allow' if rp.can_fetch(a,origin) else 'disallow' for a in ('OAI-SearchBot','ChatGPT-User','GPTBot','Claude-SearchBot','ClaudeBot','Googlebot','Google-Extended','PerplexityBot','CCBot')}
@@ -132,7 +168,103 @@ def _fetch_image(tr,entry,limits):
         dims=raster_dimensions(r.content)
         entry['kind']='raster'
         if dims:entry['format'],entry['width'],entry['height']=dims
+        entry['bytes_total']=_total_size(r)
     return st
+
+def _total_size(r):
+    """Full file size of a response to a Range GET: the total in Content-Range, or
+    Content-Length when the server ignored the range, or the body length when the
+    whole file arrived. None when unknown."""
+    m=re.match(r'\s*bytes\s+\d+-\d+/(\d+)',r.headers.get('Content-Range',''),re.I)
+    if m:return int(m.group(1))
+    if r.status_code==200:
+        length=r.headers.get('Content-Length','').strip()
+        if length.isdigit():return int(length)
+        if not r.truncated:return len(r.content)
+    return None
+
+# Advertised like a browser, so a server that negotiates formats can answer with AVIF or WebP.
+_IMAGE_ACCEPT='image/avif,image/webp,image/apng,image/*;q=0.8,*/*;q=0.5'
+
+def _probe_image_weight(tr,entry,limits):
+    """Range GET of the first bytes of one same-origin image: total size, served
+    format and pixel dimensions. Pixels are never decoded."""
+    cap=limits.IMAGE_WEIGHT_PROBE_BYTES
+    r,st=tr.get(entry['url'],max_bytes=cap,headers={'Range':f'bytes=0-{cap-1}','Accept':_IMAGE_ACCEPT})
+    entry['weight_probe']=True
+    if st!='ok':entry['fetch_status']=st;return st
+    if not r.ok:entry['fetch_status']=f'http_{r.status_code}';return st
+    ctype=r.headers.get('Content-Type','').split(';')[0].strip().lower()
+    if not ctype.startswith('image/'):entry['fetch_status']='not_image';return st
+    entry['fetch_status']='ok';entry['content_type']=ctype;entry['accept_sent']=True
+    if ctype=='image/svg+xml':entry['kind']='svg';return st
+    entry['kind']='raster'
+    dims=raster_dimensions(r.content)
+    if dims:entry['format'],entry['width'],entry['height']=dims
+    entry['bytes_total']=_total_size(r)
+    return st
+
+def _probe_text_file(tr,url,max_bytes):
+    """Presence of a plain-text companion file such as /llms-full.txt. Only the
+    start is read: the file can be large, and presence and type need no more."""
+    r,st=tr.get(url,max_bytes=max_bytes)
+    if st!='ok':return {'present':False,'status':'blocked' if st in ('blocked','robots_disallowed','cross_origin_redirect_blocked') else 'inaccessible','fetch_status':st}
+    if r.status_code in (404,410):return {'present':False,'status':'absent','http_status':r.status_code}
+    if not r.ok:return {'present':False,'status':'inaccessible','http_status':r.status_code}
+    head=r.text[:2048].lstrip().lower()
+    html='html' in r.headers.get('Content-Type','').lower() or head.startswith(('<html','<!doctype'))
+    valid=not html and len(r.text.strip())>=10 and urlsplit(r.final_url).path==urlsplit(url).path
+    return {'present':valid,'status':'ok' if valid else 'malformed','bytes_read':len(r.content),'truncated':r.truncated,
+            'served_html':html}
+
+def _verify_llms_links(tr,llms,pages,origin,limits):
+    """Does each page listed in llms.txt resolve? Crawled pages reuse their crawl
+    result; others get a bounded, robots-checked, same-origin GET. Cross-origin
+    links are listed but not requested."""
+    crawled={}
+    for p in pages:
+        for u in (p.url,p.final_url):
+            if u:crawled.setdefault(u,p.status_code)
+    checks=[];fetched=0;stopped=None
+    for link in llms.get('links',())[:100]:
+        try:url=normalize_url(link)
+        except ValueError:url=None
+        item={'url':link}
+        if not url:item['status']='invalid_url'
+        elif not same_origin(url,origin):item['status']='cross_origin_not_checked'
+        elif url in crawled:
+            code=crawled[url];item.update(status='ok' if code and 200<=code<300 else 'broken' if code in (404,410) else 'unverified',http_status=code,source='crawl')
+        elif tr.robots is not None and not tr.robots.can_fetch(USER_AGENT,url):item['status']='robots_disallowed'
+        elif _SENSITIVE_ROUTE.search(urlsplit(url).path):item['status']='sensitive_route_not_checked'
+        elif stopped or fetched>=limits.MAX_LLMS_LINK_CHECKS:item['status']=stopped or 'check_cap_reached'
+        else:
+            fetched+=1
+            r,st=tr.get(url,max_bytes=limits.LLMS_LINK_CHECK_BYTES)
+            if st in ('deadline','budget_exhausted'):stopped=st
+            if st!='ok':item.update(status='unverified',fetch_status=st)
+            else:item.update(status='ok' if r.ok else 'broken' if r.status_code in (404,410) else 'unverified',http_status=r.status_code,source='fetch')
+        checks.append(item)
+    llms['link_checks']=checks
+    llms['link_summary']=dict(Counter(c['status'] for c in checks),requests=fetched)
+
+def _probe_https(tr,origin,pages,limits,instrumentation,allow_private):
+    """One GET of https://<host>/robots.txt when pages were served over plain HTTP.
+    robots.txt is the one path every crawler may request, so the probe needs no
+    robots permission of its own, and it is charged to the shared request and byte
+    budget. Any HTTP answer over verified TLS means HTTPS is available."""
+    if urlsplit(origin).scheme!='http' or not any(p.status_code==200 for p in pages):return {'status':'not_applicable'}
+    if tr.requests>=limits.MAX_TOTAL_HTTP_REQUESTS or tr.bytes>=limits.MAX_TOTAL_BYTES:return {'status':'not_checked','fetch_status':'budget_exhausted'}
+    host=urlsplit(origin).hostname or ''
+    https_origin='https://'+(f'[{host}]' if ':' in host else host)
+    probe=Transport(https_origin,tr.deadline,limits,instrumentation,allow_private)
+    # Same host, so the same pacing: crawl-delay and the gap since the last request carry over.
+    probe.delay=tr.delay;probe.last_request=tr.last_request
+    url=https_origin+'/robots.txt'
+    r,st=probe.get(url,robots_exempt=True,max_bytes=4096)
+    tr.requests+=probe.requests;tr.bytes+=probe.bytes;tr.diagnostics.extend(probe.diagnostics)
+    if st=='ok':return {'status':'available','url':url,'http_status':r.status_code}
+    if st in ('deadline','budget_exhausted','blocked'):return {'status':'not_checked','url':url,'fetch_status':st}
+    return {'status':'unavailable','url':url,'fetch_status':st}
 
 def _acquire_media(tr,pages,pdf_links,origin,limits):
     """Facts locked in non-text media: bounded, same-origin, robots-checked GETs
@@ -150,6 +282,8 @@ def _acquire_media(tr,pages,pdf_links,origin,limits):
                     'kind':image_kind(url),'keywords':list(fact_keywords(tokens)),'excluded':is_excluded_image(tokens),
                     'same_origin':same_origin(url,origin),'fetch_status':'not_attempted'}
             if p.url not in entry['pages'] and len(entry['pages'])<5:entry['pages'].append(p.url)
+            if record.get('lcp'):entry['lcp']=True
+            if record.get('srcset') or record.get('picture_types'):entry['responsive']=True
     candidates=[e for e in images.values() if e['keywords']]
     large_svg=[e for e in images.values() if not e['keywords'] and not e['excluded'] and e['kind']=='svg'
                and ((e['width_attr'] or 0)>=300 or (e['height_attr'] or 0)>=200)]
@@ -165,6 +299,20 @@ def _acquire_media(tr,pages,pdf_links,origin,limits):
     for entry in queue[:limits.MAX_IMAGE_FETCHES]:
         if stopped:entry['fetch_status']=stopped;continue
         st=_fetch_image(tr,entry,limits)
+        if st in ('deadline','budget_exhausted'):stopped=st
+    # Image weight: the largest same-origin content images, likely LCP images first.
+    # Images named as facts keep their own fetch above; one already read there is
+    # measured from that response and never requested twice.
+    def icon_sized(e):
+        dims=[d for d in (e['width_attr'],e['height_attr']) if d is not None]
+        return bool(dims) and (min(dims)<48 or max(dims)<100)
+    weight=[e for e in images.values() if e['same_origin'] and not e['excluded'] and not e['keywords']
+            and e['kind']!='svg' and not icon_sized(e) and not _SENSITIVE_ROUTE.search(urlsplit(e['url']).path)
+            and (tr.robots is None or tr.robots.can_fetch(USER_AGENT,e['url']))]
+    weight.sort(key=lambda e:(not e.get('lcp'),-((e['width_attr'] or 0)*(e['height_attr'] or 0)),e['url']))
+    for entry in weight[:limits.MAX_IMAGE_WEIGHT_PROBES]:
+        if stopped:break
+        st=_probe_image_weight(tr,entry,limits)
         if st in ('deadline','budget_exhausted'):stopped=st
     pdfs=[]
     selected=0
@@ -197,6 +345,9 @@ def _acquire_media(tr,pages,pdf_links,origin,limits):
                        'pdfs_fetch_attempted':sum(attempted(d) for d in pdfs),
                        'pdfs_text_extracted':sum(d['extraction']=='ok' for d in pdfs),
                        'image_fetch_cap':limits.MAX_IMAGE_FETCHES,'pdf_fetch_cap':limits.MAX_PDF_FETCHES,
+                       'image_weight_candidates':len(weight),
+                       'image_weight_probes':sum(1 for e in images.values() if e.get('weight_probe')),
+                       'image_weight_probe_cap':limits.MAX_IMAGE_WEIGHT_PROBES,
                        # Per-item outcomes so an unfetched or unread item is always explained.
                        'image_fetch_outcomes':dict(Counter(e['fetch_status'] for e in kept)),
                        'pdf_outcomes':[{'url':d['url'],'fetch_status':d['fetch_status'],'extraction':d['extraction']}
@@ -238,7 +389,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     # Probe failures never justify fetching blocked pages, including under blanket disallow.
     if not conservative:
         maps=list(dict.fromkeys(rp.sitemaps or [urljoin(origin,'/sitemap.xml')]))[:4];seen_maps=set();locs=[];statuses=[]
-        lastmods={};url_entries=[0]
+        lastmods={};url_entries=[0];sitemap_hreflang={}
         while maps and len(seen_maps)<4:
             sm=urljoin(origin,maps.pop(0))
             if sm in seen_maps:continue
@@ -256,10 +407,11 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
                 else:
                     locs.extend(found[:200-len(locs)])
                     _collect_lastmod(tree,origin,lastmods,url_entries)
+                    _collect_sitemap_hreflang(tree,origin,sitemap_hreflang)
                 statuses.append('ok')
             except ET.ParseError:statuses.append('malformed')
         sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200],
-                 'url_entries':url_entries[0],'lastmod':lastmods}
+                 'url_entries':url_entries[0],'lastmod':lastmods,'hreflang':sitemap_hreflang}
         r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
         if st=='tls_certificate_error':probe_failures.append({'url':urljoin(origin,'/llms.txt'),'reason':st})
         if st!='ok':llms={'present':False,'status':'blocked' if st in ('blocked','robots_disallowed') else 'inaccessible'}
@@ -268,11 +420,15 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         else:
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
+            if valid:llms.update(parse_llms_txt(r.text,r.final_url))
+        llms['full']=_probe_text_file(tr,urljoin(origin,'/llms-full.txt'),limits.LLMS_FULL_PROBE_BYTES)
     queue=[(site_url,0)];visited=set();discovered={site_url};pages=[];blocked=set();pdf_links={}
+    sitemap_urls=[]
     for raw in sitemap['urls']:
         try:u=normalize_url(raw,origin)
         except ValueError:continue
-        if u and same_origin(u,origin):queue.append((u,1));discovered.add(u)
+        if u and same_origin(u,origin) and u not in discovered:sitemap_urls.append(u);discovered.add(u)
+    queue.extend((u,1) for u in stratify_by_section(sitemap_urls))
     while queue and monotonic()<tr.deadline and len(pages)<limits.MAX_PAGES_CRAWLED:
         url,depth=queue.pop(0)
         if url in visited:i.record_deduplicated();continue
@@ -301,13 +457,20 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             discovered.add(link)
             if link not in visited:queue.append((link,depth+1))
     if queue:i.record_skip('acquisition_limit_reached')
+    https_probe=_probe_https(tr,origin,pages,limits,i,allow_private_targets)
+    if llms.get('links'):_verify_llms_links(tr,llms,pages,origin,limits)
     media=_acquire_media(tr,pages,pdf_links,origin,limits)
     ok=[p for p in pages if p.status_code and 200<=p.status_code<300];analyzed=[p for p in ok if p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts')]
     timed=[p for p in pages if 'fetch_timeout' in p.warnings]
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(pages),'urls_fetched_ok':len(ok),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in pages),
          'urls_blocked':len(blocked),'urls_timed_out':len(timed),'urls_failed_other':sum(p.status_code is None and p not in timed for p in pages),
-         'urls_analyzed':len(analyzed),'urls_never_attempted':max(0,len(discovered)-len(pages)),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons))}
+         'urls_analyzed':len(analyzed),'urls_never_attempted':max(0,len(discovered)-len(pages)),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
+         # Representativeness of the sample: site sections (first path segment)
+         # discovered versus sections with at least one analyzed page.
+         'sections_discovered':len({site_section(u) for u in discovered}),
+         'sections_analyzed':len({site_section(p.final_url or p.url) for p in analyzed}),
+         'page_types_analyzed':sorted({p.page_type for p in analyzed if p.page_type})}
     i.end_stage('acquisition')
     return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'fetch_outcome':status,'attempt_outcomes':robots_attempts}),
-        freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings),
+        freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'https_probe':https_probe,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings),
         media_data=freeze_value(media))

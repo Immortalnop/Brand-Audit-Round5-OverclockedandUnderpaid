@@ -18,8 +18,13 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 - Env: `SEARCH_API_URL` (optional, plus `SEARCH_API_KEY`) enables external
   corroboration/footprint search in `freshness-corroboration`; without it those
   checks report `insufficient_evidence`, never a confirmed absence.
-- Network: outbound GET only, to the target site and (if configured) the
-  external search endpoint. No target credentials or mutating requests; provider credentials remain optional.
+- Env (optional): `PAGESPEED_API_KEY` adds Core Web Vitals field data;
+  `OFF_SITE_LOOKUP=0`, `KNOWLEDGE_GRAPH_LOOKUP=0` and `FIELD_VITALS_LOOKUP=0`
+  switch the third-party lookups off.
+- Network: outbound GET only, to the target site, to profiles and
+  knowledge-graph entries the site itself declares, and (if configured) the
+  external search endpoint and the PageSpeed Insights API. No target credentials
+  or mutating requests; provider credentials remain optional.
 
 ## Inputs
 - `site_url`: a URL or bare domain.
@@ -30,7 +35,9 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    independent analysis batch (crawl-render-audit checks plus the data-producing
    steps of freshness-corroboration and engagement-audit), runs the mandatory
    sequential `identify_important_facts` step, then runs the dependent batch
-   (freshness, corroboration, footprint, knowledge graph, engagement).
+   (freshness, corroboration, footprint, knowledge graph, off-site profiles,
+   Core Web Vitals, engagement). The optional Core Web Vitals field-data request
+   starts before acquisition so its latency overlaps the crawl.
 3. Findings are merged (`merge_findings.py`), prioritized
    (`prioritize_findings.py`), and validated (`validate_report.py`).
 4. Return the resulting report to the user as-is.
@@ -63,15 +70,40 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
   `KNOWLEDGE_GRAPH_LOOKUP=0` turns it off. A failed lookup is a limitation, never
   a finding. Sitemap `<lastmod>` and `Last-Modified` dates come from responses
   already fetched, so they cost no requests.
+- **Off-site profiles are bounded and optional**: sameAs and linked review
+  profiles get at most 8 GETs (2 per host) within 18 seconds, each host's
+  robots.txt read first (fail closed); `OFF_SITE_LOOKUP=0` turns it off.
+  Platforms that forbid crawlers or answer bots with a challenge are reported as
+  unverified, never as broken.
+- **Image weight checks are bounded**: at most 4 same-origin, robots-checked
+  Range GETs of 32 KiB read content-image size and format. A plain-HTTP site
+  gets one GET of `https://<host>/robots.txt`.
+- **llms.txt checks are bounded**: one probe of `/llms-full.txt` and at most 8
+  same-origin, robots-checked GETs of listed pages that were not already
+  crawled; links to other domains are never requested.
+- **Core Web Vitals field data is opt-in**: only with `PAGESPEED_API_KEY`, one
+  GET to the PageSpeed Insights API after reading its robots.txt, at most 60
+  seconds, running alongside the crawl. The key never appears in the report.
+  Without it, LCP, CLS and INP are estimated from markup and labelled as
+  estimates.
 
 ## Output
 A JSON report matching `references/report-schema.md`: `site`, `audited_at`,
 `summary`, `coverage`, `findings`, `recommendations`, `execution_status`
 (completed / completed_with_timeouts / degraded / partial_deadline_reached),
 `limitations` (plain-English, each tied to a real signal from the run -- never
-unconditional boilerplate), and `confidence` (the minimum of crawl
-completeness, identity confidence, and an execution penalty, with its method
-shown). Recommend-only -- no skill ever modifies a live site.
+unconditional boilerplate), and `confidence` (the minimum of sample
+representativeness, identity confidence, and an execution penalty, with its
+method shown). Sitemap URLs are crawled round-robin across site sections, so a
+bounded crawl samples every section first; `--max-pages N` (at most 100)
+crawls deeper with proportionally larger request and byte budgets. Recommend-only -- no skill ever modifies a live site.
+
+After validation the entrypoint adds two aids a non-expert can act on
+(`common/fix_snippets.py`, `prioritize_findings.annotate_action_plan`):
+ready-to-paste fix snippets (JSON-LD, llms.txt, canonical and Open Graph tags,
+location and contact markup) built only from observed facts, with every unknown value left
+as a listed REPLACE_WITH_ placeholder; and an impact x effort placement on every
+action, surfaced as `top_actions` (with one `start_here`) and `quick_wins`.
 
 Headless rendering runs in an isolated child process
 (`common/subprocess_isolation.py`) with a hard wall-clock kill, not just
