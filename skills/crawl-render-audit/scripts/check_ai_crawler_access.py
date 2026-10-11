@@ -3,6 +3,7 @@ When robots.txt could not be retrieved/parsed, directives are
 empty and this reports insufficient evidence rather than silently implying
 AI crawlers are allowed."""
 from models import skill_result, make_finding, apply_invariant_i1
+from ai_crawlers import SEARCH_CRAWLERS, describe, group_by_purpose, purpose_of, PURPOSE_LABELS
 
 
 def check_ai_crawler_access(artifacts, deadline):
@@ -26,17 +27,20 @@ def check_ai_crawler_access(artifacts, deadline):
             provenance={"skill": "crawl-render-audit", "script": "check_ai_crawler_access.py",
                         "rule_id": "ai-crawler-unchecked"},
         )))
-    search_bots = {"OAI-SearchBot", "Claude-SearchBot", "PerplexityBot", "Googlebot"}
+    search_bots = SEARCH_CRAWLERS
     search_blocked = sorted(set(blocked) & search_bots)
     if blocked:
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect" if search_blocked else "proactive_improvement", severity="high" if search_blocked else "low",
             status="confirmed", confidence=0.9,
-            title="AI crawlers are blocked by robots.txt" if search_blocked
+            title="AI search crawlers are blocked by robots.txt: " + ", ".join(search_blocked) if search_blocked
             else "robots.txt blocks training or user-fetch AI crawlers: " + ", ".join(blocked),
-            root_cause=f"robots.txt disallows: {', '.join(blocked)}. Search, model-training and user-triggered retrieval controls have different effects; training exclusions do not establish search exclusion.",
-            evidence=[{"type": "robots", "description": "AI crawler directives disallow access",
-                       "urls": [artifacts.site_url]}],
+            root_cause=f"robots.txt disallows ({describe(blocked)}). Search, model-training and user-triggered "
+                       "retrieval controls have different effects; training exclusions do not establish search "
+                       "exclusion.",
+            evidence=[{"type": "robots", "description": f"robots.txt disallows the {PURPOSE_LABELS[purpose]} "
+                                                        f"crawler(s) {', '.join(names)} for the start URL",
+                       "urls": [artifacts.site_url]} for purpose, names in group_by_purpose(blocked).items()],
             suggested_action={
                 "summary": "Review crawler access against the intended search and training policy",
                 "steps": [f"Review the {a} rule; change only if the exclusion is unintended" for a in blocked]
@@ -63,10 +67,11 @@ def check_ai_crawler_access(artifacts, deadline):
             severity="medium" if search_sections else "low", status="confirmed", confidence=0.9,
             title=("AI search crawlers are blocked from some site sections" if search_sections
                    else "robots.txt blocks training or user-fetch AI crawlers from some site sections"),
-            root_cause="robots.txt rules for " + ", ".join(sorted(sections)) + " disallow sections of the site that "
+            root_cause="robots.txt rules for " + describe(sections) + " disallow sections of the site that "
                        "it leaves open to other crawlers, so those sections cannot be read or cited by these crawlers",
             affected_pages=urls[:10],
-            evidence=[{"type": "robots", "description": f"{agent} may not fetch: " + ", ".join(us[:5]),
+            evidence=[{"type": "robots", "description": f"{agent} ({PURPOSE_LABELS[purpose_of(agent)]}) may not fetch: "
+                                                        + ", ".join(us[:5]),
                        "urls": list(us[:5])} for agent, us in sorted(sections.items())],
             suggested_action={
                 "summary": "Review the section rules for AI crawlers against the intended search and training policy",
@@ -81,4 +86,5 @@ def check_ai_crawler_access(artifacts, deadline):
         ))
 
     return skill_result("crawl-render-audit", findings=findings,
-                        metrics={"blocked_ai_crawlers": blocked, "ai_crawler_section_blocks": sorted(sections)})
+                        metrics={"blocked_ai_crawlers": blocked, "ai_crawler_section_blocks": sorted(sections),
+                                 "ai_crawler_purposes": {name: purpose_of(name) for name in directives}})

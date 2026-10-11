@@ -93,6 +93,23 @@ def _client_render_signs(page, js_required):
     return signs
 
 
+# Signs that every page of one framework carries together: a Next.js or Nuxt
+# page ships both its bundle and its serialized state, even when the server
+# rendered all of its content. Together they are one observation, not two.
+_CORRELATED_SIGNS = frozenset({"framework_bundle", "serialized_state"})
+
+
+def independent_sign_count(signs):
+    """How many independent signs of client-side rendering a set of signs holds:
+    a framework bundle and serialized page state count once between them. An
+    empty mount point, a JavaScript-required notice and page text held only in
+    script data are each independent of the framework's own artifacts."""
+    count = len(signs)
+    if _CORRELATED_SIGNS <= set(signs):
+        count -= 1
+    return count
+
+
 def _noscript_summary(pages):
     """Per-page noscript observations for evidence and metrics."""
     js_required, fallback = [], []
@@ -301,7 +318,9 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
         # (_client_render_signs). With none, the page is reported only as
         # insufficient evidence. With one, the gap is a suspected medium defect;
         # with two or more independent signs it is high, since each sign alone has
-        # innocent explanations but together they describe an app shell.
+        # innocent explanations but together they describe an app shell. A
+        # framework bundle and its serialized state count as one sign
+        # (independent_sign_count): they ship together on server-rendered pages too.
         by_url = {p.url: p for p in artifacts.pages}
         signs = {u: _client_render_signs(by_url[u], u in js_required_pages) for u in heuristic_gap_pages}
         shells = [u for u in heuristic_gap_pages if signs[u]]
@@ -313,7 +332,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                 urls = [u for u in shells if kind in signs[u]]
                 if urls:
                     evidence.append({"type": kind, "description": description, "urls": urls[:10]})
-            strongest = max(len(signs[u]) for u in shells)
+            strongest = max(independent_sign_count(signs[u]) for u in shells)
             severity = "high" if strongest >= 2 else "medium"
             findings.append(make_finding(
                 category="ai_discoverability", finding_type="defect", severity=severity,

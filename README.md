@@ -11,7 +11,7 @@ Validates the target URL, performs a single bounded acquisition (robots.txt, sit
 ### 2. `crawl-render-audit`
 
 Analyzes the acquisition snapshot for crawlability and machine-readability issues:
-- Robots.txt and AI-crawler access (GPTBot, ChatGPT-User, etc.)
+- Robots.txt and AI-crawler access for 18 crawlers, each labelled search (OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot, Applebot), user-requested fetch (ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User) or training (GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot, Bytespider); a whole-site block of a search crawler is high, any other block low
 - Sitemap presence; llms.txt presence, format (H1 title, Markdown links in H2 sections) and dead links it lists; the companion `llms-full.txt` is probed too
 - Recursive JSON-LD structured data inspection and schema-type coverage
 - Citation-oriented markup: incomplete or inconsistent FAQPage, HowTo, Review and AggregateRating markup, and pages that show questions, steps or ratings without it
@@ -39,6 +39,8 @@ Analyzes page content quality and entity identity:
 - sameAs and profile links: invalid values (share links, platform home pages, the site itself, relative URLs) without any request; then, for the rest, whether each profile resolves and names the brand or the site (robots-checked GETs, at most 8 profiles and 2 per host, 18-second budget; off with `OFF_SITE_LOOKUP=0`). Platforms that forbid crawlers or answer bots with a challenge are reported as unverified, never as broken
 - Review and directory presence: Trustpilot, G2, Capterra, Google Business Profile, Yelp and similar profiles linked from the site or sameAs, plus one "reviews" search when a search provider is configured
 - Authorship and E-E-A-T on articles: a byline, an Article author typed as a Person, a profile link and credentials
+- Expired offers: "sale ends", "offer valid until" and similar wording followed by a full date that has passed, and Offer `priceValidUntil` or `validThrough` in the past (editorial, legal, archive and event pages are skipped)
+- On-site fact consistency: a telephone, postal code, opening hours or product price in JSON-LD that the visible pages contradict, and one organization or product (same @id, organization name or product GTIN) with two values for one property on different pages in the same language
 - Answer-content quality (title-body alignment, keyword stuffing, brand definition)
 - External footprint and corroboration (when search is available)
 
@@ -46,7 +48,7 @@ Analyzes page content quality and entity identity:
 
 Analyzes on-site visitor engagement and navigation:
 - Site graph construction (internal link structure)
-- Orphan pages, isolated clusters, and dead-end detection
+- Orphan pages and isolated clusters (pages keyed by their final URL after redirects; reported only when the crawl reached every discovered URL, since a sample cannot show what unfetched pages link to), and dead-end detection
 - Breadcrumb and orientation analysis
 - Internal discoverability and generic anchor text
 - Visitor retention opportunities
@@ -100,10 +102,13 @@ All four analysis skills read the same immutable acquisition snapshot, so nothin
 
 Every suggested action carries an impact (from severity and evidence), an effort and its impact x effort quadrant. `top_actions` marks one `start_here` item and `quick_wins` lists the cheap, valuable fixes. For markup fixes (JSON-LD, llms.txt, canonical and Open Graph tags, location and contact markup) the action includes a ready-to-paste `snippet` filled from what the audit observed; anything it did not observe is a listed `REPLACE_WITH_` placeholder, never a guess.
 
+`recommendations` link to proactive findings by `finding_id` rather than copying their evidence and steps; only the baseline maintenance items carry their own action. `whats_working` lists the checks that ran and passed (for example "All 12 pages checked have a document title"). A check appears there only when its skill finished, no finding or recommendation carries its check IDs, and the stated observation holds on the crawled pages, so the section never hides a skipped check or contradicts a finding.
+
 ## Quick start
 
 ```bash
 python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com > report.json
+python3 skills/audit-orchestrator/scripts/run_audit.py --max-pages 100 https://example.com > report.json ##allows you to crawl for 100 pages instead of default 50 pages. Can't go any higher, needs a code change then.
 python3 common/report_markdown.py report.json        # optional: writes report.md
 ```
 
@@ -115,7 +120,7 @@ python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in --out results.j
 
 `--out` checks the path before the audit starts, writes the file in one step (a failed run never leaves half a report), and prints the report to stdout instead if the file cannot be written. `examples/sample-report.json` is a full report made this way.
 
-The Markdown report is built from the JSON report alone, with no new requests: confidence and why, a summary, where to start, top actions, quick wins, every finding with its evidence, steps and ready-to-paste fix, and what the audit could not check. It reads UTF-8 or UTF-16 JSON (PowerShell's `>` writes UTF-16) and always writes UTF-8. Text from the audited site is escaped, so it cannot add headings, links, table columns or HTML. Pass a second path to name the file, or `-` to print it.
+The Markdown report is built from the JSON report alone, with no new requests: confidence and why, a summary, where to start, top actions, quick wins, every finding with its evidence, steps and ready-to-paste fix, what is working, and what the audit could not check. It reads UTF-8 or UTF-16 JSON (PowerShell's `>` writes UTF-16) and always writes UTF-8. Text from the audited site is escaped, so it cannot add headings, links, table columns or HTML. Pass a second path to name the file, or `-` to print it.
 
 No installation required beyond Python 3.10+ standard library. No pip install, no API keys, no browser download.
 
@@ -154,6 +159,7 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 ├── common/                        <- shared library imported by every skill
 │   ├── __init__.py
 │   ├── action_catalog.py          <- baseline suggested-action templates per category
+│   ├── ai_crawlers.py             <- AI and search crawlers, each labelled search, training or user fetch
 │   ├── capabilities.py            <- runtime capability detection (rendering, search)
 │   ├── check_catalog.py           <- single source of check_id -> mechanism/fix wording
 │   ├── check_helpers.py
@@ -192,6 +198,7 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 │   │       ├── prioritize_findings.py     <- severity ordering
 │   │       ├── generate_recommendations.py
 │   │       ├── validate_report.py         <- schema + invariant enforcement
+│   │       ├── whats_working.py           <- checks that ran and passed, with evidence
 │   │       ├── execution_summary.py       <- status/limitations/confidence
 │   │       └── diagnose_transport.py
 │   ├── crawl-render-audit/        <- crawlability + machine-readability checks
@@ -227,6 +234,8 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 │   │       ├── check_knowledge_graph.py   <- Wikidata/Wikipedia link verification
 │   │       ├── check_off_site_profiles.py <- sameAs profiles and review platforms
 │   │       ├── analyze_authorship.py      <- article authors and credentials (E-E-A-T)
+│   │       ├── check_offer_expiry.py      <- offers whose stated end date has passed
+│   │       ├── check_fact_consistency.py  <- JSON-LD facts vs visible text, and across pages
 │   │       ├── resolve_entity_identity.py
 │   │       ├── analyze_answer_content.py
 │   │       ├── corroborate_claims.py
@@ -268,6 +277,8 @@ python3 -m pytest tests/test_points_6_11.py  # concrete titles, answer formats, 
 python3 -m pytest tests/test_precision_traps.py  # false-positive traps, severity gate, rendering-gap evidence
 python3 -m pytest tests/test_benchmark_tools.py  # measurement harness and fixture recall
 python3 -m pytest tests/test_robustness.py  # blocked and empty runs, bot challenges, encodings, --out
+python3 -m pytest tests/test_whats_working.py  # passed checks: never skipped, never contradicting a finding
+python3 -m pytest tests/test_offers_facts_crawlers.py  # expired offers, fact consistency, labelled AI crawlers
 ```
 
 `tests/conftest.py` switches the third-party lookups off for every test, so the suite never leaves the machine; tests of those lookups inject a fake transport.

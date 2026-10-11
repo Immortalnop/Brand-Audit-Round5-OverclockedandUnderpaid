@@ -26,7 +26,7 @@ def is_intentional_exclusion_url(url: str) -> bool:
         # Pagination & facet / listing filters
         if re.search(r'/(page|p)/\d+', path) or re.search(r'(^|[?&])(page|p|sort|order|filter|facet)=', query):
             return True
-        if any(s in path for s in ('/projects-programs', '/facet/', '/filter/')):
+        if any(s in path for s in ('/facet/', '/filter/')):
             return True
 
         # Fragment / component / modal / partial endpoints
@@ -113,10 +113,15 @@ def analyze_directives(artifacts, deadline):
                     where.append('meta ' + agent)
             if header and ('max-snippet:0' in re.sub(r'\s+', '', header) or 'max-image-preview:none' in re.sub(r'\s+', '', header)):
                 where.append('X-Robots-Tag: ' + header)
-            sev = 'high'
+            # Severity follows page scope, as for noindex and nosnippet above: on
+            # the home page the directive usually comes from a site-wide template,
+            # on one inner page it limits only that page.
+            sev = 'high' if is_root else 'low'
             findings.append(make_finding(
-                category='ai_discoverability', finding_type='defect', severity=sev, status='confirmed', confidence=0.95,
-                title='Sampled page suppresses snippet or preview eligibility',
+                category='ai_discoverability', finding_type='defect', severity=sev, status='confirmed',
+                confidence=0.95 if is_root else 0.85,
+                title='Homepage suppresses snippet or preview eligibility' if is_root
+                else 'Sampled content page suppresses snippet or preview eligibility',
                 root_cause='The observed ' + ' and '.join(snippet_hits) + ' directive keeps the page indexed but removes the snippet or preview a supporting consumer would quote, reducing the chance a clear fact is surfaced.',
                 evidence=[{'type': 'indexing_directive', 'description': '; '.join(where) or '; '.join(snippet_hits), 'urls': [p.url]}],
                 suggested_action={

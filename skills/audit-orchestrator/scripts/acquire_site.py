@@ -19,6 +19,7 @@ from pdf_text import extract_pdf_text
 from llms_txt import parse_llms_txt
 from auth_pages import login_page_signals
 from bot_challenge import challenge_signals
+from ai_crawlers import AI_CRAWLER_NAMES
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -191,11 +192,12 @@ def _collect_sitemap_hreflang(tree,origin,out,cap=200):
         except ValueError:continue
         if key:out.setdefault(key,alternates)
 
-AI_CRAWLERS=('OAI-SearchBot','ChatGPT-User','GPTBot','Claude-SearchBot','ClaudeBot','Googlebot','Google-Extended','PerplexityBot','CCBot')
+# Crawler tokens and their purposes (search, training, user fetch): common/ai_crawlers.py.
+AI_CRAWLERS=AI_CRAWLER_NAMES
 
 def _ai_crawler_directives(rp,origin,conservative):
     if conservative:return {}
-    return {a:'allow' if rp.can_fetch(a,origin) else 'disallow' for a in AI_CRAWLERS}
+    return {a:'allow' if rp.can_fetch_token(a,origin) else 'disallow' for a in AI_CRAWLERS}
 
 def _ai_crawler_section_blocks(rp,urls,conservative,cap=40):
     """{crawler: [sample URLs]} for site sections an AI crawler may not fetch while
@@ -209,7 +211,7 @@ def _ai_crawler_section_blocks(rp,urls,conservative,cap=40):
         if section and section not in samples and len(samples)<cap:samples[section]=u
     out={}
     for agent in AI_CRAWLERS:
-        blocked=[u for _,u in sorted(samples.items()) if rp.can_fetch('*',u) and not rp.can_fetch(agent,u)]
+        blocked=[u for _,u in sorted(samples.items()) if rp.can_fetch('*',u) and not rp.can_fetch_token(agent,u)]
         if blocked:out[agent]=blocked[:10]
     return out
 

@@ -131,7 +131,9 @@ def _large_result(): return 'x'*2000000
 
 
 def test_process_large_result_does_not_deadlock():
-    r=run_isolated(_large_result,timeout_s=3)
+    # A deadlock never returns, so a generous limit still catches it; 3 s was
+    # shorter than a Windows spawn start under full-suite load.
+    r=run_isolated(_large_result,timeout_s=30)
     assert r.ok and len(r.value)==2000000
 
 

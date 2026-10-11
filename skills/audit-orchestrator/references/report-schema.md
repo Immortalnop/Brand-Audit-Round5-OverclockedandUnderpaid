@@ -6,10 +6,38 @@ low, proactive_improvements, insufficient_evidence_items), coverage
 (pages_discovered, pages_analyzed, pages_skipped, rendered_pages,
 external_claims_checked, external_footprint_queries, external_fetches,
 identity_confidence, memory_budget_used_mb, runtime_seconds,
-deadline_reached), warnings, findings (see finding-schema.md).
+deadline_reached), warnings, findings (see finding-schema.md),
+recommendations, whats_working.
+
+Recommendations come in two shapes. A proactive finding is linked, not
+copied: `{"id": "R-...", "finding_id": "F-...", "check_id", "check_ids",
+"category", "finding_type": "proactive_improvement", "title", "status",
+"provenance": {"source": "finding_reference"}}`. Its evidence, steps, action
+plan and snippet are on the finding it names. Validation drops a link whose
+finding is not in the report. The other recommendations are baseline
+maintenance items for categories with no finding; they have the full finding
+fields and their own `suggested_action`.
+
+`whats_working` lists the checks that ran and passed, in a fixed order:
+`{"id": "W-...", "check", "title", "check_ids", "evidence", "pages_checked"}`.
+A check is listed only when every skill that runs it finished with status
+success, no finding or recommendation carries any of its `check_ids`, and the
+observation in `evidence` holds on the snapshot (for example, every page
+checked has a title). A check with nothing to look at is not listed.
+`pages_checked` is null for robots.txt, sitemap and llms.txt checks. When no
+page was analyzed only those three kinds can appear; an audit that did not
+finish has an empty list. Implemented in
+`skills/audit-orchestrator/scripts/whats_working.py`.
 
 
-Every finding and recommendation also exposes a stable `check_id`, `mechanism`,
+Coverage also reports `offer_expiry` (`offer_expiry_pages_scanned`,
+`offer_deadlines_found`, `expired_offer_pages`, `offer_expiry_reference_date`),
+`fact_consistency` (`facts_compared_with_text`, `markup_text_mismatches`,
+`cross_page_conflicts`, `fact_consistency_pages`) and `ai_crawler_purposes`
+(crawler name to `search`, `training`, `user_fetch` or `unclassified`, from
+common/ai_crawlers.py).
+
+Every finding and baseline recommendation also exposes a stable `check_id`, `mechanism`,
 `implementation_detail` and `expected_outcome` from common/check_catalog.py.
 Merged findings include `check_ids` for all contributing rules. Per-report `id`
 is unchanged. A finding whose severity the severity gate lowered (see
@@ -53,7 +81,7 @@ footer. Any doubt keeps the page in scope. Coverage reports
 Login pages count toward the page cap and toward `pages_fetched_attempted` and
 `pages_fetched_ok`, never toward `pages_analyzed`.
 
-Action plan: every finding's and recommendation's `suggested_action` also
+Action plan: every finding's and baseline recommendation's `suggested_action` also
 carries `impact` (low, medium, high), `effort`, `quadrant` (quick_win,
 major_project, fill_in, deprioritize), `quadrant_label` and `quick_win`.
 Impact comes from severity, capped at medium for suspected items and low for

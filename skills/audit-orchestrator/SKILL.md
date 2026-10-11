@@ -134,6 +134,14 @@ location and contact markup) built only from observed facts, with every unknown 
 as a listed REPLACE_WITH_ placeholder; and an impact x effort placement on every
 action, surfaced as `top_actions` (with one `start_here`) and `quick_wins`.
 
+`recommendations` link to proactive findings by `finding_id` instead of
+copying them; only baseline maintenance items carry their own action.
+`whats_working` (`scripts/whats_working.py`) lists the checks that ran and
+passed, each with the observation that shows it. A check is listed only when
+its skill finished, no finding or recommendation carries its check IDs, and the
+observation holds on the snapshot, so it never hides a skipped check or
+contradicts a finding.
+
 Headless rendering runs in an isolated child process
 (`common/subprocess_isolation.py`) with a hard wall-clock kill, not just
 Playwright's own cooperative per-navigation timeout -- a genuinely hung browser

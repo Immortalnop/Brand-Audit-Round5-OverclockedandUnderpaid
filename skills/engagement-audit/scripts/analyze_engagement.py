@@ -2,10 +2,7 @@
 Consumes artifacts, site_graph, and rendering_result; runs in the dependent batch
 so it overlaps external-analysis work; never writes to either input.
 """
-from models import skill_result, make_finding, coverage_ratio, scale_confidence
-
-_ANALYZED_KEY = "urls_analyzed"
-_DISCOVERED_KEY = "urls_discovered"
+from models import skill_result, make_finding
 
 
 def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
@@ -17,40 +14,24 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
     isolated_clusters = graph.get("isolated_clusters", [])
     crawl_scope = graph.get("crawl_scope", {"complete": True, "urls_never_attempted": 0})
     crawl_complete = crawl_scope.get("complete", True)
-    # Proportional evidence-completeness ratio (Round-3 review item 1): a crawl
-    # that reached 45/50 discovered pages is much stronger evidence for an orphan
-    # finding than one that reached 5/50, even though both are technically
-    # "incomplete". This replaces the previous complete/incomplete binary
-    # (confidence 0.75 vs 0.5) with a proportional scale; status (confirmed vs.
-    # suspected) stays binary since that's a statement about certainty of kind,
-    # not degree.
-    graph_ratio = coverage_ratio(
-        crawl_scope.get(_ANALYZED_KEY, len(graph.get("nodes", {}))),
-        crawl_scope.get(_DISCOVERED_KEY, len(graph.get("nodes", {}))),
-    )
 
-    if orphans:
-        # Orphan status is a statement about the crawled subgraph only. When the
-        # crawl didn't reach every discovered URL, a page that looks orphaned here
-        # may actually be linked from a page that was never fetched -- so this is
-        # reported as suspected, with a note on the incomplete scope, rather than
-        # confirmed, whenever coverage is incomplete.
-        status = "confirmed" if crawl_complete else "suspected"
-        confidence = scale_confidence(0.75, graph_ratio)
-        root_cause = "Pages exist but are not linked from anywhere else on the site"
-        if not crawl_complete:
-            root_cause += (
-                f" (within the {len(graph.get('nodes', {}))} pages actually crawled; "
-                f"{crawl_scope.get('urls_never_attempted', 0)} discovered URLs were never fetched, "
-                "so a linking page may simply not have been crawled)"
-            )
+    # Orphan and cluster status is a statement about the crawled subgraph only.
+    # A complete crawl makes it a whole-site statement. A sampled crawl cannot:
+    # a page nothing in the sample links to may be linked from a page that was
+    # never fetched, and even its own section index may reach it only through
+    # pagination or a "load more" script (build_site_graph.py). So both are
+    # reported on complete crawls only; on a sample they are counted in metrics.
+    reported_orphans = orphans if crawl_complete else []
+    if reported_orphans:
         findings.append(make_finding(
             category="engagement", finding_type="defect", severity="medium",
-            status=status, confidence=confidence,
+            status="confirmed", confidence=0.75,
             title="Orphan pages with no internal links pointing to them",
-            root_cause=root_cause,
-            evidence=[{"type": "site_graph", "description": f"{len(orphans)} orphan pages found",
-                       "urls": orphans[:10]}],
+            root_cause="Pages exist but are not linked from anywhere else on the site",
+            evidence=[{"type": "site_graph",
+                       "description": f"{len(reported_orphans)} page(s) that no crawled page links to; the crawl "
+                                      "reached every discovered URL",
+                       "urls": reported_orphans[:10]}],
             suggested_action={
                 "summary": "Add internal links to orphan pages from relevant navigation or content",
                 "steps": ["Identify high-value orphan pages", "Link them from navigation or related content"],
@@ -62,22 +43,18 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
                         "rule_id": "orphan-pages"},
         ))
 
-    if isolated_clusters:
+    if isolated_clusters and crawl_complete:
         # A disconnected cluster of pages (reachable from each other, but not from
         # the main site graph) is a bigger structural problem than N unrelated
         # orphan pages, and calls for a different fix (link the section into
         # navigation, not link each page individually).
         total_isolated_pages = sum(len(c) for c in isolated_clusters)
-        status = "confirmed" if crawl_complete else "suspected"
-        confidence = scale_confidence(0.7, graph_ratio)
         findings.append(make_finding(
             category="engagement", finding_type="defect", severity="medium",
-            status=status, confidence=confidence,
+            status="confirmed", confidence=0.7,
             title="Isolated page clusters not reachable from the main site structure",
             root_cause=f"{len(isolated_clusters)} cluster(s) totalling {total_isolated_pages} page(s) are "
-                       "internally linked to each other but have no path from the main navigation/homepage"
-                       + ("" if crawl_complete else " (crawl coverage was incomplete, so this may include "
-                                                     "clusters only reachable from uncrawled pages)"),
+                       "internally linked to each other but have no path from the main navigation/homepage",
             evidence=[{"type": "site_graph", "description": f"Isolated cluster of {len(c)} page(s)",
                        "urls": c[:10]} for c in isolated_clusters[:5]],
             suggested_action={
@@ -176,10 +153,16 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
         ))
 
     gap_pages = rendering_result.get("metrics", {}).get("raw_rendered_gap_pages", [])
+    warnings = []
+    if not crawl_complete and graph.get("nodes"):
+        warnings.append("Orphan pages and isolated page clusters were not assessed: the crawl analyzed a sample, "
+                        "and a page the sample does not link to may be linked from a page that was not fetched.")
     return skill_result(
-        "engagement-audit", findings=findings,
-        metrics={"orphan_pages": len(orphans), "dead_end_pages": len(dead_ends),
+        "engagement-audit", findings=findings, warnings=warnings,
+        metrics={"orphan_pages": len(orphans), "orphan_pages_reported": len(reported_orphans),
+                 "dead_end_pages": len(dead_ends),
                  "isolated_clusters": len(isolated_clusters),
+                 "isolated_clusters_reported": len(isolated_clusters) if crawl_complete else 0,
                  "rendering_gap_pages": len(gap_pages),
                  "crawl_scope_complete": crawl_complete},
         coverage={"pages_analyzed": len(graph.get("nodes", {})), "pages_skipped": 0,

@@ -1,6 +1,7 @@
 # Crawl & render checklist
 
-- robots.txt: general and AI-crawler-specific directives. Fetch status is one
+- robots.txt: general and AI-crawler-specific directives for the labelled
+  crawlers in common/ai_crawlers.py (search, user-requested fetch, training). Fetch status is one
   of `ok` / `absent` (404, allow-all) / `timeout` / `inaccessible` / `malformed`
   / `blocked` (failed the SSRF check). Only `ok` and `absent` produce a
   confirmed allow/disallow verdict; every other status is `insufficient_evidence`,

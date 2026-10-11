@@ -29,12 +29,19 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                               'mechanism': 'When independent sources describe the brand differently from the '
                                            'site, retrieval surfaces the discrepancy and confidence drops '
                                            'across every associated fact.'},
- 'ai-crawler-blocked': {'expected_outcome': 'Improves the affected sampled pages when the observed condition '
-                                            'is confirmed.',
-                        'implementation_detail': 'Review the affected evidence and apply the page-specific '
-                                                 'action steps; verify the change by repeating the audit.',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
+ 'ai-crawler-blocked': {'expected_outcome': 'The search crawlers the site wants to be cited by can fetch it '
+                                            'again, while deliberate training opt-outs stay in place. Access '
+                                            'makes citation possible, not certain.',
+                        'implementation_detail': 'Compare each disallowed user-agent with the intended policy: '
+                                                 'remove or narrow the Disallow rule for search crawlers that '
+                                                 'should cite the site (OAI-SearchBot, Claude-SearchBot, '
+                                                 'PerplexityBot, Googlebot), and keep deliberate training '
+                                                 'opt-outs (GPTBot, ClaudeBot, Google-Extended, CCBot) as they '
+                                                 'are.',
+                        'mechanism': 'A robots.txt Disallow for an AI search crawler keeps the whole site out '
+                                     'of that assistant\'s search index, so it cannot be retrieved or cited '
+                                     'there. A Disallow for a training or user-fetch crawler only withholds '
+                                     'the content from model training or on-demand fetches.'},
  'ai-crawler-section-blocked': {'expected_outcome': 'Content sections become readable by the AI crawlers that '
                                                     'cite sources, where that is the intended policy.',
                                 'implementation_detail': 'Remove or narrow the Disallow rules for the listed AI '
@@ -42,10 +49,14 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                          'exclusion is deliberate.',
                                 'mechanism': 'An AI crawler that robots.txt disallows on a section never reads its '
                                              'pages, so assistants that rely on that crawler cannot quote them.'},
- 'ai-crawler-unchecked': {'expected_outcome': 'Enables a real verdict',
-                          'implementation_detail': 'Re-run once reachable',
-                          'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                       'sampled pages.'},
+ 'ai-crawler-unchecked': {'expected_outcome': 'Crawlers, and the next audit, get a definite answer on '
+                                              'which AI crawlers may fetch the site.',
+                          'implementation_detail': 'Serve /robots.txt as plain text with a 200 status (or a '
+                                                   'clean 404 when there are no rules), without a timeout, a '
+                                                   'server error or a bot challenge, then re-run the audit.',
+                          'mechanism': 'Without a readable robots.txt the audit cannot tell which AI crawlers '
+                                       'the site admits, and crawlers that cannot read the file may hold back '
+                                       'from the whole site.'},
  'answer-headings': {'expected_outcome': 'May improve answer readability; questions are not required for '
                                          'retrieval or citation.',
                      'implementation_detail': 'Review audience questions and add useful question headings '
@@ -135,12 +146,39 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                             'changes.',
                    'mechanism': 'Slow observed HTML retrieval reduces the amount of evidence available '
                                 'within a deadline.'},
- 'footprint-signal': {'expected_outcome': 'Improves the affected sampled pages when the observed condition '
-                                          'is confirmed.',
-                      'implementation_detail': 'Review the affected evidence and apply the page-specific '
-                                               'action steps; verify the change by repeating the audit.',
-                      'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                                   'pages.'},
+ 'expired-offer': {'expected_outcome': 'Assistants and visitors see only offers that are still valid.',
+                   'implementation_detail': 'Remove or update each offer whose end date has passed, correct the '
+                                            'matching Offer priceValidUntil or validThrough, and give every '
+                                            'promotion a step that takes it down when it ends.',
+                   'mechanism': 'An offer whose stated end date has passed still reads as current: an assistant '
+                                'that quotes the page repeats a deal that no longer applies, and a visitor who '
+                                'acts on it is turned away.'},
+ 'fact-inconsistent-across-pages': {'expected_outcome': 'Every page states the same value, so assistants repeat '
+                                                        'it with confidence.',
+                                    'implementation_detail': 'Decide which value is current for each listed '
+                                                             'property, correct the pages that state the other '
+                                                             'one, and emit organization and product markup '
+                                                             'from one shared source.',
+                                    'mechanism': 'When one organization or product has two values for the same '
+                                                 'property on different pages, an assistant cannot tell which is '
+                                                 'current and may repeat either, or trust neither.'},
+ 'fact-markup-mismatch': {'expected_outcome': 'Assistants and visitors get one answer for each fact.',
+                          'implementation_detail': 'Make the JSON-LD and the visible text state the same '
+                                                   'telephone, postal code, opening hours and price, ideally by '
+                                                   'generating both from one data source.',
+                          'mechanism': 'Assistants read structured data and visible text; when the markup states '
+                                       'a telephone, postal code, opening time or price the page contradicts, '
+                                       'they meet two answers and may quote the wrong one.'},
+ 'footprint-signal': {'expected_outcome': 'More independent domains name the brand consistently, giving '
+                                          'assistants sources that corroborate what the site says.',
+                      'implementation_detail': 'List the brand under its exact site name on relevant '
+                                               'directories and review platforms, link those profiles from '
+                                               'Organization sameAs, and pursue press or partner coverage on '
+                                               'independent domains.',
+                      'mechanism': 'Assistants corroborate a brand through independent sources: a brand '
+                                   'named on few domains other than its own rests on its own claims, while '
+                                   'mentions spread across several independent domains make its facts easier '
+                                   'to confirm.'},
  'h1': {'expected_outcome': 'Makes the page topic easier to identify.',
         'implementation_detail': 'Add a descriptive page heading when the template lacks an equivalent '
                                  'accessible title.',
@@ -191,10 +229,15 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                 'site.',
                        'mechanism': 'A group of pages that links only to itself cannot be reached from the rest '
                                     'of the site, so crawlers and visitors rarely find it.'},
- 'llms-txt-unchecked': {'expected_outcome': 'Enables a real presence/absence verdict',
-                        'implementation_detail': 'Check that /llms.txt responds. Re-run the audit.',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
+ 'llms-txt-unchecked': {'expected_outcome': 'Tools that read llms.txt get the file or a clear absence, '
+                                            'and the next audit can say whether it is present and valid.',
+                        'implementation_detail': 'Serve /llms.txt as a plain-text Markdown file at that exact '
+                                                 'path with a 200 status, or answer 404 when the site has '
+                                                 'none; do not redirect it or answer with an HTML page. Then '
+                                                 're-run the audit.',
+                        'mechanism': '/llms.txt answered with an error, a block, a redirect or an HTML page '
+                                     'instead of a text file, so tools that look for it find no usable guide '
+                                     'and the audit cannot tell whether one is meant to exist.'},
  'long-paragraphs': {'expected_outcome': 'Improves readability of the observed long passages.',
                      'implementation_detail': 'Split dense passages by topic and use appropriate lists or '
                                               'tables.',
@@ -309,7 +352,7 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                       'schema is mandatory for indexing or citations.',
                                   'implementation_detail': 'Review the contact classification, then add '
                                                            'truthful ContactPage or applicable organization '
-                                                           'markup markup only where applicable and validate '
+                                                           'markup only where applicable and validate '
                                                            'it.',
                                   'mechanism': 'Page-appropriate structured data can make visible facts more '
                                                'explicit to supporting consumers.'},
@@ -370,11 +413,16 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                            'only if unintended, preserving private paths.',
                   'mechanism': 'The observed robots policy disallows this audit crawler for the evaluated '
                                'URL.'},
- 'robots-unreachable': {'expected_outcome': 'Enables a real crawl-permission verdict',
-                        'implementation_detail': 'Check that robots.txt responds quickly with a 200 or a '
-                                                 'clean 404. Re-run the audit once robots.txt is reachable.',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
+ 'robots-unreachable': {'expected_outcome': 'Crawlers read a definite crawl policy, and the next audit '
+                                            'can assess the site\'s pages.',
+                        'implementation_detail': 'Make /robots.txt answer quickly with a 200 and a plain-text '
+                                                 'body (or a clean 404 when there are no rules), with no '
+                                                 'server error, timeout or bot challenge. Re-run the audit '
+                                                 'once it does.',
+                        'mechanism': 'Crawlers that cannot read robots.txt cannot learn their permissions: '
+                                     'a server error or timeout makes major search crawlers pause crawling '
+                                     'until the file can be read, and this audit fetched no page without '
+                                     'known permission.'},
  'scannability': {'expected_outcome': 'Makes individual topics easier to locate and summarize.',
                   'implementation_detail': 'Divide long content into meaningful sections with descriptive '
                                            'headings.',

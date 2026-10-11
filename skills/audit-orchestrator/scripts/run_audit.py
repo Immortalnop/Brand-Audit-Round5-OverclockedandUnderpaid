@@ -52,8 +52,9 @@ from acquire_site import acquire_site
 from merge_findings import merge_findings
 from prioritize_findings import prioritize_findings, annotate_action_plan, top_actions, quick_wins
 from fix_snippets import attach_fix_snippets
-from generate_recommendations import generate_recommendations
+from generate_recommendations import generate_recommendations, is_finding_reference
 from validate_report import validate_report
+from whats_working import whats_working
 from execution_summary import (derive_execution_status, derive_limitations, overall_confidence,
                                identity_resolution, unfinished_confidence)
 
@@ -86,6 +87,8 @@ from assess_external_footprint import assess_external_footprint
 from check_knowledge_graph import check_knowledge_graph
 from check_off_site_profiles import check_off_site_profiles
 from analyze_authorship import analyze_authorship
+from check_offer_expiry import check_offer_expiry
+from check_fact_consistency import check_fact_consistency
 
 from build_site_graph import build_site_graph
 from analyze_engagement import analyze_engagement
@@ -172,6 +175,8 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
         "answer_format": lambda: analyze_answer_format(artifacts, deadline),
         "context_signals": lambda: analyze_context_signals(artifacts, deadline),
         "context_retention": lambda: analyze_context_retention(artifacts, deadline),
+        "offer_expiry": lambda: check_offer_expiry(artifacts, deadline),
+        "fact_consistency": lambda: check_fact_consistency(artifacts, deadline),
     }
     results = _run_jobs(jobs, deadline, limits, instrumentation, "independent_batch")
     instrumentation.end_stage("independent_batch")
@@ -261,7 +266,7 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         independent["international"], independent["graphics_text"], independent["image_context"],
         independent["image_weight"], independent["accessibility"],
         independent["overlays"], independent["answer_format"], independent["context_signals"],
-        independent["context_retention"],
+        independent["context_retention"], independent["offer_expiry"], independent["fact_consistency"],
     ]
 
     acq_coverage = artifacts.acquisition_metadata.get("coverage", {})
@@ -342,6 +347,9 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "answer_format": dict(independent["answer_format"].get("metrics", {})),
         "context_signals": dict(independent["context_signals"].get("metrics", {})),
         "context_retention": dict(independent["context_retention"].get("metrics", {})),
+        "offer_expiry": dict(independent["offer_expiry"].get("metrics", {})),
+        "fact_consistency": dict(independent["fact_consistency"].get("metrics", {})),
+        "ai_crawler_purposes": dict(independent["ai_crawler_access"].get("metrics", {}).get("ai_crawler_purposes") or {}),
         "agent_corroboration_stage": dependent["agent_corroboration"].get("metrics", {}).get("agent_stage", "not_supplied"),
         "external_fetches": telemetry["external_fetches_attempted"],
         "identity_confidence": independent["entity_identity"].get("data", {}).get("confidence", 0.0),
@@ -390,9 +398,14 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     # Ready-to-paste fixes and the impact x effort plan are added after
     # validation: enrichment rewrites suggested_action from the catalog.
     attach_fix_snippets(validated["findings"], validated["recommendations"], artifacts, independent["entity_identity"])
-    annotate_action_plan(validated["findings"] + validated["recommendations"], coverage["pages_analyzed"])
+    # A recommendation that points at a finding has no action of its own to place.
+    annotate_action_plan(validated["findings"] + [r for r in validated["recommendations"]
+                                                  if not is_finding_reference(r)], coverage["pages_analyzed"])
     validated["top_actions"] = top_actions(validated["findings"])
     validated["quick_wins"] = quick_wins(validated["findings"], validated["recommendations"])
+    # Checks that ran and passed, each with the observation that shows it.
+    validated["whats_working"] = whats_working(artifacts, {**independent, **dependent}, validated["findings"],
+                                               validated["recommendations"], pages_analyzed)
     return _jsonable(validated)
 
 
@@ -420,6 +433,8 @@ def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False)
         "execution_status": "partial_deadline_reached" if result.timed_out else "degraded",
         "limitations": ["The audit worker did not return a complete report. No site-level conclusions can be drawn.", result.error or "Worker failed"],
         "confidence": unfinished_confidence(),
+        # Nothing was assessed, so nothing can be shown as passed.
+        "whats_working": [],
         "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
 
 

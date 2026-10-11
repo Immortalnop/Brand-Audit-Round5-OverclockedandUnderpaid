@@ -335,13 +335,26 @@ def _finding_detail(f):
 
 def _recommendations(report, findings):
     covered = {f.get("check_id") for f in findings}
-    recs = [r for r in _list(report.get("recommendations")) if isinstance(r, dict) and r.get("check_id") not in covered]
+    # A recommendation that points at a finding (finding_id) is that finding,
+    # already shown above.
+    recs = [r for r in _list(report.get("recommendations")) if isinstance(r, dict) and "finding_id" not in r
+            and r.get("check_id") not in covered]
     if not recs:
         return []
     lines = ["## Other recommendations", "", "Good practice to keep, beyond the findings above:", ""]
     for r in recs:
         action = _dict(r.get("suggested_action"))
         lines.append(f"- **{text(r.get('title'), 300)}.** {text(action.get('summary'), 600)}")
+    return lines + [""]
+
+
+def _whats_working(report):
+    items = [w for w in _list(report.get("whats_working")) if isinstance(w, dict)]
+    if not items:
+        return []
+    lines = ["## What's working", "", "Checks that ran and found nothing to fix:", ""]
+    for w in items:
+        lines.append(f"- **{text(w.get('title'), 300)}.** {text(w.get('evidence'), 600)}")
     return lines + [""]
 
 
@@ -375,7 +388,7 @@ def render(report):
         lines += ["## Finding details", ""]
         for f in findings:
             lines += _finding_detail(f)
-    lines += _recommendations(report, findings) + _not_checked(report)
+    lines += _recommendations(report, findings) + _whats_working(report) + _not_checked(report)
     lines += ["---", "", "Generated from the JSON audit report by common/report_markdown.py. Findings describe the "
                          "sampled pages; the JSON report holds every detail."]
     out = "\n".join(lines)

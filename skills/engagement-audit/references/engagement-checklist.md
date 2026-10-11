@@ -1,7 +1,16 @@
 # Engagement checklist
 
-- Orphan pages (no inbound internal links)
-- Dead-end pages (no outbound internal links)
+- Orphan pages (no inbound internal links) and isolated page clusters. Graph
+  nodes are pages at their final URL: a crawled URL that redirected is the page
+  it lands on, URLs redirecting to one page are one node, and a trailing slash
+  does not hide a link. Both are reported only when the crawl reached every
+  discovered URL. On a sampled crawl a page the sample does not link to may be
+  linked from a page that was not fetched (a section index often lists only its
+  newest items), so they are counted in metrics and the report says they were
+  not assessed. A start page that reaches no other sampled page (a splash or
+  language chooser) never makes the rest of the site an isolated cluster.
+- Dead-end pages (no outbound internal links; a link to the page itself does
+  not count)
 - Navigation/breadcrumb consistency: visible breadcrumbs vs BreadcrumbList
   JSON-LD
 - Rendering-gap pages (from crawl-render-audit's rendering_result) as context

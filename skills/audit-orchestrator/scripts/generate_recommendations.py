@@ -11,9 +11,14 @@ site is small, or the site is already well-structured. Recommendations are:
   - separated        : always finding_type == "proactive_improvement", carried in the
                         report's own `recommendations` array, never mixed into
                         `findings`.
+  - linked, not copied: a proactive finding appears here as a short reference
+                        ({id, finding_id, check_id, category, title, status});
+                        its evidence, steps and fix stay on the finding itself.
+                        Only the baseline items, which have no finding, carry
+                        their own action.
 """
-from merge_findings import dedup_key, normalize_text, similarity
-from models import apply_invariant_i1, make_evidence_text
+from merge_findings import dedup_key, similarity
+from models import apply_invariant_i1
 from check_catalog import enrich_finding
 from action_catalog import baseline_action, evidence_status_mode
 
@@ -48,27 +53,26 @@ _GENERIC_BASELINE = [
 ]
 
 
+def is_finding_reference(item) -> bool:
+    """True for a recommendation that points at a finding instead of carrying
+    its own evidence and action."""
+    return isinstance(item, dict) and "finding_id" in item
+
+
 def _recommendation_from_finding(rid: int, finding: dict) -> dict:
-    ev_text = str(finding.get("evidence_text") or make_evidence_text(finding.get("evidence") or []))
-    return apply_invariant_i1({
+    """A pointer to a proactive finding: its ID, check and title. The finding
+    holds the evidence, steps and fix, so none of it is copied here."""
+    return {
         "id": f"R-{rid:03d}",
+        "finding_id": finding["id"],
         "check_id": finding.get("check_id"),
-        "check_ids": finding.get("check_ids", []),
-        "mechanism": finding.get("mechanism", finding["root_cause"]),
+        "check_ids": list(finding.get("check_ids") or []),
         "category": finding["category"],
         "finding_type": "proactive_improvement",
         "title": finding["title"],
-        "severity": "low",
-        "confidence": finding["confidence"],
-        "status": finding["status"] if finding["status"] != "confirmed" else "confirmed",
-        "evidence_status": evidence_status_mode(finding["status"]),
-        "affected_pages": [],
-        "root_cause": finding["root_cause"],
-        "evidence": [],
-        "evidence_text": ev_text,
-        "suggested_action": finding["suggested_action"],
-        "provenance": {"source": "derived_from_finding", "finding_id": finding["id"]},
-    })
+        "status": finding["status"],
+        "provenance": {"source": "finding_reference"},
+    }
 
 
 def _recommendation_from_baseline(rid: int, item: dict) -> dict:
@@ -131,4 +135,4 @@ def generate_recommendations(skill_results: list, merged_findings: list) -> list
         rid += 1
         recommendations.append(_recommendation_from_baseline(rid, item))
 
-    return [enrich_finding(r) for r in recommendations]
+    return [r if is_finding_reference(r) else enrich_finding(r) for r in recommendations]

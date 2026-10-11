@@ -51,8 +51,8 @@ def analyze_crawlability(artifacts, deadline):
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
             status="insufficient_evidence", confidence=0.3,
             title="robots.txt could not be retrieved or parsed",
-            root_cause=f"robots.txt fetch/parse status was '{robots_status}'; the crawl proceeded "
-                       "conservatively (single page only) rather than assuming unrestricted access",
+            root_cause=f"robots.txt fetch/parse status was '{robots_status}'; no page was "
+                       "fetched, since crawl permission was unknown, rather than assuming unrestricted access",
             evidence=[{"type": "robots", "description": f"robots.txt status: {robots_status}",
                        "urls": [artifacts.site_url]}],
             suggested_action={

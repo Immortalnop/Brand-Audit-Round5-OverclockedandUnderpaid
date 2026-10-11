@@ -36,8 +36,8 @@ Thumbs.db
 tmp/
 temp/
 .claude/
-results.json
-results.md
+report.json
+report.md
 Plan.md/
 # Local benchmark runs (tests/live_benchmark.py)
 benchmark_runs/

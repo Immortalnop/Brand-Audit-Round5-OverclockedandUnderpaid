@@ -11,7 +11,8 @@ allowed-tools: Bash(python3:*) Read
 Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`, and
 `build_site_graph`-adjacent data steps run in the independent batch;
 `identify_important_facts` runs once, sequentially, between the two batches;
-`analyze_authorship` also runs in the independent batch;
+`analyze_authorship`, `check_offer_expiry` and `check_fact_consistency` also
+run in the independent batch;
 `assess_freshness`, `corroborate_claims`, `assess_external_footprint`,
 `check_knowledge_graph` and `check_off_site_profiles` run in the dependent batch.
 
@@ -95,3 +96,26 @@ is a plain string or an Organization rather than a Person, the Person has no
 profile link or credentials (jobTitle, description, knowsAbout, alumniOf, award,
 hasCredential), the markup author is not shown on the page, or a visible byline
 has no markup.
+
+## Expired offers and fact consistency
+
+`check_offer_expiry.py` reports `expired-offer` (confirmed, medium) when visible
+text pairs an offer word (offer, sale, deal, discount, coupon...) with a
+present-tense deadline ("ends", "expires", "valid until", "available through")
+and a full date more than a day before the audit, or when an Offer's
+`priceValidUntil` or `validThrough` has passed. Past tense ("ended"), dates
+without a year and numeric dates whose two readings disagree are never read as
+expired; editorial, listing, legal, archive and event pages are skipped.
+
+`check_fact_consistency.py` reports `fact-markup-mismatch` (suspected, medium)
+when JSON-LD states a telephone or postal code that no sampled page shows while
+the pages carrying it show another one, opening hours none of whose times appear
+in the hours the site shows, or a single Offer price a product page never shows
+while it shows other prices in that currency. Only pages whose whole text was
+read and that do not build their text with JavaScript are compared. It reports
+`fact-inconsistent-across-pages` (confirmed, medium) when one entity (same
+absolute @id, same name for a non-local organization, same GTIN for a product;
+a SKU or MPN often names a product family whose variants differ in price) has two values for telephone, email, foundingDate, postal code or
+price in one currency on two pages in the same language. A property one page
+states with several values (variants, several telephones) is not compared. Both
+scripts make no request.

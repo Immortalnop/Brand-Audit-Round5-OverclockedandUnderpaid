@@ -1,5 +1,6 @@
 """Step 2 regression coverage: one snapshot, catalog contract and calibrated ports."""
 import ast
+import codecs
 import json
 import sys
 from dataclasses import replace
@@ -186,19 +187,43 @@ def test_every_emitted_check_id_resolves_after_merge_and_recommendations():
     try:
         report=run_audit(url+'/',allow_private_targets=True)
         assert report['coverage']['pages_analyzed']>0,report['warnings']
+        finding_ids={f['id'] for f in report['findings']}
         for f in report['findings']+report['recommendations']:
             assert f['check_id'] in CATALOG
             for rid in f.get('check_ids',[]):get_entry(rid)
+            if 'finding_id' in f:
+                # A link to a finding carries no catalog wording; the finding does.
+                assert f['finding_id'] in finding_ids
+                assert not {'mechanism','implementation_detail','expected_outcome'}&f.keys()
+                continue
             for key,value in get_entry(f['check_id']).items():assert f[key]==value
         assert not any('Dropped' in w for w in report['warnings'])
         json.dumps(report,allow_nan=False)
     finally:stop()
 
 
+def _project_files():
+    """Files of the project: tracked or new, not git-ignored (local reports and
+    caches are not part of it). Without git, every file under the root."""
+    import subprocess
+    try:
+        out=subprocess.run(['git','ls-files','--cached','--others','--exclude-standard'],cwd=ROOT,
+                           capture_output=True,text=True,timeout=30,check=True).stdout
+        return [ROOT/line for line in out.splitlines() if line]
+    except (OSError,subprocess.SubprocessError):
+        return [p for p in ROOT.rglob('*') if '.git' not in p.parts]
+
+
+def _read_text(p):
+    """Text of a file written as UTF-8, UTF-8 with a BOM, or UTF-16 with a BOM."""
+    raw=p.read_bytes()
+    return raw.decode('utf-16') if raw.startswith((codecs.BOM_UTF16_LE,codecs.BOM_UTF16_BE)) else raw.decode('utf-8-sig')
+
+
 def test_no_em_dash_or_second_skill_orchestrator():
-    for p in ROOT.rglob('*'):
+    for p in _project_files():
         if p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
-            assert chr(0x2014) not in p.read_text(encoding='utf-8'),str(p)
+            assert chr(0x2014) not in _read_text(p),str(p)
     entry=(ROOT/'skills/audit-orchestrator/scripts/run_audit.py').read_text()
     assert 'subprocess.run(' not in entry and '--workdir' not in entry
 
@@ -354,7 +379,12 @@ def test_2_6_sample_report_exists_validates_and_is_clean():
     # Strict validation drops nothing from a clean sample.
     assert len(validated['findings'])==len(report['findings'])
     assert len(validated['recommendations'])==len(report['recommendations'])
+    finding_ids={f['id'] for f in validated['findings']}
     for item in validated['findings']+validated['recommendations']:
         assert item['check_id'] in CATALOG
+        if 'finding_id' in item:
+            # A link to a finding: the finding it names carries severity and type.
+            assert item['finding_id'] in finding_ids
+            continue
         if item['status']=='insufficient_evidence':
             assert item['severity']=='low' and item['finding_type']=='proactive_improvement'

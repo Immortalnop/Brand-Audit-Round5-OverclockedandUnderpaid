@@ -441,8 +441,8 @@ def _wants_snippet(check_id):
 
 def attach_fix_snippets(findings, recommendations, artifacts, entity_identity=None):
     """Attach a snippet to every finding and recommendation whose check has a
-    markup fix. Recommendations derived from a finding use that finding's pages.
-    Never raises: a snippet is an aid, and a failure to build one must not cost
+    markup fix. A recommendation that points at a finding gets none: the finding
+    it names carries the snippet. Never raises: a snippet is an aid, and a failure to build one must not cost
     the report."""
     try:
         facts = site_facts(artifacts, entity_identity)
@@ -455,6 +455,10 @@ def attach_fix_snippets(findings, recommendations, artifacts, entity_identity=No
                 by_url.setdefault(url, page)
     pages_of = {f.get("id"): list(f.get("affected_pages") or ()) for f in findings}
     for item in list(findings) + list(recommendations):
+        if not isinstance(item, dict) or "finding_id" in item:
+            # A recommendation that points at a finding: the snippet goes on
+            # the finding it names, not on a copy.
+            continue
         check_id = item.get("check_id")
         if not _wants_snippet(check_id):
             check_id = next((c for c in item.get("check_ids") or () if _wants_snippet(c)), None)

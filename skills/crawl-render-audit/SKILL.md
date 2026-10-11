@@ -67,6 +67,18 @@ crawlers that robots.txt disallows on some site sections while leaving them open
 to crawlers in general (one sample URL per section, judged from robots.txt with
 no request): medium for search crawlers, low for training or user-fetch ones.
 
+The crawlers checked are listed in `common/ai_crawlers.py`, each labelled with
+the purpose its operator documents: search (OAI-SearchBot, Claude-SearchBot,
+PerplexityBot, Googlebot, Applebot), user-requested fetch (ChatGPT-User,
+Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User) or training
+(GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot,
+Meta-ExternalAgent, CCBot, Bytespider). A crawler whose stated use mixes answers
+with training is labelled training, the lower severity. Blocking a search
+crawler for the whole site is a high defect; blocking any other is a low
+improvement. Their rules are matched by exact product token (RFC 9309), so a
+`User-agent: Applebot` group never governs Applebot-Extended. Findings and
+`coverage.ai_crawler_purposes` carry the labels.
+
 ## Non-text media
 
 `analyze_non_text.py` reads the image and PDF observations that acquisition
@@ -137,7 +149,9 @@ Without a headless browser, a thin page that runs scripts is a suspected
 render-gap only with a sign of client-side rendering in its raw HTML: an empty
 app mount point, a framework bundle or attribute, page state serialized for a
 script (`__NEXT_DATA__`, `window.__INITIAL_STATE__`), or a JavaScript-required
-`<noscript>`. One sign makes it medium, two or more make it high. A thin page with
+`<noscript>`. One sign makes it medium, two or more independent signs make it
+high. A framework bundle and its serialized state count as one sign: a
+server-rendered Next.js or Nuxt page ships both. A thin page with
 no sign, or a page whose text is mostly real links (a splash or chooser page), is
 reported only as `render-gap-unconfirmed` (insufficient evidence).
 
