@@ -39,6 +39,7 @@ from dataclasses import replace
 from time import monotonic
 from urllib.parse import urlsplit
 
+from bot_challenge import challenge_signals
 from check_helpers import site_kind
 from external_lookup import ROBOTS_MAX_BYTES, ExternalLookup
 from html_features import Document
@@ -182,6 +183,9 @@ def evaluate_profile(url, resp, status, site_host, brand_names):
     soft_broken, mismatch, unverified."""
     if status != "ok":
         return "unverified", status
+    # A bot challenge says nothing about the profile: unverified, never broken.
+    if challenge_signals(resp.status_code, resp.headers, resp.text):
+        return "unverified", "bot_challenge"
     if resp.status_code in (404, 410):
         return "broken", f"HTTP {resp.status_code}"
     if not resp.ok:

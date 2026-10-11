@@ -493,6 +493,65 @@ STORE = {
 TRAPS = {"news": NEWS, "splash": SPLASH, "store": STORE}
 
 
+# ---------------------------------------------------------------------------
+# Robustness sites (tests/test_robustness.py). Each reproduces a way a real
+# acquisition goes wrong: the audit must still return a valid, honest report.
+# ---------------------------------------------------------------------------
+
+# A bot-protection interstitial: a challenge title, a challenge script and a
+# noscript notice, with no content of the site.
+CHALLENGE_PAGE = ('<!DOCTYPE html><html lang="en"><head><title>Just a moment...</title></head><body>'
+                  '<noscript>Enable JavaScript and cookies to continue</noscript>'
+                  '<script>window._cf_chl_opt={cvId:"3",cType:"managed"};</script></body></html>')
+
+_GUARD_PATHS = ("/", "/about", "/pricing", "/blog/", "/contact")
+
+# 10. A site behind bot protection: every page answers 403 with a challenge. The
+#     audit must stop after a couple of challenges, analyze nothing, and say why.
+GUARDED = {
+    "robots": ALLOW_ALL,
+    "sitemap": _sitemap(_GUARD_PATHS),
+    "pages": {},
+    "responses": {p: (403, CHALLENGE_PAGE, "text/html; charset=utf-8") for p in _GUARD_PATHS},
+}
+
+_MIXED_NAV = ('<header><nav><a href="/">Home</a> <a href="/guides">Guides</a> <a href="/members">Members</a>'
+              '</nav></header>')
+_MIXED_COPY = ("Cedar Row Studio teaches pottery to beginners in small evening groups, with clay, glazes and two "
+               "firings included in every course. ")
+
+# 11. One section behind a challenge (503 with a challenge script); the rest is
+#     public. The challenged page is skipped, never reported as broken.
+MIXED_GUARD = {
+    "robots": ALLOW_ALL,
+    "sitemap": _sitemap(["/", "/guides", "/members"]),
+    "pages": {
+        "/": _page("Cedar Row Studio, pottery classes",
+                   _MIXED_NAV + "<main><h1>Pottery classes for beginners</h1><p>" + _MIXED_COPY * 3 + "</p></main>",
+                   description="Evening pottery classes for beginners."),
+        "/guides": _page("Glazing guide | Cedar Row Studio",
+                         _MIXED_NAV + "<main><h1>A beginner's glazing guide</h1><p>" + _MIXED_COPY * 3
+                         + "</p></main>", description="How glazes behave in the kiln."),
+    },
+    "responses": {"/members": (503, CHALLENGE_PAGE, "text/html; charset=utf-8")},
+}
+
+# 12. A page in windows-1252 whose only declaration is <meta charset>; the HTTP
+#     header names no charset. Curly quotes and accented letters must survive.
+_LEGACY_TEXT = ("\u201cCaf\u00e9 cr\u00e8me\u201d is what we\u2019re known for: Rue Barr\u00e9 roasts its own "
+                "beans and bakes p\u00e2tisserie every morning. ")
+LEGACY_ENCODING = {
+    "robots": ALLOW_ALL,
+    "pages": {},
+    "responses": {"/": (200, ('<!doctype html><html lang="fr"><head><meta charset="windows-1252">'
+                              "<title>Caf\u00e9 Rue Barr\u00e9</title></head><body><h1>Caf\u00e9 Rue Barr\u00e9</h1>"
+                              "<p>" + _LEGACY_TEXT * 4 + "</p></body></html>").encode("cp1252"),
+                        "text/html")},
+}
+
+ROBUSTNESS = {"guarded": GUARDED, "mixed_guard": MIXED_GUARD, "legacy_encoding": LEGACY_ENCODING}
+
+
 def serve(site):
     """Serve one archetype on 127.0.0.1. Returns (base_url, stop, requests), where
     requests lists (method, path) for every request the server received."""
@@ -502,10 +561,12 @@ def serve(site):
         def log_message(self, *args):
             pass
 
-        def _reply(self, status, body, ctype):
+        def _reply(self, status, body, ctype, headers=()):
             data = body if isinstance(body, bytes) else body.replace("HOST", self.headers.get("Host", "")).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", ctype)
+            for name, value in headers:
+                self.send_header(name, value)
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
@@ -513,6 +574,10 @@ def serve(site):
         def do_GET(self):
             seen.append((self.command, self.path))
             path = self.path.split("?")[0]
+            # Exact responses (status, body, content type[, headers]) win over
+            # everything else, robots.txt included.
+            if path in site.get("responses", {}):
+                return self._reply(*site["responses"][path])
             if path == "/robots.txt":
                 return self._reply(200, site.get("robots", ALLOW_ALL), "text/plain")
             if path == "/sitemap.xml" and site.get("sitemap"):

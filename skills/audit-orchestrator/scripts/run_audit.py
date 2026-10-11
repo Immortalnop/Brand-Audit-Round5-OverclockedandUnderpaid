@@ -197,6 +197,25 @@ def run_dependent_batch(facts, entity_identity, artifacts, site_graph, rendering
     return results
 
 
+# Checks that read robots.txt, llms.txt, the sitemap or the TLS handshake rather
+# than page content. When no page could be analyzed only these are reported:
+# a finding drawn from zero pages (for example "none of the crawled pages link a
+# review profile") would describe the crawl, not the site.
+SITE_LEVEL_CHECKS = frozenset({
+    "ai-crawler-blocked", "ai-crawler-section-blocked", "ai-crawler-unchecked", "robots-block",
+    "robots-unreachable", "no-llms-txt", "llms-txt-invalid", "llms-txt-broken-links", "llms-txt-unchecked",
+    "sitemap-unavailable", "tls-health",
+})
+
+
+def site_level_only(skill_results):
+    """Copies of skill_results keeping only findings of SITE_LEVEL_CHECKS."""
+    def keep(finding):
+        check_id = finding.get("check_id") or (finding.get("provenance") or {}).get("rule_id")
+        return check_id in SITE_LEVEL_CHECKS
+    return [dict(result, findings=[f for f in result.get("findings", []) if keep(f)]) for result in skill_results]
+
+
 def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets: bool = False) -> dict:
     """allow_private_targets defaults to False (safe): the CLI and any production
     caller never sets it. It exists only so tests can point the audit at a local
@@ -245,7 +264,10 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         independent["context_retention"],
     ]
 
-    merged = merge_findings(skill_results)
+    acq_coverage = artifacts.acquisition_metadata.get("coverage", {})
+    pages_analyzed = acq_coverage.get("urls_analyzed", len(artifacts.pages))
+    # No analyzed page: only checks that never read page content can be reported.
+    merged = merge_findings(site_level_only(skill_results) if not pages_analyzed else skill_results)
     prioritized = prioritize_findings(merged)
     for idx, finding in enumerate(prioritized, 1):
         finding["id"] = f"F-{idx:03d}"
@@ -254,7 +276,7 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     memory_peak_mb = instrumentation.stop_memory_tracking_mb()
     telemetry = instrumentation.as_dict(memory_peak_mb)
 
-    acq_coverage = artifacts.acquisition_metadata.get("coverage", {})
+    failure = artifacts.acquisition_metadata.get("acquisition_failure")
     coverage = {
         # Factual, non-equated coverage counts (Round-3 handout, Priority 2 #3):
         # discovered/fetched/analyzed are different numbers and must not collapse
@@ -262,12 +284,19 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "pages_discovered": acq_coverage.get("urls_discovered", len(artifacts.pages)),
         "pages_fetched_attempted": acq_coverage.get("urls_fetched_attempted", len(artifacts.pages)),
         "pages_fetched_ok": acq_coverage.get("urls_fetched_ok", len(artifacts.pages)),
-        "pages_analyzed": acq_coverage.get("urls_analyzed", len(artifacts.pages)),
+        "pages_analyzed": pages_analyzed,
         "pages_blocked": acq_coverage.get("urls_blocked", 0),
         # Login pages: fetched, never analyzed, each listed with its signals.
         "pages_out_of_scope": acq_coverage.get("urls_out_of_scope", 0),
         "out_of_scope_pages": acq_coverage.get("out_of_scope_pages", []),
         "start_url_out_of_scope": acq_coverage.get("start_url_out_of_scope", False),
+        # Bot-protection challenges: requested, never analyzed as site content.
+        "pages_challenged": acq_coverage.get("urls_challenged", 0),
+        "challenged_pages": acq_coverage.get("challenged_pages", []),
+        "crawl_stopped_by_challenge": acq_coverage.get("crawl_stopped_by_challenge", False),
+        # Why no page could be analyzed ({reason, stage, url, http_status, detail});
+        # None whenever at least one page was analyzed.
+        "acquisition_failure": dict(failure) if failure else None,
         "sections_discovered": acq_coverage.get("sections_discovered", 0),
         "sections_analyzed": acq_coverage.get("sections_analyzed", 0),
         "page_types_analyzed": acq_coverage.get("page_types_analyzed", []),
@@ -349,6 +378,9 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     execution_status = derive_execution_status(deadline, skill_results, telemetry["worker_timeout_events"])
     if artifacts.robots_data.get("conservative_fail_closed") and execution_status == "completed":
         execution_status = "degraded"
+    if not pages_analyzed:
+        # Nothing on the site was assessed, whatever else happened in the run.
+        execution_status = "insufficient_evidence"
     report["execution_status"] = execution_status
     report["limitations"] = derive_limitations(artifacts, capabilities, coverage, execution_status)
     report["confidence"] = overall_confidence(coverage, execution_status)
@@ -412,11 +444,36 @@ def limits_for_pages(limits, max_pages):
                        MAX_TOTAL_BYTES=max(limits.MAX_TOTAL_BYTES, int(DEFAULT_LIMITS.MAX_TOTAL_BYTES * scale)))
 
 
+def write_report(report, path):
+    """Write the JSON report to path as UTF-8, whatever the console or shell
+    encoding (PowerShell 5's > redirect writes UTF-16). The text is the same as
+    the stdout output. The file is written next to its destination and then
+    moved into place, so a failed run never leaves half a report."""
+    import json
+    import tempfile
+    path = os.path.abspath(path)
+    if os.path.isdir(path):
+        raise ValueError(f"--out must name a file, not a directory: {path}")
+    folder = os.path.dirname(path)
+    handle, temp = tempfile.mkstemp(prefix=".report-", suffix=".tmp", dir=folder)
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as out:
+            out.write(json.dumps(report, indent=2, default=str) + "\n")
+        os.replace(temp, path)
+    except BaseException:
+        try:
+            os.unlink(temp)
+        except OSError:
+            pass
+        raise
+    return path
+
+
 def main(argv=None):
     import argparse
     import json
     parser = argparse.ArgumentParser(
-        description="Brand AI-Readiness Audit. Emits one JSON report to stdout.")
+        description="Brand AI-Readiness Audit. Emits one JSON report to stdout, or to a UTF-8 file with --out.")
     parser.add_argument("site", nargs="?", default="https://example.com",
                         help="Target URL or bare domain to audit.")
     parser.add_argument("--timeout", type=float, default=None,
@@ -430,6 +487,9 @@ def main(argv=None):
     parser.add_argument("-v", "--progress", action="store_true",
                         help="Print stage progress to stderr (stdout stays pure JSON).")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress on stderr; JSON output is unchanged.")
+    parser.add_argument("--out", metavar="PATH", default=None,
+                        help="Write the JSON report to PATH as UTF-8 instead of stdout. Use this in Windows "
+                             "PowerShell, whose > redirect writes UTF-16.")
     parsed = parser.parse_args(argv)
     import math
     if parsed.timeout is not None and (not math.isfinite(parsed.timeout) or parsed.timeout<=0):
@@ -440,6 +500,11 @@ def main(argv=None):
         os.environ["AUDIT_PROGRESS"] = "0"
     if parsed.max_pages is not None and not 1 <= parsed.max_pages <= MAX_PAGES_CEILING:
         parser.error(f"--max-pages must be between 1 and {MAX_PAGES_CEILING}")
+    if parsed.out is not None:
+        out_dir = os.path.dirname(os.path.abspath(parsed.out))
+        # Checked before the audit runs, so a typo never costs a five-minute run.
+        if os.path.isdir(os.path.abspath(parsed.out)) or not os.path.isdir(out_dir):
+            parser.error(f"--out must name a file in an existing folder: {parsed.out}")
     active_limits = DEFAULT_LIMITS
     if parsed.timeout is not None:
         from dataclasses import replace as _dc_replace
@@ -448,7 +513,17 @@ def main(argv=None):
         active_limits = limits_for_pages(active_limits, parsed.max_pages)
     try:
         report=run_audit(parsed.site, limits=active_limits)
-        print(json.dumps(report, indent=2, default=str))
+        written = None
+        if parsed.out is not None:
+            try:
+                written = write_report(report, parsed.out)
+                print(f"[audit] report written to {written} (UTF-8)", file=sys.stderr)
+            except OSError as exc:
+                # The finished audit is never lost: it goes to stdout instead.
+                print(f"[audit] could not write {parsed.out} ({exc}); printing the report instead",
+                      file=sys.stderr)
+        if written is None:
+            print(json.dumps(report, indent=2, default=str))
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)
     except KeyboardInterrupt:
         print("[audit] cancelled",file=sys.stderr)

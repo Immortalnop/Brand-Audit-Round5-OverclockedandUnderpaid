@@ -1,0 +1,3289 @@
+{
+  "site": "https://www.python.org",
+  "audited_at": "2026-10-11T14:29:37.820217+00:00",
+  "summary": {
+    "total_findings": 21,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 20,
+    "proactive_improvements": 17,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 18
+  },
+  "coverage": {
+    "pages_discovered": 885,
+    "pages_fetched_attempted": 50,
+    "pages_fetched_ok": 49,
+    "pages_analyzed": 49,
+    "pages_blocked": 0,
+    "pages_out_of_scope": 0,
+    "out_of_scope_pages": [],
+    "start_url_out_of_scope": false,
+    "pages_challenged": 0,
+    "challenged_pages": [],
+    "crawl_stopped_by_challenge": false,
+    "acquisition_failure": null,
+    "sections_discovered": 18,
+    "sections_analyzed": 12,
+    "page_types_analyzed": [
+      "about",
+      "home",
+      "other"
+    ],
+    "start_redirect": null,
+    "audited_url": "https://www.python.org/",
+    "robots_permission": "evaluated",
+    "transport_diagnostics": [
+      {
+        "url": "https://www.python.org/sitemap.xml",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.python.org/llms.txt",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.python.org/llms-full.txt",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.python.org/blogs/",
+        "category": "timeout",
+        "phase": "tls_handshake",
+        "address": "167.82.56.223",
+        "exception_type": "TimeoutError",
+        "message": "_ssl.c:1063: The handshake operation timed out"
+      },
+      {
+        "url": "https://www.python.org/psf-landing/",
+        "category": "timeout",
+        "phase": "tls_handshake",
+        "address": "167.82.60.223",
+        "exception_type": "TimeoutError",
+        "message": "_ssl.c:1063: The handshake operation timed out"
+      },
+      {
+        "url": "https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+        "category": "timeout",
+        "phase": "connect",
+        "address": "167.82.56.223",
+        "exception_type": "TimeoutError",
+        "message": "timed out"
+      }
+    ],
+    "transport_environment": {
+      "python_version": "3.14.4",
+      "openssl_version": "OpenSSL 3.0.19 27 Jan 2026",
+      "connection_route": "direct_validated_ip",
+      "extra_ca_bundle_configured": false,
+      "openssl_ca_override_configured": false,
+      "proxy_environment_present": false,
+      "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
+      "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
+    },
+    "robots_attempt_outcomes": [
+      "ok"
+    ],
+    "pages_timed_out": 0,
+    "pages_failed_other": 1,
+    "pages_never_attempted": 835,
+    "pages_skipped": 3,
+    "skip_reason_counts": {
+      "cross_origin_redirect_blocked": 2,
+      "acquisition_limit_reached": 1
+    },
+    "rendered_pages": 0,
+    "non_text_media": {
+      "images_observed": 80,
+      "unique_image_urls": 33,
+      "fact_keyword_images": 0,
+      "image_fetches_attempted": 2,
+      "images_fetched_ok": 1,
+      "svg_text_read": 0,
+      "pdfs_discovered": 1,
+      "pdfs_fetch_attempted": 0,
+      "pdfs_text_extracted": 0,
+      "image_fetch_cap": 6,
+      "pdf_fetch_cap": 3,
+      "image_weight_candidates": 2,
+      "image_weight_probes": 2,
+      "image_weight_probe_cap": 4,
+      "image_fetch_outcomes": {
+        "ok": 1,
+        "timeout": 1
+      },
+      "pdf_outcomes": [
+        {
+          "url": "https://www.python.org/m/files/irs_determination.pdf",
+          "fetch_status": "cross_origin_redirect_blocked",
+          "extraction": "not_attempted"
+        }
+      ]
+    },
+    "external_claims_checked": 0,
+    "external_footprint_queries": 0,
+    "knowledge_graph": {
+      "lookup": "not_applicable",
+      "organization_pages": 0
+    },
+    "llms_txt": {
+      "llms_txt_present": false,
+      "llms_txt_status": "absent",
+      "llms_txt_links": 0,
+      "llms_txt_links_checked": 0,
+      "llms_txt_link_outcomes": {},
+      "llms_full_txt_status": "absent",
+      "llms_full_txt_present": false
+    },
+    "off_site_profiles": {
+      "same_as_links": 0,
+      "review_platforms_linked": [],
+      "business_kind": "general",
+      "lookup": "not_needed",
+      "profiles": [],
+      "profile_outcomes": {},
+      "review_platform_check": "not_applicable_nonprofit",
+      "review_platform_search": "not_run"
+    },
+    "web_vitals": {
+      "web_vitals_mode": "static_estimate",
+      "web_vitals_pages_estimated": 49,
+      "web_vitals_estimate_pages": {
+        "LCP": 0,
+        "CLS": 0,
+        "INP": 0
+      },
+      "web_vitals_estimates_suppressed_by_field_data": [],
+      "web_vitals_field_lookup": "not_configured"
+    },
+    "freshness_update_signals": {
+      "page_update_date_facts": 0,
+      "sitemap_lastmod_entries": 0,
+      "sitemap_lastmod_trusted": false,
+      "sitemap_lastmod_invalid": 0,
+      "sitemap_lastmod_uniform": null,
+      "update_dates_from_sitemap_lastmod": 0,
+      "update_dates_from_last_modified": 0,
+      "last_modified_header": {
+        "absent": 49
+      },
+      "pages_with_update_date": 0
+    },
+    "hreflang": {
+      "hreflang_pages": 0,
+      "hreflang_annotations": 0,
+      "hreflang_sitemap_entries": 0,
+      "hreflang_alternates_unverified": 0,
+      "html_languages": [
+        "en"
+      ]
+    },
+    "noscript": {
+      "noscript_js_required_pages": 0,
+      "noscript_fallback_pages": []
+    },
+    "graphics_text": {
+      "canvases_observed": 0,
+      "canvas_pages_without_text": 0,
+      "inline_svg_fact_pages": 0,
+      "icon_font_pages": 0
+    },
+    "image_context": {
+      "image_context_content_images": 3,
+      "image_context_with_alt": 1,
+      "image_context_context_only": 0,
+      "image_context_no_context": 2,
+      "image_context_with_caption": 0
+    },
+    "image_weight": {
+      "image_weight_measured": 1,
+      "image_weight_probes": 2,
+      "image_weight_problems": 0,
+      "image_weight_bytes_largest": 4171,
+      "responsive_image_gaps": 0
+    },
+    "accessibility": {
+      "accessibility_pages_analyzed": 49,
+      "accessibility_form_fields": 54,
+      "accessibility_unlabeled_fields": 5,
+      "accessibility_placeholder_only_fields": 0,
+      "accessibility_controls": 11502,
+      "accessibility_unnamed_controls": 1,
+      "accessibility_contrast_pairs_checked": 0,
+      "accessibility_stylesheet_styles_measured": false
+    },
+    "overlays": {
+      "overlay_pages_analyzed": 49,
+      "overlay_blocking_pages": 0,
+      "overlay_class_only_pages": 0,
+      "consent_platform_pages": 0,
+      "consent_text_summary_pages": 0,
+      "consent_text_opening_pages": 0,
+      "overlay_timing_measured": false
+    },
+    "answer_format": {
+      "answer_format_pages_analyzed": 49,
+      "answer_format_script_dependent_pages": 0,
+      "answer_format_question_headings_checked": 0,
+      "answer_format_indirect_answers": 0,
+      "answer_format_data_tables": 2,
+      "answer_format_english_pages": 49
+    },
+    "context_signals": {
+      "context_pages_analyzed": 49,
+      "context_script_dependent_pages": 0,
+      "context_location_markup_pages": 0,
+      "context_location_evidence_pages": 1,
+      "context_location_evidence_kinds": [
+        "address"
+      ],
+      "context_commercial_site": false,
+      "context_audience_pages": 2,
+      "context_contact_pages": 7,
+      "context_contact_markup_pages": 0
+    },
+    "context_retention": {
+      "context_retention_pages_analyzed": 49,
+      "context_retention_site_urls": 885,
+      "context_retention_script_dependent_pages": 0,
+      "context_retention_saved_state_hints": [],
+      "context_retention_search_present": true,
+      "context_retention_shop_pages": 0,
+      "context_retention_query_urls": 0
+    },
+    "agent_corroboration_stage": "not_supplied",
+    "external_fetches": 0,
+    "identity_confidence": 0.6,
+    "identity_resolution": "name_from_site_metadata",
+    "memory_budget_used_mb": 5.301,
+    "runtime_seconds": 71.439,
+    "deadline_reached": false,
+    "capabilities": {
+      "check_tiers": {
+        "robots_and_ai_crawler_access": "executable",
+        "crawlability": "executable",
+        "machine_readability_jsonld": "executable",
+        "llms_txt_presence": "executable",
+        "sitemap_discovery": "executable",
+        "claim_extraction_heuristic": "executable",
+        "entity_resolution_from_jsonld": "executable",
+        "site_graph_engagement": "executable",
+        "freshness_from_dated_facts": "executable",
+        "dedup_merge_prioritize_validate": "executable",
+        "rendering_gap_heuristic": "executable",
+        "non_text_svg_and_pdf_text": "executable",
+        "structured_date_freshness": "executable",
+        "sitemap_lastmod_and_last_modified_freshness": "executable",
+        "knowledge_graph_link_check": "executable",
+        "knowledge_graph_entity_verification": "fallback",
+        "alt_text_quality": "executable",
+        "media_transcripts_and_schema": "executable",
+        "citation_schema_types": "executable",
+        "author_eeat_signals": "executable",
+        "llms_txt_structure_and_links": "executable",
+        "llms_full_txt_probe": "executable",
+        "same_as_static_validation": "executable",
+        "review_platform_links": "executable",
+        "web_vitals_static_estimate": "executable",
+        "hreflang_annotations": "executable",
+        "noscript_fallback": "executable",
+        "canvas_svg_icon_font_text": "executable",
+        "image_caption_context": "executable",
+        "image_weight_measurement": "executable",
+        "accessibility_html_checks": "executable",
+        "overlay_and_consent_detection": "executable",
+        "answer_format_checks": "executable",
+        "location_and_audience_signals": "executable",
+        "context_retention_checks": "executable",
+        "fix_snippets": "executable",
+        "impact_effort_matrix": "executable",
+        "same_as_profile_verification": "fallback",
+        "review_platform_search": "fallback",
+        "web_vitals_field_data": "fallback",
+        "rendering_headless_browser": "fallback",
+        "external_corroboration": "fallback",
+        "external_footprint_search": "fallback",
+        "agent_entity_corroboration": "optional",
+        "agent_image_vision": "optional",
+        "agent_knowledge_graph_search": "optional",
+        "agent_review_platform_search": "optional"
+      },
+      "capabilities_detected": {
+        "headless_rendering": false,
+        "external_search": false
+      },
+      "rendering_mode": "heuristic_only",
+      "external_analysis_mode": "unavailable",
+      "web_vitals_mode": "static_estimate"
+    },
+    "instrumentation": {
+      "stage_timings_s": {
+        "acquisition": {
+          "start": 20169.657831,
+          "end": 20240.0576994,
+          "duration": 70.4
+        },
+        "independent_batch": {
+          "start": 20240.0577225,
+          "end": 20240.391783,
+          "duration": 0.334
+        },
+        "identify_important_facts": {
+          "start": 20240.3917955,
+          "end": 20240.3927162,
+          "duration": 0.001
+        },
+        "dependent_batch": {
+          "start": 20240.3927316,
+          "end": 20241.0776172,
+          "duration": 0.685
+        }
+      },
+      "requests_attempted": 66,
+      "requests_completed": 63,
+      "requests_failed": 3,
+      "requests_timed_out": 3,
+      "requests_retried": 2,
+      "redirects_followed": 7,
+      "responses_truncated": 0,
+      "urls_deduplicated": 1,
+      "bytes_downloaded": 3348623,
+      "pages_skipped": 3,
+      "pages_skipped_reasons": [
+        "cross_origin_redirect_blocked",
+        "acquisition_limit_reached",
+        "cross_origin_redirect_blocked"
+      ],
+      "safety_blocks": [],
+      "external_fetches_attempted": 0,
+      "external_fetches_completed": 0,
+      "search_queries_attempted": 0,
+      "worker_timeout_events": [],
+      "memory_peak_mb": 5.301,
+      "process_rss_mb": null
+    }
+  },
+  "warnings": [
+    "English lexical checks skipped on pages with unknown/non-English language or truncated retained text.",
+    "No external search provider configured (SEARCH_API_URL unset); corroboration is an optional capability in this deployment (not checked, not \"not found\").",
+    "External footprint not assessed: identity unresolved or below confidence threshold.",
+    "No Organization markup on the crawled pages; the knowledge-graph link was not assessed.",
+    "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the qualitative About-concreteness and cross-web corroboration checks were not run this audit (not checked, not \"no corroboration found\"). See skills/entity-corroboration-agent/SKILL.md."
+  ],
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "engagement",
+      "finding_type": "defect",
+      "title": "Form fields have no label",
+      "severity": "medium",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.python.org/events/python-events/2118/",
+        "https://www.python.org/events/python-events/2183/",
+        "https://www.python.org/events/python-events/2189/",
+        "https://www.python.org/events/python-events/2203/",
+        "https://www.python.org/events/python-events/2211/"
+      ],
+      "root_cause": "A field with no label, aria-label or title has no name in the accessibility tree, so screen-reader users and AI agents filling the form cannot tell what it asks for",
+      "evidence": [
+        {
+          "type": "form_labels",
+          "description": "1 unlabeled field(s): <select name=dataRangeSelect>",
+          "urls": [
+            "https://www.python.org/events/python-events/2118/"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "1 unlabeled field(s): <select name=dataRangeSelect>",
+          "urls": [
+            "https://www.python.org/events/python-events/2183/"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "1 unlabeled field(s): <select name=dataRangeSelect>",
+          "urls": [
+            "https://www.python.org/events/python-events/2189/"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "1 unlabeled field(s): <select name=dataRangeSelect>",
+          "urls": [
+            "https://www.python.org/events/python-events/2203/"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "1 unlabeled field(s): <select name=dataRangeSelect>",
+          "urls": [
+            "https://www.python.org/events/python-events/2211/"
+          ]
+        }
+      ],
+      "evidence_text": "1 unlabeled field(s): <select name=dataRangeSelect>; 1 unlabeled field(s): <select name=dataRangeSelect>; 1 unlabeled field(s): <select name=dataRangeSelect>; 1 unlabeled field(s): <select name=dataRangeSelect>; 1 unlabeled field(s): <select name=dataRangeSelect>",
+      "suggested_action": {
+        "summary": "Give every form field a visible label tied to it",
+        "steps": [
+          "Add <label for=\"field-id\"> with visible text for each field, or wrap the field in <label>",
+          "Use aria-label only where a visible label is impossible; a placeholder is not a label"
+        ],
+        "priority": "medium",
+        "effort": "low",
+        "expected_benefit": "Visitors using assistive technology, and AI agents that act through the accessibility tree, can identify and use the affected elements",
+        "verification": "Re-run the audit and check the pages with a screen reader or an accessibility checker",
+        "implementation_detail": "Tie a visible label element to every field, or use aria-label where a visible label is impossible.",
+        "expected_outcome": "Every form field can be identified and filled in with assistive technology or by an AI agent.",
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_accessibility.py",
+            "rule_id": "form-label-missing"
+          }
+        ]
+      },
+      "check_id": "form-label-missing",
+      "mechanism": "A field with no label has no name in the accessibility tree, so screen-reader users and AI agents cannot tell what it asks for.",
+      "implementation_detail": "Tie a visible label element to every field, or use aria-label where a visible label is impossible.",
+      "expected_outcome": "Every form field can be identified and filled in with assistive technology or by an AI agent.",
+      "check_ids": [
+        "form-label-missing"
+      ],
+      "coverage": {
+        "affected_pages": 5,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-002",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No llms.txt file found",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.python.org/llms.txt"
+      ],
+      "root_cause": "Site does not publish an llms.txt guidance file",
+      "evidence": [
+        {
+          "type": "llms_txt",
+          "description": "/llms.txt returned 404",
+          "urls": [
+            "https://www.python.org/llms.txt"
+          ]
+        }
+      ],
+      "evidence_text": "/llms.txt returned 404",
+      "suggested_action": {
+        "summary": "Publish an llms.txt summarizing key pages for AI assistants",
+        "steps": [
+          "Create /llms.txt",
+          "List key pages and a short site summary"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
+        "verification": "Confirm /llms.txt is reachable and valid",
+        "implementation_detail": "Create /llms.txt. List the key pages and a short site summary.",
+        "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
+        "snippet": {
+          "format": "markdown",
+          "placement": "Save as /llms.txt at the site root, served as text/plain",
+          "code": "# Python.org\n\n> The official home of the Python Programming Language\n\n## Key pages\n\n- [Welcome to Python.org](https://www.python.org/): The official home of the Python Programming Language\n- [About Python\u2122 | Python.org](https://www.python.org/about/): The official home of the Python Programming Language\n- [Applications for Python | Python.org](https://www.python.org/about/apps/): The official home of the Python Programming Language\n- [Python For Beginners | Python.org](https://www.python.org/about/gettingstarted/): The official home of the Python Programming Language\n- [Help | Python.org](https://www.python.org/about/help/): The official home of the Python Programming Language\n- [Legal Statements | Python Software Foundation](https://www.python.org/about/legal/): The official home of the Python Programming Language\n- [Quotes about Python | Python.org](https://www.python.org/about/quotes/): The official home of the Python Programming Language\n- [Our Blogs | Python.org](https://www.python.org/blogs/): The official home of the Python Programming Language\n- [Our Community | Python.org](https://www.python.org/community/): The official home of the Python Programming Language\n- [Python Community Awards | Python Software Foundation](https://www.python.org/community/awards/): The official home of the Python Programming Language\n- [Diversity | Python.org](https://www.python.org/community/diversity/): The official home of the Python Programming Language\n- [Forums | Python.org](https://www.python.org/community/forums/): The official home of the Python Programming Language\n",
+          "filled_from": {
+            "name": "og:site_name on the home page",
+            "description": "home page meta description",
+            "key pages": "crawled pages, with their titles and meta descriptions"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "check_llms_txt.py",
+            "rule_id": "no-llms-txt"
+          }
+        ]
+      },
+      "check_id": "no-llms-txt",
+      "mechanism": "Site does not publish an llms.txt guidance file",
+      "implementation_detail": "Create /llms.txt. List the key pages and a short site summary.",
+      "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
+      "check_ids": [
+        "no-llms-txt"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-003",
+      "category": "ai_discoverability",
+      "finding_type": "defect",
+      "title": "Image alt text is a file name, placeholder or repeated label that describes nothing",
+      "severity": "low",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.python.org/community/logos/"
+      ],
+      "root_cause": "Alt text such as a file name or a word like 'banner' gives crawlers, assistants and screen readers no description of the image",
+      "evidence": [
+        {
+          "type": "image_alt",
+          "description": "2 image(s) with uninformative alt text, for example alt=\"/static/community_logos/python-powered-w-100x40.png\" (a file name) on https://www.python.org/static/community_logos/python-powered-w-100x40.png; alt=\"/static/community_logos/python-powered-h-50x65.png\" (a file name) on https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+          "urls": [
+            "https://www.python.org/community/logos/"
+          ]
+        }
+      ],
+      "evidence_text": "2 image(s) with uninformative alt text, for example alt=\"/static/community_logos/python-powered-w-100x40.png\" (a file name) on https://www.python.org/static/community_logos/python-powered-w-100x40.png; alt=\"/static/community_logos/python-powered-h-50x65.png\" (a file name) on https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+      "suggested_action": {
+        "summary": "Replace placeholder alt text with a short description of each image",
+        "steps": [
+          "Write alt text that says what each informative image shows, in a short phrase",
+          "Use an empty alt=\"\" for purely decorative images instead of a placeholder word",
+          "Fix the CMS or template default that fills alt text with the file name"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Crawlers, assistants and screen readers can tell what each image shows",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Replace file names and placeholder words in alt text with a short description of the image, use an empty alt for decorative images, and fix the template default that fills alt text automatically.",
+        "expected_outcome": "Crawlers, assistants and screen readers can tell what each informative image shows.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_media_text.py",
+            "rule_id": "alt-text-quality"
+          }
+        ]
+      },
+      "check_id": "alt-text-quality",
+      "mechanism": "Alt text is the only description of an image that text-based crawlers, assistants and screen readers receive; a file name or a word such as banner describes nothing.",
+      "implementation_detail": "Replace file names and placeholder words in alt text with a short description of the image, use an empty alt for decorative images, and fix the template default that fills alt text automatically.",
+      "expected_outcome": "Crawlers, assistants and screen readers can tell what each informative image shows.",
+      "check_ids": [
+        "alt-text-quality"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-004",
+      "category": "engagement",
+      "finding_type": "defect",
+      "title": "Links or buttons have no accessible name",
+      "severity": "low",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.python.org/about/"
+      ],
+      "root_cause": "A link or button with no text, no image alt text and no aria-label is announced only as 'link' or 'button', so screen-reader users and AI agents cannot tell where it leads",
+      "evidence": [
+        {
+          "type": "control_names",
+          "description": "1 unnamed control(s): <a href=/community/lists> with no content",
+          "urls": [
+            "https://www.python.org/about/"
+          ]
+        }
+      ],
+      "evidence_text": "1 unnamed control(s): <a href=/community/lists> with no content",
+      "suggested_action": {
+        "summary": "Name every icon-only link and button",
+        "steps": [
+          "Add an aria-label that says what the control does, such as aria-label=\"Open cart\"",
+          "Or add visually hidden text inside the control",
+          "Mark the icon itself aria-hidden=\"true\""
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Visitors using assistive technology, and AI agents that act through the accessibility tree, can identify and use the affected elements",
+        "verification": "Re-run the audit and check the pages with a screen reader or an accessibility checker",
+        "implementation_detail": "Add an aria-label or visually hidden text to icon-only links and buttons, and hide the icon itself.",
+        "expected_outcome": "Every link and button says where it leads or what it does.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_accessibility.py",
+            "rule_id": "control-name-missing"
+          }
+        ]
+      },
+      "check_id": "control-name-missing",
+      "mechanism": "A link or button with no text or label is announced only as \"link\" or \"button\", so it cannot be understood or chosen reliably.",
+      "implementation_detail": "Add an aria-label or visually hidden text to icon-only links and buttons, and hide the icon itself.",
+      "expected_outcome": "Every link and button says where it leads or what it does.",
+      "check_ids": [
+        "control-name-missing"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-005",
+      "category": "ai_discoverability",
+      "finding_type": "defect",
+      "title": "About pages are missing Organization/AboutPage structured data",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.python.org/about/",
+        "https://www.python.org/about/apps",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/legal/",
+        "https://www.python.org/about/quotes/"
+      ],
+      "root_cause": "6 page(s) classified as 'about' carry no Organization/AboutPage JSON-LD, so explicit machine-readable context may be improved",
+      "evidence": [
+        {
+          "type": "structured_data",
+          "description": "6 'about' page(s) missing Organization/AboutPage markup",
+          "urls": [
+            "https://www.python.org/about/",
+            "https://www.python.org/about/apps",
+            "https://www.python.org/about/gettingstarted/",
+            "https://www.python.org/about/help/",
+            "https://www.python.org/about/legal/",
+            "https://www.python.org/about/quotes/"
+          ]
+        }
+      ],
+      "evidence_text": "6 'about' page(s) missing Organization/AboutPage markup",
+      "suggested_action": {
+        "summary": "Add Organization/AboutPage JSON-LD to about pages",
+        "steps": [
+          "Add Organization/AboutPage schema.org JSON-LD matching each about page's content",
+          "Validate with a schema.org/Rich Results validator"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "About facts become machine-extractable and citable",
+        "verification": "Re-crawl and confirm the expected @type is present",
+        "implementation_detail": "Review the about classification, then add truthful AboutPage or Organization markup only where applicable and validate it.",
+        "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/about/ -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"AboutPage\",\n  \"url\": \"https://www.python.org/about/\",\n  \"name\": \"Python is powerful... and fast; plays well with others; runs everywhere; is friendly & easy to learn; is Open.\",\n  \"description\": \"The official home of the Python Programming Language\",\n  \"about\": {\n    \"@id\": \"https://www.python.org/#organization\"\n  }\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "page fields": "the page's H1 or title, meta description and URL"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_machine_readability.py",
+            "rule_id": "page-type-schema-gap:about"
+          }
+        ]
+      },
+      "check_id": "page-type-schema-gap:about",
+      "mechanism": "Page-appropriate structured data can make visible facts more explicit to supporting consumers.",
+      "implementation_detail": "Review the about classification, then add truthful AboutPage or Organization markup only where applicable and validate it.",
+      "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
+      "check_ids": [
+        "page-type-schema-gap:about"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-006",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/about/",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/legal/",
+        "https://www.python.org/about/quotes/",
+        "https://www.python.org/community/diversity/",
+        "https://www.python.org/community/irc/",
+        "https://www.python.org/community/logos/",
+        "https://www.python.org/community/workshops/",
+        "https://www.python.org/dev/core-mentorship/",
+        "https://www.python.org/doc/essays/",
+        "https://www.python.org/download/alternatives",
+        "https://www.python.org/downloads/source/",
+        "https://www.python.org/events/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/psf/community-stories/"
+      ],
+      "root_cause": "No H1 was found on these sampled pages.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "No H1 was found on these sampled pages.",
+          "urls": [
+            "https://www.python.org/events/",
+            "https://www.python.org/events/python-events/",
+            "https://www.python.org/events/python-events/past/",
+            "https://www.python.org/events/python-user-group/",
+            "https://www.python.org/events/python-user-group/past/",
+            "https://www.python.org/psf/community-stories/"
+          ]
+        },
+        {
+          "type": "html_observation",
+          "description": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+          "urls": [
+            "https://www.python.org/about/",
+            "https://www.python.org/about/gettingstarted/",
+            "https://www.python.org/about/legal/",
+            "https://www.python.org/about/quotes/",
+            "https://www.python.org/community/diversity/",
+            "https://www.python.org/community/irc/",
+            "https://www.python.org/community/logos/",
+            "https://www.python.org/community/workshops/",
+            "https://www.python.org/dev/core-mentorship/",
+            "https://www.python.org/doc/essays/",
+            "https://www.python.org/download/alternatives",
+            "https://www.python.org/downloads/source/",
+            "https://www.python.org/events/",
+            "https://www.python.org/events/python-events/",
+            "https://www.python.org/events/python-events/past/",
+            "https://www.python.org/events/python-user-group/",
+            "https://www.python.org/events/python-user-group/past/",
+            "https://www.python.org/psf/community-stories/"
+          ]
+        }
+      ],
+      "evidence_text": "No H1 was found on these sampled pages.; Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "suggested_action": {
+        "summary": "Add a descriptive primary heading where a clear page title is missing",
+        "steps": [
+          "Add a descriptive primary heading where a clear page title is missing"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+        "expected_outcome": "Makes the page topic easier to identify.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "h1"
+          },
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "page-orientation"
+          }
+        ]
+      },
+      "check_id": "h1",
+      "mechanism": "An absent primary heading can weaken page orientation.",
+      "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+      "expected_outcome": "Makes the page topic easier to identify.",
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "coverage": {
+        "affected_pages": 18,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-007",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Different sampled URLs share page titles",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/events/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/psf-landing/",
+        "https://www.python.org/psf/"
+      ],
+      "root_cause": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
+          "urls": [
+            "https://www.python.org/events/",
+            "https://www.python.org/events/python-events/",
+            "https://www.python.org/events/python-events/past/",
+            "https://www.python.org/events/python-user-group/",
+            "https://www.python.org/events/python-user-group/past/",
+            "https://www.python.org/psf-landing/",
+            "https://www.python.org/psf/"
+          ]
+        }
+      ],
+      "evidence_text": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
+      "suggested_action": {
+        "summary": "Give distinct content pages descriptive, distinct titles",
+        "steps": [
+          "Give distinct content pages descriptive, distinct titles",
+          "Preserve intentional canonical variants"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Give distinct content pages descriptive titles; retain intentional duplicates where justified.",
+        "expected_outcome": "Helps readers distinguish the sampled pages.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "duplicate-titles"
+          }
+        ]
+      },
+      "check_id": "duplicate-titles",
+      "mechanism": "Repeated titles can obscure differences between pages.",
+      "implementation_detail": "Give distinct content pages descriptive titles; retain intentional duplicates where justified.",
+      "expected_outcome": "Helps readers distinguish the sampled pages.",
+      "check_ids": [
+        "duplicate-titles"
+      ],
+      "coverage": {
+        "affected_pages": 7,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-008",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Email or phone shown on 7/49 sampled pages but stated in no structured data",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/legal/",
+        "https://www.python.org/community/logos/",
+        "https://www.python.org/community/sigs/",
+        "https://www.python.org/dev/security/",
+        "https://www.python.org/jobs/",
+        "https://www.python.org/psf/donations/"
+      ],
+      "root_cause": "Assistants answer \"how do I contact them?\" from machine-readable email, telephone and contactPoint properties; contact details shown only as text or links are easy to miss or to attribute to the wrong organization",
+      "evidence": [
+        {
+          "type": "contact_signal",
+          "description": "email: psf@python.org, python-announce@python.org, webmaster@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/about/help/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: legal@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/about/legal/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: psf-trademarks@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/community/logos/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: alexander.belopolsky@gmail.com, andy47@halfcooked.com, andy@robanal.demon.co.uk. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/community/sigs/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: cna@python.org, security-announce@python.org, security@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/dev/security/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: jobs@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/jobs/"
+          ]
+        },
+        {
+          "type": "contact_signal",
+          "description": "email: psf-donations@python.org. No email, telephone or contactPoint in any page's structured data",
+          "urls": [
+            "https://www.python.org/psf/donations/"
+          ]
+        }
+      ],
+      "evidence_text": "email: psf@python.org, python-announce@python.org, webmaster@python.org. No email, telephone or contactPoint in any page's structured data; email: legal@python.org. No email, telephone or contactPoint in any page's structured data; email: psf-trademarks@python.org. No email, telephone or contactPoint in any page's structured data; email: alexander.belopolsky@gmail.com, andy47@halfcooked.com, andy@robanal.demon.co.uk. No email, telephone or contactPoint in any page's structured data; email: cna@python.org, security-announce@python.org, security@python.org. No email, telephone or contactPoint in any page's structured data; email: jobs@python.org. No email, telephone or contactPoint in any page's structured data; email: psf-donations@python.org. No email, telephone or contactPoint in any page's structured data",
+      "suggested_action": {
+        "summary": "State the main email and phone number in the Organization JSON-LD",
+        "steps": [
+          "Add email and telephone to the Organization or LocalBusiness markup on the home page",
+          "Add a contactPoint for each department visitors contact (sales, support, admissions), with its contactType, telephone and email",
+          "Use the same details as the contact page, written in international format (+country code)"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Assistants can give the brand's own contact details when asked",
+        "verification": "Validate the markup and confirm it matches the visible contact details",
+        "implementation_detail": "Add email, telephone and a contactPoint to the Organization JSON-LD, matching the contact page.",
+        "expected_outcome": "Assistants can give the brand's own email and phone number when asked how to reach it.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"@id\": \"https://www.python.org/#organization\",\n  \"name\": \"Python.org\",\n  \"url\": \"https://www.python.org/\",\n  \"logo\": \"https://www.python.org/static/apple-touch-icon-precomposed.png\",\n  \"description\": \"The official home of the Python Programming Language\",\n  \"sameAs\": [\n    \"https://www.linkedin.com/company/python-software-foundation/\",\n    \"https://twitter.com/ThePSF\",\n    \"https://en.wikipedia.org/wiki/Tkinter\",\n    \"https://github.com/python/cpython/issues\",\n    \"https://github.com/python/pythondotorg/issues\"\n  ],\n  \"email\": \"barry@python.org\",\n  \"telephone\": \"REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT\",\n  \"contactPoint\": [\n    {\n      \"@type\": \"ContactPoint\",\n      \"contactType\": \"REPLACE_WITH_CONTACT_TYPE\",\n      \"email\": \"barry@python.org\",\n      \"telephone\": \"REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT\"\n    }\n  ]\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "name": "og:site_name on the home page",
+            "logo": "<link rel=\"apple-touch-icon\"> on the home page (prefer a square logo of 112 px or more)",
+            "sameAs": "profile links on the home page",
+            "description": "home page meta description",
+            "email": "the most used email on the site's own domain"
+          },
+          "placeholders": [
+            "REPLACE_WITH_CONTACT_TYPE",
+            "REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_context_signals.py",
+            "rule_id": "contact-markup-missing"
+          }
+        ]
+      },
+      "check_id": "contact-markup-missing",
+      "mechanism": "Assistants read contact details from email, telephone and contactPoint properties; details shown only as text or links are easy to miss or to attribute to another organization.",
+      "implementation_detail": "Add email, telephone and a contactPoint to the Organization JSON-LD, matching the contact page.",
+      "expected_outcome": "Assistants can give the brand's own email and phone number when asked how to reach it.",
+      "check_ids": [
+        "contact-markup-missing"
+      ],
+      "coverage": {
+        "affected_pages": 7,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-009",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Visible breadcrumbs lack matching BreadcrumbList structured data",
+      "severity": "low",
+      "confidence": 0.65,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/about/apps",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/quotes/",
+        "https://www.python.org/community/awards",
+        "https://www.python.org/community/diversity/",
+        "https://www.python.org/community/forums/",
+        "https://www.python.org/community/irc/",
+        "https://www.python.org/community/lists/",
+        "https://www.python.org/community/logos/"
+      ],
+      "root_cause": "Breadcrumb navigation is visible but not machine-readable",
+      "evidence": [
+        {
+          "type": "breadcrumb",
+          "description": "Visible breadcrumb without schema",
+          "urls": [
+            "https://www.python.org/about/apps",
+            "https://www.python.org/about/gettingstarted/",
+            "https://www.python.org/about/help/",
+            "https://www.python.org/about/quotes/",
+            "https://www.python.org/community/awards",
+            "https://www.python.org/community/diversity/",
+            "https://www.python.org/community/forums/",
+            "https://www.python.org/community/irc/",
+            "https://www.python.org/community/lists/",
+            "https://www.python.org/community/logos/"
+          ]
+        }
+      ],
+      "evidence_text": "Visible breadcrumb without schema",
+      "suggested_action": {
+        "summary": "Add BreadcrumbList JSON-LD matching visible breadcrumbs",
+        "steps": [
+          "Add BreadcrumbList schema to pages with visible breadcrumbs"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves machine understanding of site structure",
+        "verification": "Validate BreadcrumbList JSON-LD",
+        "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+        "expected_outcome": "Improves machine understanding of site structure",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_engagement.py",
+            "rule_id": "breadcrumb-mismatch"
+          }
+        ]
+      },
+      "check_id": "breadcrumb-mismatch",
+      "mechanism": "Breadcrumb navigation is visible but not machine-readable",
+      "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+      "expected_outcome": "Improves machine understanding of site structure",
+      "check_ids": [
+        "breadcrumb-mismatch"
+      ],
+      "status_note": "Reported as suspected: its confidence (0.65) is below the 0.7 a confirmed finding needs.",
+      "coverage": {
+        "affected_pages": 10,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-010",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 49/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/",
+        "https://www.python.org/about/",
+        "https://www.python.org/about/apps",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/legal/",
+        "https://www.python.org/about/quotes/",
+        "https://www.python.org/blogs/",
+        "https://www.python.org/community/",
+        "https://www.python.org/community/awards",
+        "https://www.python.org/community/diversity/",
+        "https://www.python.org/community/forums/",
+        "https://www.python.org/community/irc/",
+        "https://www.python.org/community/lists/",
+        "https://www.python.org/community/logos/",
+        "https://www.python.org/community/sigs/",
+        "https://www.python.org/community/workshops/",
+        "https://www.python.org/dev/",
+        "https://www.python.org/dev/core-mentorship/",
+        "https://www.python.org/dev/security/",
+        "https://www.python.org/doc/",
+        "https://www.python.org/doc/av",
+        "https://www.python.org/doc/essays/",
+        "https://www.python.org/download/alternatives",
+        "https://www.python.org/download/other/",
+        "https://www.python.org/downloads/",
+        "https://www.python.org/downloads/android/",
+        "https://www.python.org/downloads/ios/",
+        "https://www.python.org/downloads/macos/",
+        "https://www.python.org/downloads/release/python-3150/",
+        "https://www.python.org/downloads/source/",
+        "https://www.python.org/downloads/windows/",
+        "https://www.python.org/events/",
+        "https://www.python.org/events/calendars/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/2118/",
+        "https://www.python.org/events/python-events/2183/",
+        "https://www.python.org/events/python-events/2189/",
+        "https://www.python.org/events/python-events/2203/",
+        "https://www.python.org/events/python-events/2211/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/jobs/",
+        "https://www.python.org/psf-landing/",
+        "https://www.python.org/psf/",
+        "https://www.python.org/psf/annual-report/2024/",
+        "https://www.python.org/psf/community-stories/",
+        "https://www.python.org/psf/donations/"
+      ],
+      "root_cause": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/apps"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/gettingstarted/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/help/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/legal/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/about/quotes/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/blogs/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/community/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.python.org/community/awards"
+          ]
+        }
+      ],
+      "evidence_text": "No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.",
+      "suggested_action": {
+        "summary": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "steps": [
+          "Assess real duplicates before declaring the correct absolute canonical URL."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/\">\n\n<!-- https://www.python.org/about/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/about/\">\n\n<!-- https://www.python.org/about/apps/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/about/apps/\">",
+          "filled_from": {
+            "href": "each page's final URL, without fragments or tracking parameters"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-canonical"
+          }
+        ]
+      },
+      "check_id": "missing-canonical",
+      "mechanism": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+      "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "coverage": {
+        "affected_pages": 49,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-011",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 49/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/",
+        "https://www.python.org/about/",
+        "https://www.python.org/about/apps",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/legal/",
+        "https://www.python.org/about/quotes/",
+        "https://www.python.org/blogs/",
+        "https://www.python.org/community/",
+        "https://www.python.org/community/awards",
+        "https://www.python.org/community/diversity/",
+        "https://www.python.org/community/forums/",
+        "https://www.python.org/community/irc/",
+        "https://www.python.org/community/lists/",
+        "https://www.python.org/community/logos/",
+        "https://www.python.org/community/sigs/",
+        "https://www.python.org/community/workshops/",
+        "https://www.python.org/dev/",
+        "https://www.python.org/dev/core-mentorship/",
+        "https://www.python.org/dev/security/",
+        "https://www.python.org/doc/",
+        "https://www.python.org/doc/av",
+        "https://www.python.org/doc/essays/",
+        "https://www.python.org/download/alternatives",
+        "https://www.python.org/download/other/",
+        "https://www.python.org/downloads/",
+        "https://www.python.org/downloads/android/",
+        "https://www.python.org/downloads/ios/",
+        "https://www.python.org/downloads/macos/",
+        "https://www.python.org/downloads/release/python-3150/",
+        "https://www.python.org/downloads/source/",
+        "https://www.python.org/downloads/windows/",
+        "https://www.python.org/events/",
+        "https://www.python.org/events/calendars/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/2118/",
+        "https://www.python.org/events/python-events/2183/",
+        "https://www.python.org/events/python-events/2189/",
+        "https://www.python.org/events/python-events/2203/",
+        "https://www.python.org/events/python-events/2211/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/jobs/",
+        "https://www.python.org/psf-landing/",
+        "https://www.python.org/psf/",
+        "https://www.python.org/psf/annual-report/2024/",
+        "https://www.python.org/psf/community-stories/",
+        "https://www.python.org/psf/donations/"
+      ],
+      "root_cause": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/apps"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/gettingstarted/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/help/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/legal/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/about/quotes/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/blogs/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/community/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.python.org/community/awards"
+          ]
+        }
+      ],
+      "evidence_text": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+      "suggested_action": {
+        "summary": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "steps": [
+          "Choose an appropriate supported twitter:card value and verify the target platform preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.python.org/about/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.python.org/about/apps/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">",
+          "filled_from": {
+            "card": "summary_large_image when the page has a lead image, otherwise summary"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "twitter-card"
+          }
+        ]
+      },
+      "check_id": "twitter-card",
+      "mechanism": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+      "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+      "check_ids": [
+        "twitter-card"
+      ],
+      "coverage": {
+        "affected_pages": 49,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-012",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 23/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/about/apps",
+        "https://www.python.org/about/gettingstarted/",
+        "https://www.python.org/about/help/",
+        "https://www.python.org/about/quotes/",
+        "https://www.python.org/community/",
+        "https://www.python.org/community/diversity/",
+        "https://www.python.org/community/irc/",
+        "https://www.python.org/community/lists/",
+        "https://www.python.org/community/logos/",
+        "https://www.python.org/community/sigs/",
+        "https://www.python.org/community/workshops/",
+        "https://www.python.org/dev/core-mentorship/",
+        "https://www.python.org/dev/security/",
+        "https://www.python.org/doc/av",
+        "https://www.python.org/doc/essays/",
+        "https://www.python.org/download/other/",
+        "https://www.python.org/downloads/",
+        "https://www.python.org/events/python-events/2118/",
+        "https://www.python.org/events/python-events/2183/",
+        "https://www.python.org/events/python-events/2189/",
+        "https://www.python.org/events/python-events/2203/",
+        "https://www.python.org/events/python-events/2211/",
+        "https://www.python.org/psf/donations/"
+      ],
+      "root_cause": "Skipped heading levels can make section relationships less clear.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/about/apps"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/about/gettingstarted/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/about/help/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/about/quotes/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 2, 2, 2, 2, 2, 2, 2, 2, 4]",
+          "urls": [
+            "https://www.python.org/community/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/community/diversity/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/community/irc/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/community/lists/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/community/logos/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 1, 1, 1, 1, 3]",
+          "urls": [
+            "https://www.python.org/community/sigs/"
+          ]
+        }
+      ],
+      "evidence_text": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 2, 2, 2, 2, 2, 2, 2, 2, 4]; Observed heading levels: [1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 3]",
+      "suggested_action": {
+        "summary": "Review the outline and nest headings according to the document hierarchy.",
+        "steps": [
+          "Review the outline and nest headings according to the document hierarchy."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves outline consistency without requiring an arbitrary visual style.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+        "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "heading-hierarchy"
+          }
+        ]
+      },
+      "check_id": "heading-hierarchy",
+      "mechanism": "Skipped heading levels can make section relationships less clear.",
+      "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+      "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "coverage": {
+        "affected_pages": 23,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-013",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Visible text is under 8% of the HTML on 21/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/community/awards",
+        "https://www.python.org/community/forums/",
+        "https://www.python.org/community/workshops/",
+        "https://www.python.org/dev/",
+        "https://www.python.org/doc/",
+        "https://www.python.org/downloads/android/",
+        "https://www.python.org/downloads/ios/",
+        "https://www.python.org/events/",
+        "https://www.python.org/events/calendars/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/2118/",
+        "https://www.python.org/events/python-events/2183/",
+        "https://www.python.org/events/python-events/2189/",
+        "https://www.python.org/events/python-events/2203/",
+        "https://www.python.org/events/python-events/2211/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/psf-landing/",
+        "https://www.python.org/psf/",
+        "https://www.python.org/psf/annual-report/2024/"
+      ],
+      "root_cause": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 6.4% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/community/awards"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 5.7% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/community/forums/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 7.8% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/community/workshops/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 5.4% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/dev/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 7.4% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/doc/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/downloads/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 3.4% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/downloads/ios/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/events/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 4.7% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/events/calendars/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 5.9% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.python.org/events/python-events/"
+          ]
+        }
+      ],
+      "evidence_text": "Visible text represents 6.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.7% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 7.8% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 7.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 3.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 4.7% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.9% of decoded HTML body bytes. This is not a ranking metric.",
+      "suggested_action": {
+        "summary": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "steps": [
+          "Inspect inline assets and template boilerplate before trimming unnecessary HTML."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "markup-ratio"
+          }
+        ]
+      },
+      "check_id": "markup-ratio",
+      "mechanism": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+      "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+      "check_ids": [
+        "markup-ratio"
+      ],
+      "coverage": {
+        "affected_pages": 21,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-014",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 14/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/",
+        "https://www.python.org/about/",
+        "https://www.python.org/blogs/",
+        "https://www.python.org/community/",
+        "https://www.python.org/doc/",
+        "https://www.python.org/downloads/",
+        "https://www.python.org/events/",
+        "https://www.python.org/events/python-events/",
+        "https://www.python.org/events/python-events/past/",
+        "https://www.python.org/events/python-user-group/",
+        "https://www.python.org/events/python-user-group/past/",
+        "https://www.python.org/jobs/",
+        "https://www.python.org/psf-landing/",
+        "https://www.python.org/psf/"
+      ],
+      "root_cause": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/about/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/blogs/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/community/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/doc/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/downloads/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/events/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/events/python-events/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/events/python-events/past/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.python.org/events/python-user-group/"
+          ]
+        }
+      ],
+      "evidence_text": "No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.",
+      "suggested_action": {
+        "summary": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "steps": [
+          "Mark the main content semantically and keep navigation outside it when appropriate."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves structural clarity for supporting readers and extractors.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-landmarks"
+          }
+        ]
+      },
+      "check_id": "missing-landmarks",
+      "mechanism": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+      "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "coverage": {
+        "affected_pages": 14,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-015",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "One word makes up more than 6% of the text on 2/46 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/downloads/",
+        "https://www.python.org/downloads/android/"
+      ],
+      "root_cause": "High observed term repetition can reduce readability but is not proof of spam.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Term 'release' occurs 284 times among 2258 words. Repetition alone is not proof of spam.",
+          "urls": [
+            "https://www.python.org/downloads/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Term 'android' occurs 59 times among 588 words. Repetition alone is not proof of spam.",
+          "urls": [
+            "https://www.python.org/downloads/android/"
+          ]
+        }
+      ],
+      "evidence_text": "Term 'release' occurs 284 times among 2258 words. Repetition alone is not proof of spam.; Term 'android' occurs 59 times among 588 words. Repetition alone is not proof of spam.",
+      "suggested_action": {
+        "summary": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+        "steps": [
+          "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves natural wording when repetition is excessive.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+        "expected_outcome": "Improves natural wording when repetition is excessive.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "freshness-corroboration",
+            "script": "analyze_answer_content.py",
+            "rule_id": "term-repetition"
+          }
+        ]
+      },
+      "check_id": "term-repetition",
+      "mechanism": "High observed term repetition can reduce readability but is not proof of spam.",
+      "implementation_detail": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+      "expected_outcome": "Improves natural wording when repetition is excessive.",
+      "check_ids": [
+        "term-repetition"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-016",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Content images have no alt text, caption or other text saying what they show",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/community/logos/"
+      ],
+      "root_cause": "Text-based crawlers, assistants and screen readers learn what an image shows only from text tied to it; with no alt text, figcaption, title or link text, the image says nothing",
+      "evidence": [
+        {
+          "type": "image_context",
+          "description": "2 content image(s) with no usable alt text and no caption, title, aria-label or link text, for example https://www.python.org/static/community_logos/python-powered-w-100x40.png, https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+          "urls": [
+            "https://www.python.org/community/logos/"
+          ]
+        }
+      ],
+      "evidence_text": "2 content image(s) with no usable alt text and no caption, title, aria-label or link text, for example https://www.python.org/static/community_logos/python-powered-w-100x40.png, https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+      "suggested_action": {
+        "summary": "Describe each informative image in its alt text, and caption images that need context",
+        "steps": [
+          "Write a short alt text that says what each informative image shows",
+          "Wrap images that need explanation in <figure> with a <figcaption>",
+          "Mark purely decorative images with alt=\"\""
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Crawlers, assistants and screen readers can tell what each image shows",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Write descriptive alt text, add a figcaption where context is needed, and use alt=\"\" for decorative images.",
+        "expected_outcome": "Every informative image has text that says what it shows.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_image_context.py",
+            "rule_id": "image-context-missing"
+          }
+        ]
+      },
+      "check_id": "image-context-missing",
+      "mechanism": "Crawlers, assistants and screen readers learn what an image shows only from alt text, captions or nearby link text; an image with none says nothing.",
+      "implementation_detail": "Write descriptive alt text, add a figcaption where context is needed, and use alt=\"\" for decorative images.",
+      "expected_outcome": "Every informative image has text that says what it shows.",
+      "check_ids": [
+        "image-context-missing"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-017",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Most images have no width and height on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/jobs/"
+      ],
+      "root_cause": "Images without dimensions may lack reserved space unless CSS already supplies it.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "19/19 images lack positive width/height attributes; no lazy hints. CSS dimensions and viewport positions were not measured.",
+          "urls": [
+            "https://www.python.org/jobs/"
+          ]
+        }
+      ],
+      "evidence_text": "19/19 images lack positive width/height attributes; no lazy hints. CSS dimensions and viewport positions were not measured.",
+      "suggested_action": {
+        "summary": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+        "steps": [
+          "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Can reduce layout movement and unnecessary loading; layout shift is not measured.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+        "expected_outcome": "Can reduce layout movement and unnecessary loading; layout shift is not measured.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "image-sizing"
+          }
+        ]
+      },
+      "check_id": "image-sizing",
+      "mechanism": "Images without dimensions may lack reserved space unless CSS already supplies it.",
+      "implementation_detail": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+      "expected_outcome": "Can reduce layout movement and unnecessary loading; layout shift is not measured.",
+      "check_ids": [
+        "image-sizing"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-018",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No XML sitemap found",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/"
+      ],
+      "root_cause": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Sitemap probe status: absent; checked: https://www.python.org/sitemap.xml (absent). No additional sitemap discovery was attempted by this check.",
+          "urls": [
+            "https://www.python.org/"
+          ]
+        }
+      ],
+      "evidence_text": "Sitemap probe status: absent; checked: https://www.python.org/sitemap.xml (absent). No additional sitemap discovery was attempted by this check.",
+      "suggested_action": {
+        "summary": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "steps": [
+          "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "sitemap-unavailable"
+          }
+        ]
+      },
+      "check_id": "sitemap-unavailable",
+      "mechanism": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+      "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect.",
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-019",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/psf/donations/"
+      ],
+      "root_cause": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 96 characters: Support the PSF with a Donation or by becoming a Supporting Member! | Python Software Foundation. Display width was not measured.",
+          "urls": [
+            "https://www.python.org/psf/donations/"
+          ]
+        }
+      ],
+      "evidence_text": "Title has 96 characters: Support the PSF with a Donation or by becoming a Supporting Member! | Python Software Foundation. Display width was not measured.",
+      "suggested_action": {
+        "summary": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "steps": [
+          "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves title usefulness; pixel width and platform behavior vary.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "title-length"
+          }
+        ]
+      },
+      "check_id": "title-length",
+      "mechanism": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+      "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+      "check_ids": [
+        "title-length"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-020",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "HTML response larger than 400 KB on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/downloads/windows/"
+      ],
+      "root_cause": "Large HTML bodies consume the bounded retrieval budget.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Retained 591272 HTML body bytes; truncated: False. Asset transfer sizes were not measured.",
+          "urls": [
+            "https://www.python.org/downloads/windows/"
+          ]
+        }
+      ],
+      "evidence_text": "Retained 591272 HTML body bytes; truncated: False. Asset transfer sizes were not measured.",
+      "suggested_action": {
+        "summary": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+        "steps": [
+          "Trim unnecessary inline payloads and paginate only where useful; retain essential content."
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Reduces bytes required to retrieve the primary document.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+        "expected_outcome": "Reduces bytes required to retrieve the primary document.",
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "heavy-html"
+          }
+        ]
+      },
+      "check_id": "heavy-html",
+      "mechanism": "Large HTML bodies consume the bounded retrieval budget.",
+      "implementation_detail": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+      "expected_outcome": "Reduces bytes required to retrieve the primary document.",
+      "check_ids": [
+        "heavy-html"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    },
+    {
+      "id": "F-021",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Physical location is shown on the page but stated in no structured data",
+      "severity": "low",
+      "confidence": 0.55,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.python.org/about/legal/"
+      ],
+      "root_cause": "Assistants answer location-dependent questions from machine-readable addresses, coordinates and service areas; a location shown only as text or a map is easy to miss",
+      "evidence": [
+        {
+          "type": "location_signal",
+          "description": "address: 9450 SW Gemini Dr., ECM# 90772, Beaverton, OR 97008. No address, geo or areaServed in any page's JSON-LD",
+          "urls": [
+            "https://www.python.org/about/legal/"
+          ]
+        }
+      ],
+      "evidence_text": "address: 9450 SW Gemini Dr., ECM# 90772, Beaverton, OR 97008. No address, geo or areaServed in any page's JSON-LD",
+      "suggested_action": {
+        "summary": "State the address, coordinates and service area in Organization or LocalBusiness JSON-LD",
+        "steps": [
+          "Add a PostalAddress (streetAddress, addressLocality, postalCode, addressCountry) to the Organization or LocalBusiness markup",
+          "Add geo coordinates for each physical location, and areaServed for the regions served",
+          "Keep the visible address, the markup and the business profile identical"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "The brand can be matched to location-specific questions",
+        "verification": "Validate the markup and confirm the address matches the visible text",
+        "implementation_detail": "Add a PostalAddress, geo coordinates and areaServed to the Organization or LocalBusiness JSON-LD, matching the visible address.",
+        "expected_outcome": "The brand can be matched to questions about a place.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"@id\": \"https://www.python.org/#organization\",\n  \"name\": \"Python.org\",\n  \"url\": \"https://www.python.org/\",\n  \"logo\": \"https://www.python.org/static/apple-touch-icon-precomposed.png\",\n  \"description\": \"The official home of the Python Programming Language\",\n  \"sameAs\": [\n    \"https://www.linkedin.com/company/python-software-foundation/\",\n    \"https://twitter.com/ThePSF\",\n    \"https://en.wikipedia.org/wiki/Tkinter\",\n    \"https://github.com/python/cpython/issues\",\n    \"https://github.com/python/pythondotorg/issues\"\n  ],\n  \"address\": \"9450 SW Gemini Dr., ECM# 90772, Beaverton, OR 97008\",\n  \"geo\": {\n    \"@type\": \"GeoCoordinates\",\n    \"latitude\": \"REPLACE_WITH_LATITUDE\",\n    \"longitude\": \"REPLACE_WITH_LONGITUDE\"\n  },\n  \"areaServed\": \"REPLACE_WITH_AREA_SERVED\"\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "name": "og:site_name on the home page",
+            "logo": "<link rel=\"apple-touch-icon\"> on the home page (prefer a square logo of 112 px or more)",
+            "sameAs": "profile links on the home page",
+            "description": "home page meta description",
+            "address": "the address shown on the page"
+          },
+          "placeholders": [
+            "REPLACE_WITH_AREA_SERVED",
+            "REPLACE_WITH_LATITUDE",
+            "REPLACE_WITH_LONGITUDE"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_context_signals.py",
+            "rule_id": "location-markup-missing"
+          }
+        ]
+      },
+      "check_id": "location-markup-missing",
+      "mechanism": "Assistants tailor answers to the asker's location using machine-readable addresses and service areas; a location shown only as text or a map is easy to miss.",
+      "implementation_detail": "Add a PostalAddress, geo coordinates and areaServed to the Organization or LocalBusiness JSON-LD, matching the visible address.",
+      "expected_outcome": "The brand can be matched to questions about a place.",
+      "check_ids": [
+        "location-markup-missing"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 49,
+        "pages_discovered": 885
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "R-001",
+      "check_id": "no-llms-txt",
+      "check_ids": [
+        "no-llms-txt"
+      ],
+      "mechanism": "Site does not publish an llms.txt guidance file",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No llms.txt file found",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "confirmed",
+      "evidence_status": "The observed evidence directly demonstrates the reported condition.",
+      "affected_pages": [],
+      "root_cause": "Site does not publish an llms.txt guidance file",
+      "evidence": [],
+      "evidence_text": "/llms.txt returned 404",
+      "suggested_action": {
+        "summary": "Publish an llms.txt summarizing key pages for AI assistants",
+        "steps": [
+          "Create /llms.txt",
+          "List key pages and a short site summary"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
+        "verification": "Confirm /llms.txt is reachable and valid",
+        "implementation_detail": "Create /llms.txt. List the key pages and a short site summary.",
+        "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
+        "snippet": {
+          "format": "markdown",
+          "placement": "Save as /llms.txt at the site root, served as text/plain",
+          "code": "# Python.org\n\n> The official home of the Python Programming Language\n\n## Key pages\n\n- [Welcome to Python.org](https://www.python.org/): The official home of the Python Programming Language\n- [About Python\u2122 | Python.org](https://www.python.org/about/): The official home of the Python Programming Language\n- [Applications for Python | Python.org](https://www.python.org/about/apps/): The official home of the Python Programming Language\n- [Python For Beginners | Python.org](https://www.python.org/about/gettingstarted/): The official home of the Python Programming Language\n- [Help | Python.org](https://www.python.org/about/help/): The official home of the Python Programming Language\n- [Legal Statements | Python Software Foundation](https://www.python.org/about/legal/): The official home of the Python Programming Language\n- [Quotes about Python | Python.org](https://www.python.org/about/quotes/): The official home of the Python Programming Language\n- [Our Blogs | Python.org](https://www.python.org/blogs/): The official home of the Python Programming Language\n- [Our Community | Python.org](https://www.python.org/community/): The official home of the Python Programming Language\n- [Python Community Awards | Python Software Foundation](https://www.python.org/community/awards/): The official home of the Python Programming Language\n- [Diversity | Python.org](https://www.python.org/community/diversity/): The official home of the Python Programming Language\n- [Forums | Python.org](https://www.python.org/community/forums/): The official home of the Python Programming Language\n",
+          "filled_from": {
+            "name": "og:site_name on the home page",
+            "description": "home page meta description",
+            "key pages": "crawled pages, with their titles and meta descriptions"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-002"
+      },
+      "implementation_detail": "Create /llms.txt. List the key pages and a short site summary.",
+      "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement"
+    },
+    {
+      "id": "R-002",
+      "check_id": "h1",
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "mechanism": "An absent primary heading can weaken page orientation.",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "No H1 was found on these sampled pages.",
+      "evidence": [],
+      "evidence_text": "No H1 was found on these sampled pages.; Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "suggested_action": {
+        "summary": "Add a descriptive primary heading where a clear page title is missing",
+        "steps": [
+          "Add a descriptive primary heading where a clear page title is missing"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+        "expected_outcome": "Makes the page topic easier to identify.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-006"
+      },
+      "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+      "expected_outcome": "Makes the page topic easier to identify."
+    },
+    {
+      "id": "R-003",
+      "check_id": "duplicate-titles",
+      "check_ids": [
+        "duplicate-titles"
+      ],
+      "mechanism": "Repeated titles can obscure differences between pages.",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Different sampled URLs share page titles",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
+      "evidence": [],
+      "evidence_text": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
+      "suggested_action": {
+        "summary": "Give distinct content pages descriptive, distinct titles",
+        "steps": [
+          "Give distinct content pages descriptive, distinct titles",
+          "Preserve intentional canonical variants"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Give distinct content pages descriptive titles; retain intentional duplicates where justified.",
+        "expected_outcome": "Helps readers distinguish the sampled pages.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-007"
+      },
+      "implementation_detail": "Give distinct content pages descriptive titles; retain intentional duplicates where justified.",
+      "expected_outcome": "Helps readers distinguish the sampled pages."
+    },
+    {
+      "id": "R-004",
+      "check_id": "contact-markup-missing",
+      "check_ids": [
+        "contact-markup-missing"
+      ],
+      "mechanism": "Assistants read contact details from email, telephone and contactPoint properties; details shown only as text or links are easy to miss or to attribute to another organization.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Email or phone shown on 7/49 sampled pages but stated in no structured data",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Assistants answer \"how do I contact them?\" from machine-readable email, telephone and contactPoint properties; contact details shown only as text or links are easy to miss or to attribute to the wrong organization",
+      "evidence": [],
+      "evidence_text": "email: psf@python.org, python-announce@python.org, webmaster@python.org. No email, telephone or contactPoint in any page's structured data; email: legal@python.org. No email, telephone or contactPoint in any page's structured data; email: psf-trademarks@python.org. No email, telephone or contactPoint in any page's structured data; email: alexander.belopolsky@gmail.com, andy47@halfcooked.com, andy@robanal.demon.co.uk. No email, telephone or contactPoint in any page's structured data; email: cna@python.org, security-announce@python.org, security@python.org. No email, telephone or contactPoint in any page's structured data; email: jobs@python.org. No email, telephone or contactPoint in any page's structured data; email: psf-donations@python.org. No email, telephone or contactPoint in any page's structured data",
+      "suggested_action": {
+        "summary": "State the main email and phone number in the Organization JSON-LD",
+        "steps": [
+          "Add email and telephone to the Organization or LocalBusiness markup on the home page",
+          "Add a contactPoint for each department visitors contact (sales, support, admissions), with its contactType, telephone and email",
+          "Use the same details as the contact page, written in international format (+country code)"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Assistants can give the brand's own contact details when asked",
+        "verification": "Validate the markup and confirm it matches the visible contact details",
+        "implementation_detail": "Add email, telephone and a contactPoint to the Organization JSON-LD, matching the contact page.",
+        "expected_outcome": "Assistants can give the brand's own email and phone number when asked how to reach it.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"@id\": \"https://www.python.org/#organization\",\n  \"name\": \"Python.org\",\n  \"url\": \"https://www.python.org/\",\n  \"logo\": \"https://www.python.org/static/apple-touch-icon-precomposed.png\",\n  \"description\": \"The official home of the Python Programming Language\",\n  \"sameAs\": [\n    \"https://www.linkedin.com/company/python-software-foundation/\",\n    \"https://twitter.com/ThePSF\",\n    \"https://en.wikipedia.org/wiki/Tkinter\",\n    \"https://github.com/python/cpython/issues\",\n    \"https://github.com/python/pythondotorg/issues\"\n  ],\n  \"email\": \"barry@python.org\",\n  \"telephone\": \"REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT\",\n  \"contactPoint\": [\n    {\n      \"@type\": \"ContactPoint\",\n      \"contactType\": \"REPLACE_WITH_CONTACT_TYPE\",\n      \"email\": \"barry@python.org\",\n      \"telephone\": \"REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT\"\n    }\n  ]\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "name": "og:site_name on the home page",
+            "logo": "<link rel=\"apple-touch-icon\"> on the home page (prefer a square logo of 112 px or more)",
+            "sameAs": "profile links on the home page",
+            "description": "home page meta description",
+            "email": "the most used email on the site's own domain"
+          },
+          "placeholders": [
+            "REPLACE_WITH_CONTACT_TYPE",
+            "REPLACE_WITH_PHONE_IN_INTERNATIONAL_FORMAT"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-008"
+      },
+      "implementation_detail": "Add email, telephone and a contactPoint to the Organization JSON-LD, matching the contact page.",
+      "expected_outcome": "Assistants can give the brand's own email and phone number when asked how to reach it."
+    },
+    {
+      "id": "R-005",
+      "check_id": "breadcrumb-mismatch",
+      "check_ids": [
+        "breadcrumb-mismatch"
+      ],
+      "mechanism": "Breadcrumb navigation is visible but not machine-readable",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Visible breadcrumbs lack matching BreadcrumbList structured data",
+      "severity": "low",
+      "confidence": 0.65,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Breadcrumb navigation is visible but not machine-readable",
+      "evidence": [],
+      "evidence_text": "Visible breadcrumb without schema",
+      "suggested_action": {
+        "summary": "Add BreadcrumbList JSON-LD matching visible breadcrumbs",
+        "steps": [
+          "Add BreadcrumbList schema to pages with visible breadcrumbs"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves machine understanding of site structure",
+        "verification": "Validate BreadcrumbList JSON-LD",
+        "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+        "expected_outcome": "Improves machine understanding of site structure",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-009"
+      },
+      "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+      "expected_outcome": "Improves machine understanding of site structure"
+    },
+    {
+      "id": "R-006",
+      "check_id": "missing-canonical",
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "mechanism": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 49/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "evidence": [],
+      "evidence_text": "No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.",
+      "suggested_action": {
+        "summary": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "steps": [
+          "Assess real duplicates before declaring the correct absolute canonical URL."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/\">\n\n<!-- https://www.python.org/about/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/about/\">\n\n<!-- https://www.python.org/about/apps/ -->\n<link rel=\"canonical\" href=\"https://www.python.org/about/apps/\">",
+          "filled_from": {
+            "href": "each page's final URL, without fragments or tracking parameters"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-010"
+      },
+      "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+      "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable."
+    },
+    {
+      "id": "R-007",
+      "check_id": "twitter-card",
+      "check_ids": [
+        "twitter-card"
+      ],
+      "mechanism": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 49/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "evidence": [],
+      "evidence_text": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+      "suggested_action": {
+        "summary": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "steps": [
+          "Choose an appropriate supported twitter:card value and verify the target platform preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.python.org/about/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.python.org/about/apps/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">",
+          "filled_from": {
+            "card": "summary_large_image when the page has a lead image, otherwise summary"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-011"
+      },
+      "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+      "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card."
+    },
+    {
+      "id": "R-008",
+      "check_id": "heading-hierarchy",
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "mechanism": "Skipped heading levels can make section relationships less clear.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 23/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Skipped heading levels can make section relationships less clear.",
+      "evidence": [],
+      "evidence_text": "Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 2, 2, 2, 2, 2, 2, 2, 2, 4]; Observed heading levels: [1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 3]; Observed heading levels: [1, 1, 1, 1, 1, 3]",
+      "suggested_action": {
+        "summary": "Review the outline and nest headings according to the document hierarchy.",
+        "steps": [
+          "Review the outline and nest headings according to the document hierarchy."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves outline consistency without requiring an arbitrary visual style.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+        "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-012"
+      },
+      "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+      "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style."
+    },
+    {
+      "id": "R-009",
+      "check_id": "markup-ratio",
+      "check_ids": [
+        "markup-ratio"
+      ],
+      "mechanism": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Visible text is under 8% of the HTML on 21/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "evidence": [],
+      "evidence_text": "Visible text represents 6.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.7% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 7.8% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 7.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 3.4% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 6.9% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 4.7% of decoded HTML body bytes. This is not a ranking metric.; Visible text represents 5.9% of decoded HTML body bytes. This is not a ranking metric.",
+      "suggested_action": {
+        "summary": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "steps": [
+          "Inspect inline assets and template boilerplate before trimming unnecessary HTML."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-013"
+      },
+      "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+      "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup."
+    },
+    {
+      "id": "R-010",
+      "check_id": "missing-landmarks",
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "mechanism": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 14/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "evidence": [],
+      "evidence_text": "No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.",
+      "suggested_action": {
+        "summary": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "steps": [
+          "Mark the main content semantically and keep navigation outside it when appropriate."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves structural clarity for supporting readers and extractors.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-014"
+      },
+      "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+      "expected_outcome": "Improves structural clarity for supporting readers and extractors."
+    },
+    {
+      "id": "R-011",
+      "check_id": "term-repetition",
+      "check_ids": [
+        "term-repetition"
+      ],
+      "mechanism": "High observed term repetition can reduce readability but is not proof of spam.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "One word makes up more than 6% of the text on 2/46 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "High observed term repetition can reduce readability but is not proof of spam.",
+      "evidence": [],
+      "evidence_text": "Term 'release' occurs 284 times among 2258 words. Repetition alone is not proof of spam.; Term 'android' occurs 59 times among 588 words. Repetition alone is not proof of spam.",
+      "suggested_action": {
+        "summary": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+        "steps": [
+          "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves natural wording when repetition is excessive.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+        "expected_outcome": "Improves natural wording when repetition is excessive.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-015"
+      },
+      "implementation_detail": "Review repetition in context, retaining necessary technical names and avoiding unnatural keyword quotas.",
+      "expected_outcome": "Improves natural wording when repetition is excessive."
+    },
+    {
+      "id": "R-012",
+      "check_id": "image-context-missing",
+      "check_ids": [
+        "image-context-missing"
+      ],
+      "mechanism": "Crawlers, assistants and screen readers learn what an image shows only from alt text, captions or nearby link text; an image with none says nothing.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Content images have no alt text, caption or other text saying what they show",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Text-based crawlers, assistants and screen readers learn what an image shows only from text tied to it; with no alt text, figcaption, title or link text, the image says nothing",
+      "evidence": [],
+      "evidence_text": "2 content image(s) with no usable alt text and no caption, title, aria-label or link text, for example https://www.python.org/static/community_logos/python-powered-w-100x40.png, https://www.python.org/static/community_logos/python-powered-h-50x65.png",
+      "suggested_action": {
+        "summary": "Describe each informative image in its alt text, and caption images that need context",
+        "steps": [
+          "Write a short alt text that says what each informative image shows",
+          "Wrap images that need explanation in <figure> with a <figcaption>",
+          "Mark purely decorative images with alt=\"\""
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Crawlers, assistants and screen readers can tell what each image shows",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Write descriptive alt text, add a figcaption where context is needed, and use alt=\"\" for decorative images.",
+        "expected_outcome": "Every informative image has text that says what it shows.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-016"
+      },
+      "implementation_detail": "Write descriptive alt text, add a figcaption where context is needed, and use alt=\"\" for decorative images.",
+      "expected_outcome": "Every informative image has text that says what it shows."
+    },
+    {
+      "id": "R-013",
+      "check_id": "image-sizing",
+      "check_ids": [
+        "image-sizing"
+      ],
+      "mechanism": "Images without dimensions may lack reserved space unless CSS already supplies it.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Most images have no width and height on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Images without dimensions may lack reserved space unless CSS already supplies it.",
+      "evidence": [],
+      "evidence_text": "19/19 images lack positive width/height attributes; no lazy hints. CSS dimensions and viewport positions were not measured.",
+      "suggested_action": {
+        "summary": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+        "steps": [
+          "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Can reduce layout movement and unnecessary loading; layout shift is not measured.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+        "expected_outcome": "Can reduce layout movement and unnecessary loading; layout shift is not measured.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-017"
+      },
+      "implementation_detail": "Check CSS sizing and aspect-ratio before adding width and height; lazy-load only suitable below-fold images.",
+      "expected_outcome": "Can reduce layout movement and unnecessary loading; layout shift is not measured."
+    },
+    {
+      "id": "R-014",
+      "check_id": "sitemap-unavailable",
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "mechanism": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No XML sitemap found",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "evidence": [],
+      "evidence_text": "Sitemap probe status: absent; checked: https://www.python.org/sitemap.xml (absent). No additional sitemap discovery was attempted by this check.",
+      "suggested_action": {
+        "summary": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "steps": [
+          "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-018"
+      },
+      "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+      "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect."
+    },
+    {
+      "id": "R-015",
+      "check_id": "title-length",
+      "check_ids": [
+        "title-length"
+      ],
+      "mechanism": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "evidence": [],
+      "evidence_text": "Title has 96 characters: Support the PSF with a Donation or by becoming a Supporting Member! | Python Software Foundation. Display width was not measured.",
+      "suggested_action": {
+        "summary": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "steps": [
+          "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves title usefulness; pixel width and platform behavior vary.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-019"
+      },
+      "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+      "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary."
+    },
+    {
+      "id": "R-016",
+      "check_id": "heavy-html",
+      "check_ids": [
+        "heavy-html"
+      ],
+      "mechanism": "Large HTML bodies consume the bounded retrieval budget.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "HTML response larger than 400 KB on 1/49 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Large HTML bodies consume the bounded retrieval budget.",
+      "evidence": [],
+      "evidence_text": "Retained 591272 HTML body bytes; truncated: False. Asset transfer sizes were not measured.",
+      "suggested_action": {
+        "summary": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+        "steps": [
+          "Trim unnecessary inline payloads and paginate only where useful; retain essential content."
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Reduces bytes required to retrieve the primary document.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+        "expected_outcome": "Reduces bytes required to retrieve the primary document.",
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-020"
+      },
+      "implementation_detail": "Trim unnecessary inline payloads and paginate only where useful; retain essential content.",
+      "expected_outcome": "Reduces bytes required to retrieve the primary document."
+    },
+    {
+      "id": "R-017",
+      "check_id": "location-markup-missing",
+      "check_ids": [
+        "location-markup-missing"
+      ],
+      "mechanism": "Assistants tailor answers to the asker's location using machine-readable addresses and service areas; a location shown only as text or a map is easy to miss.",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Physical location is shown on the page but stated in no structured data",
+      "severity": "low",
+      "confidence": 0.55,
+      "status": "suspected",
+      "evidence_status": "The signal is real but a confounder could not be ruled out with the evidence gathered in this run.",
+      "affected_pages": [],
+      "root_cause": "Assistants answer location-dependent questions from machine-readable addresses, coordinates and service areas; a location shown only as text or a map is easy to miss",
+      "evidence": [],
+      "evidence_text": "address: 9450 SW Gemini Dr., ECM# 90772, Beaverton, OR 97008. No address, geo or areaServed in any page's JSON-LD",
+      "suggested_action": {
+        "summary": "State the address, coordinates and service area in Organization or LocalBusiness JSON-LD",
+        "steps": [
+          "Add a PostalAddress (streetAddress, addressLocality, postalCode, addressCountry) to the Organization or LocalBusiness markup",
+          "Add geo coordinates for each physical location, and areaServed for the regions served",
+          "Keep the visible address, the markup and the business profile identical"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "The brand can be matched to location-specific questions",
+        "verification": "Validate the markup and confirm the address matches the visible text",
+        "implementation_detail": "Add a PostalAddress, geo coordinates and areaServed to the Organization or LocalBusiness JSON-LD, matching the visible address.",
+        "expected_outcome": "The brand can be matched to questions about a place.",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.python.org/ -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"@id\": \"https://www.python.org/#organization\",\n  \"name\": \"Python.org\",\n  \"url\": \"https://www.python.org/\",\n  \"logo\": \"https://www.python.org/static/apple-touch-icon-precomposed.png\",\n  \"description\": \"The official home of the Python Programming Language\",\n  \"sameAs\": [\n    \"https://www.linkedin.com/company/python-software-foundation/\",\n    \"https://twitter.com/ThePSF\",\n    \"https://en.wikipedia.org/wiki/Tkinter\",\n    \"https://github.com/python/cpython/issues\",\n    \"https://github.com/python/pythondotorg/issues\"\n  ],\n  \"address\": \"9450 SW Gemini Dr., ECM# 90772, Beaverton, OR 97008\",\n  \"geo\": {\n    \"@type\": \"GeoCoordinates\",\n    \"latitude\": \"REPLACE_WITH_LATITUDE\",\n    \"longitude\": \"REPLACE_WITH_LONGITUDE\"\n  },\n  \"areaServed\": \"REPLACE_WITH_AREA_SERVED\"\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "name": "og:site_name on the home page",
+            "logo": "<link rel=\"apple-touch-icon\"> on the home page (prefer a square logo of 112 px or more)",
+            "sameAs": "profile links on the home page",
+            "description": "home page meta description",
+            "address": "the address shown on the page"
+          },
+          "placeholders": [
+            "REPLACE_WITH_AREA_SERVED",
+            "REPLACE_WITH_LATITUDE",
+            "REPLACE_WITH_LONGITUDE"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "derived_from_finding",
+        "finding_id": "F-021"
+      },
+      "implementation_detail": "Add a PostalAddress, geo coordinates and areaServed to the Organization or LocalBusiness JSON-LD, matching the visible address.",
+      "expected_outcome": "The brand can be matched to questions about a place."
+    },
+    {
+      "id": "R-018",
+      "check_id": "baseline:off_site_presence",
+      "category": "off_site_presence",
+      "finding_type": "proactive_improvement",
+      "title": "Continue building independent, identity-matched off-site mentions",
+      "severity": "low",
+      "confidence": 0.4,
+      "status": "insufficient_evidence",
+      "evidence_status": "The check could not be completed on this run; this is the absence of a result, not evidence of a defect, so it is reported as advisory only.",
+      "affected_pages": [],
+      "root_cause": "Off-site presence is cumulative; even a well-corroborated brand benefits from continued, diverse independent mentions.",
+      "evidence": [],
+      "evidence_text": "",
+      "suggested_action": {
+        "summary": "Continue building independent, identity-matched off-site mentions",
+        "steps": [
+          "List the brand on relevant, reputable directories",
+          "Keep sameAs and social profiles active and identity-consistent",
+          "Encourage independent, identity-matched mentions over time"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Maintains current AI-readiness posture",
+        "verification": "Periodically confirm off-site profiles resolve to the same canonical identity as the site.",
+        "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+        "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source.",
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "baseline_calibrated"
+      },
+      "mechanism": "Off-site presence is cumulative, so it benefits from continued diverse independent mentions.",
+      "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+      "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source."
+    }
+  ],
+  "execution_status": "completed",
+  "limitations": [
+    "835 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 885 discovered); findings reflect only the 50 page(s) actually crawled, not the whole site. The sample reached 12 of 18 site sections (first path segment).",
+    "Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.",
+    "No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as \"nothing found\").",
+    "1 linked PDF(s) were not fetched (robots rules, a cross-origin redirect, the per-audit cap of 3, or remaining budget; see coverage.non_text_media.pdf_outcomes); their contents were not assessed.",
+    "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not searched for the brand: they block automated clients, no search provider was configured, and the agent stage (AG-06) was not supplied. Only profiles linked from the site were considered.",
+    "Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and no PAGESPEED_API_KEY is configured. Web-vitals findings are estimates from markup patterns, not measurements.",
+    "Colour contrast and tap-target size were judged only where inline styles set them; colours and sizes from stylesheets need a browser to compute and were not assessed."
+  ],
+  "confidence": {
+    "score": 0.67,
+    "level": "medium",
+    "method": "min(sample_representativeness, execution_penalty), where sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)) and crawl_completeness = pages_analyzed / pages_discovered; a weak link caps the score rather than being averaged out. identity_confidence is reported beside the score, not in it: it gates only the checks that depend on the brand's identity",
+    "components": {
+      "crawl_completeness": 0.06,
+      "section_coverage": 0.67,
+      "sample_size": 1.0,
+      "sample_representativeness": 0.67,
+      "identity_confidence": 0.6,
+      "execution_penalty": 1.0
+    },
+    "limiting_factor": "sample_representativeness",
+    "reasons": {
+      "sample_representativeness": "The page sample is small or one-sided: the crawl analyzed 49 of 885 discovered page(s) and reached 12 of 18 site section(s).",
+      "identity_confidence": "No Organization markup was found; the brand name was read from the site's own metadata (site name, title suffix or copyright line), which is less certain. Adding Organization markup confirms it.",
+      "execution_penalty": "The audit run completed normally."
+    },
+    "explanation": "Confidence is medium (0.67). The weaker of its two parts sets the score, here the page sample. The page sample is small or one-sided: the crawl analyzed 49 of 885 discovered page(s) and reached 12 of 18 site section(s). Brand identity (reported separately, not part of the score): No Organization markup was found; the brand name was read from the site's own metadata (site name, title suffix or copyright line), which is less certain. Adding Organization markup confirms it. The score rates how far the report speaks for the whole site; each finding has its own confidence and status, and a problem seen on a page is still real on that page."
+  },
+  "coverage_limited": {
+    "sample_only": true,
+    "pages_not_analyzed": 836,
+    "unassessed_capabilities": [
+      "headless_rendering",
+      "external_search"
+    ]
+  },
+  "top_actions": [
+    {
+      "finding_id": "F-001",
+      "title": "Form fields have no label",
+      "summary": "Give every form field a visible label tied to it",
+      "priority": "medium",
+      "impact": "medium",
+      "effort": "low",
+      "quadrant": "quick_win",
+      "quick_win": true,
+      "start_here": true
+    },
+    {
+      "finding_id": "F-003",
+      "title": "Image alt text is a file name, placeholder or repeated label that describes nothing",
+      "summary": "Replace placeholder alt text with a short description of each image",
+      "priority": "low",
+      "impact": "low",
+      "effort": "low",
+      "quadrant": "fill_in",
+      "quick_win": false,
+      "start_here": false
+    },
+    {
+      "finding_id": "F-004",
+      "title": "Links or buttons have no accessible name",
+      "summary": "Name every icon-only link and button",
+      "priority": "low",
+      "impact": "low",
+      "effort": "low",
+      "quadrant": "fill_in",
+      "quick_win": false,
+      "start_here": false
+    },
+    {
+      "finding_id": "F-005",
+      "title": "About pages are missing Organization/AboutPage structured data",
+      "summary": "Add Organization/AboutPage JSON-LD to about pages",
+      "priority": "low",
+      "impact": "low",
+      "effort": "medium",
+      "quadrant": "deprioritize",
+      "quick_win": false,
+      "start_here": false
+    }
+  ],
+  "quick_wins": [
+    {
+      "id": "F-001",
+      "title": "Form fields have no label",
+      "summary": "Give every form field a visible label tied to it",
+      "impact": "medium",
+      "effort": "low"
+    }
+  ]
+}

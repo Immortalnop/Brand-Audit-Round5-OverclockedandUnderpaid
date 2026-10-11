@@ -36,6 +36,7 @@ _STATUS_TEXT = {
     "completed_with_timeouts": "Completed, but at least one analysis step ran out of time",
     "degraded": "Partly completed (an analysis step failed or robots.txt could not be read)",
     "partial_deadline_reached": "Stopped at the time limit before every step finished",
+    "insufficient_evidence": "No page could be analyzed, so the site's pages were not assessed",
 }
 _FINDING_STATUS_TEXT = {
     "confirmed": "confirmed",
@@ -147,6 +148,8 @@ def _header(report):
         lines.append(f"- **Pages:** {pages}")
     if cov.get("pages_out_of_scope"):
         lines.append(f"- **Login pages left out:** {text(cov['pages_out_of_scope'])}")
+    if cov.get("pages_challenged"):
+        lines.append(f"- **Pages that answered with a bot challenge:** {text(cov['pages_challenged'])}")
     if isinstance(cov.get("runtime_seconds"), (int, float)):
         lines.append(f"- **Run time:** {_num(cov['runtime_seconds'], 1)} seconds")
     lines.append("")
@@ -183,6 +186,8 @@ def _confidence(report):
 def _summary(report):
     s = _dict(report.get("summary"))
     lines = ["## Summary", ""]
+    if s.get("status_reason"):
+        lines += [f"**Why this report is short:** {text(s['status_reason'], 600)}", ""]
     if not s.get("total_findings"):
         lines += ["No findings were reported." if report.get("execution_status") == "completed"
                   else "No findings were reported, and the run did not complete, so nothing can be concluded.", ""]

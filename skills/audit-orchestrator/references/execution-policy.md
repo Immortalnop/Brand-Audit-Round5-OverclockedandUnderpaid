@@ -16,6 +16,9 @@ TLS verification. Robots 404 permits crawling; unreadable/error robots fail clos
 Cross-origin redirects are blocked during the crawl. If the start URL or robots.txt redirects to
 another origin and no page was analyzed, acquisition re-anchors once on that origin after an SSRF
 check and a read of its own robots.txt. Production pacing respects robots crawl-delay.
+A bot-protection challenge is recorded and never analyzed, retried or bypassed; two in a row, or
+three in all, end the crawl and skip the optional image, PDF, HTTPS and llms.txt-link requests.
+With no page analyzed the run reports `insufficient_evidence` and the reason.
 
 Optional rendering is opt-in and uses additional local phase caps of 20 requests,
 4 MiB and 25 seconds under the outer deadline. Only allowed same-origin GETs are

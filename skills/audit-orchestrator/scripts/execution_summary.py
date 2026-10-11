@@ -16,6 +16,8 @@ def derive_execution_status(deadline, skill_results: list, worker_timeout_events
                                      exceeding its per-worker timeout, but the
                                      overall deadline was not hit
       "completed"                -- normal completion
+    run_audit.py sets one more, "insufficient_evidence", when no page could be
+    analyzed at all (coverage.acquisition_failure says why).
     These are read directly off real state (deadline.expired(), each skill's own
     reported status, and instrumentation's worker-timeout log) -- never inferred
     from counts that could be stale."""
@@ -34,6 +36,19 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     nothing that is unassessed is ever implied to have passed (Round-3 handout:
     "Never imply unassessed check passed")."""
     out = []
+
+    failure = coverage.get("acquisition_failure")
+    if isinstance(failure, dict) and failure.get("detail"):
+        # Leads the list: it explains everything else in the report.
+        out.append(failure["detail"] + " " + _FAILURE_ADVICE.get(failure.get("reason"), _FAILURE_ADVICE_DEFAULT))
+
+    if coverage.get("pages_challenged", 0) > 0 and not failure:
+        out.append(
+            f"{coverage['pages_challenged']} page(s) answered with a bot-protection challenge instead of content "
+            f"(see coverage.challenged_pages); they were not analyzed, and the audit does not retry or get around "
+            f"challenges."
+            + (" The crawl stopped there." if coverage.get("crawl_stopped_by_challenge") else "")
+        )
 
     if artifacts.robots_data.get("conservative_fail_closed"):
         out.append(
@@ -209,6 +224,20 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     return out
 
 
+# What a reader can do about each acquisition failure. Never advice to get
+# around a block: a site that refuses automated clients is respected.
+_FAILURE_ADVICE_DEFAULT = ("Only checks that read robots.txt, llms.txt, the sitemap or the TLS connection are "
+                           "reported; nothing on the pages was assessed, and nothing unassessed has passed.")
+_FAILURE_ADVICE = {
+    "blocked_by_challenge": "Bot protection decides which clients may read the site; AI crawlers that are "
+                            "challenged the same way cannot read it either. " + _FAILURE_ADVICE_DEFAULT,
+    "robots_disallowed": "The audit obeys robots.txt and fetched nothing it disallows. " + _FAILURE_ADVICE_DEFAULT,
+    "cross_origin_redirect": "Run the audit on the URL the site redirects to. " + _FAILURE_ADVICE_DEFAULT,
+    "login_page": "Audit a public page such as the home page. " + _FAILURE_ADVICE_DEFAULT,
+    "dns_error": "Check the address and run the audit again. " + _FAILURE_ADVICE_DEFAULT,
+}
+
+
 def overall_confidence(coverage: dict, execution_status: str) -> dict:
     """A single, honestly-derived overall confidence score plus the method used to
     compute it -- explicit rather than implied precision (Round-3 handout,
@@ -264,6 +293,8 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     execution_penalty = {
         "completed": 1.0, "completed_with_timeouts": 0.7,
         "degraded": 0.7, "partial_deadline_reached": 0.4,
+        # No page analyzed: the run produced no evidence about the site.
+        "insufficient_evidence": 0.0,
     }.get(execution_status, 0.5)
 
     score = min(representativeness, execution_penalty)
@@ -275,7 +306,7 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     reasons = {
         "sample_representativeness": _sample_reason(coverage, representativeness),
         "identity_confidence": _identity_reason(coverage, identity_confidence),
-        "execution_penalty": _execution_reason(execution_status),
+        "execution_penalty": _execution_reason(execution_status, coverage),
     }
     # The part that sets the score. On a tie the more basic cause is named first:
     # an unfinished run, then a thin sample.
@@ -328,6 +359,7 @@ _EXECUTION_REASONS = {
     "degraded": "Part of the audit could not complete (a failed analysis step, or robots.txt could not be "
                 "read, so pages were not fetched).",
     "partial_deadline_reached": "The audit time limit was reached before every step finished.",
+    "insufficient_evidence": "No page could be analyzed, so the run produced no evidence about the site's content.",
 }
 
 
@@ -374,7 +406,10 @@ def _identity_reason(coverage, value):
     return "The brand identity was only partly confirmed." if value > 0 else _IDENTITY_REASONS["not_completed"]
 
 
-def _execution_reason(execution_status):
+def _execution_reason(execution_status, coverage=None):
+    failure = (coverage or {}).get("acquisition_failure")
+    if execution_status == "insufficient_evidence" and isinstance(failure, dict) and failure.get("detail"):
+        return failure["detail"]
     return _EXECUTION_REASONS.get(execution_status, f"The audit run ended with status '{execution_status}'.")
 
 

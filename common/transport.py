@@ -1,5 +1,8 @@
 """GET-only stdlib transport: pinned DNS, verified TLS, one shared request/byte clock."""
+import codecs
+import functools
 import http.client
+import re
 import socket
 import ssl
 import time
@@ -10,16 +13,75 @@ from url_safety import classify_url,same_origin
 from tls_context import create_context
 
 USER_AGENT='BrandAIReadinessAuditBot/2.0 (read-only audit)'
+
+_BOMS=((b'\xef\xbb\xbf','utf-8'),(b'\xff\xfe','utf-16-le'),(b'\xfe\xff','utf-16-be'))
+_HTTP_CHARSET=re.compile(r'charset\s*=\s*["\']?\s*([A-Za-z0-9_.:-]+)',re.I)
+# <meta charset="x"> and <meta http-equiv="Content-Type" content="text/html; charset=x">.
+_META_CHARSET=re.compile(rb'<meta\b[^>]*?charset\s*=\s*["\']?\s*([A-Za-z0-9_.:-]+)',re.I)
+_META_PRESCAN_BYTES=2048
+# Encodings a web page can declare. Anything else (base64, rot13, unicode_escape,
+# idna and other codecs Python happens to know) is ignored, never used to decode.
+_WEB_ENCODING=re.compile(r'^(?:utf-8|utf-16(?:-le|-be)?|cp(?:125\d|866|874|932|949|950)|iso8859-\d+|koi8-[ru]'
+                         r'|shift_jis|euc_(?:jp|kr)|gb2312|gbk|gb18030|big5(?:hkscs)?|iso2022_jp|hz|mac-(?:roman|cyrillic)'
+                         r'|tis-620|ascii)$')
+
+def _web_encoding(label):
+    """Python codec name for a declared charset label, or None. As browsers do,
+    ASCII and ISO-8859-1 labels decode as windows-1252."""
+    if isinstance(label,bytes):label=label.decode('ascii','ignore')
+    try:name=codecs.lookup(label.strip()).name
+    except (LookupError,ValueError):return None
+    if not _WEB_ENCODING.match(name):return None
+    return 'cp1252' if name in ('ascii','iso8859-1') else name
+
+def detect_encoding(content,content_type=''):
+    """(codec, source) for a response body: a byte order mark first, then the
+    HTTP charset, then <meta charset> or http-equiv in the first 2 KB of an HTML
+    body, else UTF-8. source is bom, http, meta or default."""
+    for bom,name in _BOMS:
+        if content.startswith(bom):return name,'bom'
+    m=_HTTP_CHARSET.search(content_type or '')
+    name=_web_encoding(m[1]) if m else None
+    if name:return name,'http'
+    if 'html' in (content_type or '').lower() or not content_type:
+        m=_META_CHARSET.search(content[:_META_PRESCAN_BYTES])
+        name=_web_encoding(m[1]) if m else None
+        # A meta tag readable as ASCII cannot really declare UTF-16 (HTML standard).
+        if name:return ('utf-8' if name.startswith('utf-16') else name),'meta'
+    return 'utf-8','default'
+
+def decode_body(content,content_type=''):
+    """(text, codec, source). A body sent as UTF-8 that is mostly invalid UTF-8
+    (at least 3 bad sequences and more bad sequences than valid non-ASCII
+    characters) is a mislabelled single-byte page and is read as windows-1252;
+    a few stray bytes in a real UTF-8 page never trigger this."""
+    name,source=detect_encoding(content,content_type)
+    if source=='bom':
+        # The mark itself is not text.
+        bom=next(b for b,n in _BOMS if n==name)
+        return content[len(bom):].decode(name,'replace'),name,source
+    try:text=content.decode(name,'replace')
+    except LookupError:name,source='utf-8','default';text=content.decode('utf-8','replace')
+    if name=='utf-8' and source!='bom':
+        bad=text.count('\ufffd')
+        if bad>=3 and bad>sum(1 for ch in text if ch>'\x7f' and ch!='\ufffd'):
+            single=content.decode('cp1252','replace')
+            if single.count('\ufffd')<bad:return single,'cp1252','utf8_fallback'
+    return text,name,source
+
 class Response:
     def __init__(self,status,headers,content,url,truncated=False,hops=0):
         self.status_code=status;self.headers=headers;self.content=content;self.final_url=url
         self.truncated=truncated;self.redirect_hops=hops;self.history=[]
-        charset='utf-8'
-        import re
-        m=re.search(r'charset=["\']?([^;"\' ]+)',headers.get('Content-Type',''),re.I)
-        if m:charset=m[1]
-        try:self.text=content.decode(charset,errors='replace')
-        except LookupError:self.text=content.decode('utf-8',errors='replace')
+    @functools.cached_property
+    def _decoded(self):return decode_body(self.content,self.headers.get('Content-Type',''))
+    # Decoded on first use, so images and PDFs read as bytes are never decoded.
+    @property
+    def text(self):return self._decoded[0]
+    @property
+    def encoding(self):return self._decoded[1]
+    @property
+    def encoding_source(self):return self._decoded[2]
     @property
     def ok(self):return 200<=self.status_code<300
 

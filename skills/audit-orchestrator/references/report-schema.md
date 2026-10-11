@@ -1,6 +1,7 @@
 # Report schema
 
-Top-level: site, audited_at, summary (total_findings, critical, high, medium,
+Top-level: site, audited_at, summary (status_reason first when no page could
+be analyzed, then total_findings, critical, high, medium,
 low, proactive_improvements, insufficient_evidence_items), coverage
 (pages_discovered, pages_analyzed, pages_skipped, rendered_pages,
 external_claims_checked, external_footprint_queries, external_fetches,
@@ -73,6 +74,22 @@ social-url, twitter-card, location-markup-missing and contact-markup-missing,
 holds ready-to-paste code built from observed facts (`format`, `placement`,
 `code`, `filled_from`, `placeholders`, `note`). Values the audit did not
 observe are REPLACE_WITH_... placeholders, all listed in `placeholders`.
+
+No page analyzed: `execution_status` is `insufficient_evidence` and
+`coverage.acquisition_failure` is `{"reason", "stage", "url", "http_status",
+"detail"}` (plus `signals` for a bot challenge); it is null whenever a page was
+analyzed. reason is one of dns_error, tls_error, timeout, connection_error,
+unsupported_response, too_many_redirects, deadline, budget_exhausted,
+cross_origin_redirect, robots_disallowed, robots_unavailable,
+blocked_by_safety_policy, blocked_by_challenge, access_denied (401/403),
+rate_limited (429), not_found, server_error, http_error, login_page, no_content
+or not_fetched; stage is robots_txt or start_url. Only robots.txt, llms.txt,
+sitemap and TLS checks are reported in that case.
+
+Bot challenges: coverage reports `pages_challenged`, `challenged_pages` (up to
+20 entries of `url`, `final_url`, `http_status` and `signals`) and
+`crawl_stopped_by_challenge`. Challenged pages count toward
+`pages_fetched_attempted`, never toward `pages_analyzed`.
 
 Transport diagnostics: coverage includes transport_diagnostics, transport_environment,
 robots_attempt_outcomes and robots_permission. Failed robots acquisition means

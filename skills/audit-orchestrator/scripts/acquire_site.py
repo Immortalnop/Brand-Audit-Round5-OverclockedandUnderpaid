@@ -18,6 +18,7 @@ from non_text import image_tokens,fact_keywords,is_excluded_image,image_kind,ras
 from pdf_text import extract_pdf_text
 from llms_txt import parse_llms_txt
 from auth_pages import login_page_signals
+from bot_challenge import challenge_signals
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -277,13 +278,17 @@ def _probe_image_weight(tr,entry,limits):
     entry['bytes_total']=_total_size(r)
     return st
 
+def _is_challenge(r):
+    # A 2xx bot challenge served in place of a file says nothing about the file.
+    return bool(challenge_signals(r.status_code,r.headers,r.text))
+
 def _probe_text_file(tr,url,max_bytes):
     """Presence of a plain-text companion file such as /llms-full.txt. Only the
     start is read: the file can be large, and presence and type need no more."""
     r,st=tr.get(url,max_bytes=max_bytes)
     if st!='ok':return {'present':False,'status':'blocked' if st in ('blocked','robots_disallowed','cross_origin_redirect_blocked') else 'inaccessible','fetch_status':st}
     if r.status_code in (404,410):return {'present':False,'status':'absent','http_status':r.status_code}
-    if not r.ok:return {'present':False,'status':'inaccessible','http_status':r.status_code}
+    if not r.ok or _is_challenge(r):return {'present':False,'status':'inaccessible','http_status':r.status_code}
     head=r.text[:2048].lstrip().lower()
     html='html' in r.headers.get('Content-Type','').lower() or head.startswith(('<html','<!doctype'))
     valid=not html and len(r.text.strip())>=10 and urlsplit(r.final_url).path==urlsplit(url).path
@@ -426,6 +431,83 @@ def _acquire_media(tr,pages,pdf_links,origin,limits):
                        'pdf_outcomes':[{'url':d['url'],'fetch_status':d['fetch_status'],'extraction':d['extraction']}
                                        for d in pdfs]}}
 
+# Transport outcomes that mean no usable response came back, as failure reasons.
+_NETWORK_REASONS={'dns_error':'dns_error','timeout':'timeout','connection_error':'connection_error','failed':'connection_error',
+                  'tls_certificate_error':'tls_error','tls_handshake_error':'tls_error','tls_protocol_error':'tls_error',
+                  'tls_configuration_error':'tls_error','unsupported_encoding':'unsupported_response',
+                  'too_many_redirects':'too_many_redirects','deadline':'deadline','budget_exhausted':'budget_exhausted',
+                  'cross_origin_redirect_blocked':'cross_origin_redirect','robots_disallowed':'robots_disallowed',
+                  'blocked':'blocked_by_safety_policy'}
+_FAILURE_TEXT={
+    'dns_error':'the host name could not be resolved (DNS)',
+    'timeout':'the server did not answer in time',
+    'connection_error':'a connection to the server could not be made',
+    'tls_error':'a secure (TLS) connection could not be established',
+    'unsupported_response':'the server sent a response encoding the audit cannot read',
+    'too_many_redirects':'the URL redirects too many times',
+    'deadline':'the time limit was reached before a page could be fetched',
+    'budget_exhausted':'the request or byte budget ran out before a page could be fetched',
+    'cross_origin_redirect':'the start URL redirects to another site, and redirects to other sites are not followed',
+    'robots_disallowed':"the site's robots.txt does not allow this crawler to fetch the start URL",
+    'robots_unavailable':'robots.txt could not be read, so no page was fetched without known permission',
+    'blocked_by_safety_policy':'the address is not allowed by the safety policy (private, local or metadata address)',
+    'blocked_by_challenge':'the site answered with a bot-protection challenge instead of its content',
+    'access_denied':'the server refused access',
+    'rate_limited':'the server asked the crawler to slow down',
+    'not_found':'the start URL does not exist',
+    'server_error':'the server reported an error',
+    'http_error':'the server answered with an error status',
+    'login_page':'the start URL is a login page, and the audit never signs in',
+    'no_content':'the fetched pages had no readable content (no text, structured data or scripts)',
+    'not_fetched':'the start URL was not fetched',
+}
+
+def _http_reason(code):
+    if code in (401,403):return 'access_denied'
+    if code==429:return 'rate_limited'
+    if code in (404,410):return 'not_found'
+    if code>=500:return 'server_error'
+    return 'http_error'
+
+def _failure(reason,stage,url,http_status=None,signals=None):
+    stage_text='robots.txt' if stage=='robots_txt' else 'the start URL'
+    detail=f"No page could be analyzed: {_FAILURE_TEXT[reason]}"
+    if http_status:detail+=f" (HTTP {http_status} for {stage_text})"
+    elif stage=='robots_txt':detail+=' (while reading robots.txt)'
+    out={'reason':reason,'stage':stage,'url':url,'http_status':http_status,'detail':detail+'.'}
+    if signals:out['signals']=list(signals)
+    return out
+
+def acquisition_failure(robots_url,robots_fetch,robots_http,robots_status,robots_challenge,general_disallow,site_url,start):
+    """Why an acquisition analyzed no page: {'reason','stage','url','http_status',
+    'detail'}, reason being one of _FAILURE_TEXT's keys. robots.txt is the first
+    request to the host, so a failure there is the reason; else the start URL's
+    own outcome (start: {'fetch_status','http_status','challenge','login'}, or
+    None when it was never requested)."""
+    if robots_fetch!='ok':
+        return _failure(_NETWORK_REASONS.get(robots_fetch,'connection_error'),'robots_txt',robots_url)
+    if robots_challenge:
+        return _failure('blocked_by_challenge','robots_txt',robots_url,robots_http,robots_challenge)
+    if robots_status not in ('ok','absent'):
+        if robots_http and robots_http>=400:
+            return _failure(_http_reason(robots_http),'robots_txt',robots_url,robots_http)
+        return _failure('robots_unavailable','robots_txt',robots_url)
+    if general_disallow:return _failure('robots_disallowed','start_url',site_url)
+    if not start:return _failure('not_fetched','start_url',site_url)
+    if start['fetch_status']!='ok':
+        return _failure(_NETWORK_REASONS.get(start['fetch_status'],'connection_error'),'start_url',site_url)
+    if start.get('challenge'):
+        return _failure('blocked_by_challenge','start_url',site_url,start.get('http_status'),start['challenge'])
+    if start.get('login'):return _failure('login_page','start_url',site_url)
+    code=start.get('http_status')
+    if code and code>=400:return _failure(_http_reason(code),'start_url',site_url,code)
+    return _failure('no_content','start_url',site_url)
+
+# A bot challenge on this many pages in a row, or in total, ends the crawl: the
+# site is refusing automated clients, and more requests would only add load.
+_CHALLENGE_STOP_CONSECUTIVE=2
+_CHALLENGE_STOP_TOTAL=3
+
 # Seconds the acquisition stage must still have left to re-anchor on a new origin.
 _REANCHOR_MIN_S=20.0
 
@@ -479,7 +561,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     check=classify_url(site_url,allow_private=allow_private_targets)
     if not check.safe and check.reason not in ('dns_resolution_failed','dns_resolution_error'):
         i.record_safety_block(site_url,check.reason)
-        return AuditArtifacts(site_url,origin,(),freeze_value({'allowed_general':False,'status':'not_checked','ai_crawler_directives':{}}),freeze_value({'present':False,'status':'not_checked'}),freeze_value({'discovered':False,'status':'not_checked','urls':[]}),freeze_value({'pages_crawled':0,'total_bytes':0,'total_requests':0}),('initial_url_blocked:'+check.reason,)),None
+        return AuditArtifacts(site_url,origin,(),freeze_value({'allowed_general':False,'status':'not_checked','ai_crawler_directives':{}}),freeze_value({'present':False,'status':'not_checked'}),freeze_value({'discovered':False,'status':'not_checked','urls':[]}),freeze_value({'pages_crawled':0,'total_bytes':0,'total_requests':0,'acquisition_failure':_failure('blocked_by_safety_policy','start_url',site_url)}),('initial_url_blocked:'+check.reason,)),None
     tr=Transport(origin,min(deadline.deadline_monotonic,deadline.stage_deadlines['acquisition']),limits,i,allow_private_targets)
     warnings=[];probe_failures=[];moved=None
     if start_redirect:
@@ -500,6 +582,9 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         i.record_retry()
         resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
         robots_attempts.append(status)
+    # A challenge in place of robots.txt is recorded; it is never retried.
+    robots_challenge=challenge_signals(resp.status_code,resp.headers,resp.text) if status=='ok' else []
+    robots_http=resp.status_code if status=='ok' else None
     if status!='ok':probe_failures.append({'url':robots_url,'reason':'tls_certificate_error' if 'tls_certificate_error' in robots_attempts else status,'final_outcome':status,'attempt_outcomes':robots_attempts})
     elif resp.status_code not in (200,404):probe_failures.append({'url':robots_url,'reason':'http_error','http_status':resp.status_code})
     if status!='ok':robots_status='timeout' if status=='timeout' else 'blocked' if status=='blocked' else 'inaccessible';robots_text=None
@@ -507,11 +592,14 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     elif resp.status_code!=200:robots_status='inaccessible';robots_text=None
     else:
         try:
-            robots_text=resp.content.decode('utf-8','strict')
+            # A leading byte order mark is not part of the first rule line.
+            robots_text=resp.content.decode('utf-8-sig','strict')
             if resp.truncated or robots_text.lstrip().lower().startswith(('<html','<!doctype')):raise ValueError()
             robots_status='ok'
         except (ValueError,UnicodeDecodeError):robots_status='malformed';robots_text=None
     conservative=robots_text is None
+    # A readable robots.txt is never a challenge, whatever its comments say.
+    if not conservative:robots_challenge=[]
     rp=RobotsPolicy(robots_text if not conservative else 'User-agent: *\nDisallow: /')
     tr.robots=rp;tr.delay=max(tr.delay,rp.crawl_delay(USER_AGENT))
     if conservative:warnings.append(f'robots_txt_{robots_status}_conservative_crawl')
@@ -529,7 +617,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
             if st=='tls_certificate_error':probe_failures.append({'url':sm,'reason':st})
             if st!='ok':outcome='blocked' if st in ('robots_disallowed','blocked','cross_origin_redirect_blocked') else 'inaccessible'
             elif r.status_code==404:outcome='absent'
-            elif not r.ok:outcome='inaccessible'
+            elif not r.ok or _is_challenge(r):outcome='inaccessible'
             else:
                 # A gzipped sitemap is decompressed by the transport, within the same byte cap.
                 try:
@@ -553,7 +641,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         if st=='tls_certificate_error':probe_failures.append({'url':urljoin(origin,'/llms.txt'),'reason':st})
         if st!='ok':llms={'present':False,'status':'blocked' if st in ('blocked','robots_disallowed') else 'inaccessible'}
         elif r.status_code==404:llms={'present':False,'status':'absent'}
-        elif not r.ok:llms={'present':False,'status':'inaccessible'}
+        elif not r.ok or _is_challenge(r):llms={'present':False,'status':'inaccessible'}
         else:
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
@@ -563,6 +651,10 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     # Login pages: fetched (a public, read-only GET) but kept out of the analyzed
     # sample, with the reason listed in coverage.
     login_pages=[];out_of_scope=[]
+    # Bot-challenge interstitials: requested, never analyzed as site content.
+    challenged=[];challenged_pages=[];consecutive_challenges=0;challenge_stop=False
+    # What the start URL answered, for the reason given when no page is analyzed.
+    start_outcome=None
     sitemap_urls=[]
     for raw in sitemap['urls']:
         try:u=normalize_url(raw,origin)
@@ -586,15 +678,30 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
             i.record_retry();r,st=tr.get(url)
         if url==site_url and st=='cross_origin_redirect_blocked' and tr.last_cross_origin_redirect and not moved:
             moved=dict(tr.last_cross_origin_redirect,via='start_url')
+        if url==site_url:
+            start_outcome={'fetch_status':st,'http_status':r.status_code if r else None,'challenge':[],'login':False}
         if st in ('deadline','budget_exhausted'):break
         if st in ('robots_disallowed','blocked'):blocked.add(url);continue
         page=_extract_page(url,r,int((monotonic()-start)*1000),limits,st)
+        challenge=challenge_signals(r.status_code,r.headers,r.text,page.title,(page.features or {}).get('full_visible_chars')) if r else []
+        if challenge:
+            challenged.append(page);i.record_skip('bot_challenge')
+            if len(challenged_pages)<20:
+                challenged_pages.append({'url':url,'final_url':page.final_url,'http_status':r.status_code,'signals':challenge})
+            if url==site_url:start_outcome['challenge']=challenge
+            consecutive_challenges+=1
+            # No retry and no way around it: after a few challenges the crawl ends.
+            if consecutive_challenges>=_CHALLENGE_STOP_CONSECUTIVE or len(challenged)>=_CHALLENGE_STOP_TOTAL:
+                challenge_stop=True;break
+            continue
+        consecutive_challenges=0
         signals=login_page_signals(url,page.final_url,page.title,page.headings,page.features,page.jsonld_blocks) if page.status_code and 200<=page.status_code<300 else []
         if signals:
             login_pages.append(page);i.record_skip('login_page_out_of_scope')
             if len(out_of_scope)<20:
                 out_of_scope.append({'url':url,'final_url':page.final_url,'reason':'login_page','signals':signals})
             if url==site_url:
+                start_outcome['login']=True
                 warnings.append(f'The start URL {url} is a login page ({", ".join(signals)}); it was left out of the '
                                 f'audit, which never signs in. Audit a public page such as the home page instead.')
         else:pages.append(page)
@@ -610,17 +717,23 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
             if re.search(r'\.(pdf|zip|png|jpg|jpeg|svg|gif|mp4|css|js)(?:$|\?)',link,re.I):continue
             discovered.add(link)
             if link not in visited:queue.append((link,depth+1))
-    if queue:i.record_skip('acquisition_limit_reached')
-    # Every fetched page, login pages included: they answered a request.
-    fetched=pages+login_pages
-    https_probe=_probe_https(tr,origin,fetched,limits,i,allow_private_targets)
-    if llms.get('links'):_verify_llms_links(tr,llms,fetched,origin,limits)
-    media=_acquire_media(tr,pages,pdf_links,origin,limits)
+    if challenge_stop:
+        i.record_skip('crawl_stopped_by_bot_challenge')
+        warnings.append(f'The site answered {len(challenged)} request(s) with a bot-protection challenge, so the crawl '
+                        f'stopped there. The audit does not retry or get around challenges.')
+    elif queue:i.record_skip('acquisition_limit_reached')
+    # Every fetched page, login and challenge pages included: they answered a request.
+    fetched=pages+login_pages+challenged
+    # After a challenge stop no optional request is made.
+    https_probe=_probe_https(tr,origin,[] if challenge_stop else fetched,limits,i,allow_private_targets)
+    if llms.get('links') and not challenge_stop:_verify_llms_links(tr,llms,fetched,origin,limits)
+    media=_acquire_media(tr,[] if challenge_stop else pages,{} if challenge_stop else pdf_links,origin,limits)
     ok=[p for p in pages if p.status_code and 200<=p.status_code<300];analyzed=[p for p in ok if p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts')]
     timed=[p for p in fetched if 'fetch_timeout' in p.warnings]
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(fetched),'urls_fetched_ok':len(ok)+len(login_pages),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in fetched),
          'urls_blocked':len(blocked),'urls_timed_out':len(timed),'urls_failed_other':sum(p.status_code is None and p not in timed for p in fetched),
          'urls_out_of_scope':len(login_pages),'out_of_scope_pages':out_of_scope,
+         'urls_challenged':len(challenged),'challenged_pages':challenged_pages,'crawl_stopped_by_challenge':challenge_stop,
          'start_url_out_of_scope':any(p.url==site_url for p in login_pages),
          'urls_analyzed':len(analyzed),'urls_never_attempted':max(0,len(discovered)-len(fetched)),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
          # Representativeness of the sample: site sections (first path segment)
@@ -631,6 +744,12 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     section_blocks=_ai_crawler_section_blocks(rp,discovered,conservative)
     metadata={'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'https_probe':https_probe,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}
     if start_redirect:metadata['start_redirect']=start_redirect
-    return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_section_blocks':section_blocks,'fetch_outcome':status,'attempt_outcomes':robots_attempts}),
+    if not analyzed:
+        # As in probe_failures: a certificate error on any attempt is the cause,
+        # whatever the retry then met.
+        robots_fetch='tls_certificate_error' if status!='ok' and 'tls_certificate_error' in robots_attempts else status
+        metadata['acquisition_failure']=acquisition_failure(robots_url,robots_fetch,robots_http,robots_status,robots_challenge,
+                                                            general_disallow,site_url,start_outcome)
+    return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_section_blocks':section_blocks,'fetch_outcome':status,'attempt_outcomes':robots_attempts,'challenge':robots_challenge}),
         freeze_value(llms),freeze_value(sitemap),freeze_value(metadata),tuple(warnings),
         media_data=freeze_value(media)),moved

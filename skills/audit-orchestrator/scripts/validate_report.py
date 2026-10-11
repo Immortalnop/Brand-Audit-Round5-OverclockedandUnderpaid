@@ -86,7 +86,12 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
         warnings.append("No recommendations were generated for this audit -- "
                          "recommendations are a required, first-class section.")
 
-    summary = {
+    summary = {}
+    failure = (report.get("coverage") or {}).get("acquisition_failure")
+    if isinstance(failure, dict) and failure.get("detail"):
+        # The summary leads with why nothing on the pages was assessed.
+        summary["status_reason"] = failure["detail"]
+    summary.update({
         "total_findings": len(kept_findings),
         "critical": sum(1 for f in kept_findings if f["severity"] == "critical"),
         "high": sum(1 for f in kept_findings if f["severity"] == "high"),
@@ -95,7 +100,7 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
         "proactive_improvements": sum(1 for f in kept_findings if f["finding_type"] == "proactive_improvement"),
         "insufficient_evidence_items": sum(1 for f in kept_findings if f["status"] == "insufficient_evidence"),
         "total_recommendations": len(kept_recommendations),
-    }
+    })
     report = dict(report)
     report["findings"] = kept_findings
     report["recommendations"] = kept_recommendations

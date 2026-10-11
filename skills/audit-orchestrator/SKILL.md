@@ -59,6 +59,10 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
   once, to that origin: the target must resolve and pass the SSRF check, its own
   robots.txt is read first, and the report names both URLs
   (`coverage.start_redirect`, `coverage.audited_url`).
+- **Bot challenges are never bypassed**: a bot-protection interstitial is
+  recorded (`coverage.challenged_pages`), never analyzed as content and never
+  retried; the User-Agent never changes. Two challenges in a row, or three in
+  all, end the crawl (`common/bot_challenge.py`).
 - **Robots.txt never fails open**: absence (a confirmed 404) is the only state
   that means "allowed". Timeout, other HTTP errors, or an undecodable body make
   the crawl conservative (no pages fetched until permission is known) and
@@ -100,7 +104,11 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 ## Output
 A JSON report matching `references/report-schema.md`: `site`, `audited_at`,
 `summary`, `coverage`, `findings`, `recommendations`, `execution_status`
-(completed / completed_with_timeouts / degraded / partial_deadline_reached),
+(completed / completed_with_timeouts / degraded / partial_deadline_reached /
+insufficient_evidence when no page could be analyzed: then
+`coverage.acquisition_failure` names the reason, `summary.status_reason`,
+the first limitation and the confidence explanation lead with it, and only
+robots.txt, llms.txt, sitemap and TLS findings are kept),
 `limitations` (plain-English, each tied to a real signal from the run -- never
 unconditional boilerplate), and `confidence` (the minimum of sample
 representativeness, counted from analyzed pages, and an execution penalty, with
@@ -135,7 +143,11 @@ process cannot block the orchestrator past its deadline.
 
 ```
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com
+$ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json
 ```
+
+`--out PATH` writes the same JSON as UTF-8 (use it in Windows PowerShell, whose
+`>` writes UTF-16).
 
 Illustrative excerpt (not a complete report):
 

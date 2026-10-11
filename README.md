@@ -105,8 +105,15 @@ Every suggested action carries an impact (from severity and evidence), an effort
 ```bash
 python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com > report.json
 python3 common/report_markdown.py report.json        # optional: writes report.md
-python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in > results.json; python common/report_markdown.py results.json #Both in one line
 ```
+
+In Windows PowerShell, `>` writes UTF-16. Use `--out`, which always writes UTF-8 (the same text the command prints) and prints nothing to stdout:
+
+```powershell
+python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in --out results.json; python common/report_markdown.py results.json
+```
+
+`--out` checks the path before the audit starts, writes the file in one step (a failed run never leaves half a report), and prints the report to stdout instead if the file cannot be written. `examples/sample-report.json` is a full report made this way.
 
 The Markdown report is built from the JSON report alone, with no new requests: confidence and why, a summary, where to start, top actions, quick wins, every finding with its evidence, steps and ready-to-paste fix, and what the audit could not check. It reads UTF-8 or UTF-16 JSON (PowerShell's `>` writes UTF-16) and always writes UTF-8. Text from the audited site is escaped, so it cannot add headings, links, table columns or HTML. Pass a second path to name the file, or `-` to print it.
 
@@ -129,6 +136,9 @@ Optional environment variables:
 - **Login pages out of scope**: a fetched page is not analyzed only when it has a visible password input, at most 1,500 characters of visible text, no entity structured data (Organization, Product, Article and so on), and a login signal: an auth path (`/login`, `/sign-in`, `/wp-login.php`, matched as a whole path segment), a login title or H1, or a login form outside the header, nav and footer. Any page with real copy or entity markup is always audited. It is listed in `coverage.out_of_scope_pages` with its signals, and the report warns when the start URL is a login page.
 - **SSRF protection**: every URL (target, redirects, discovered links, sitemaps) is validated against loopback, private, link-local, multicast, reserved, and cloud-metadata ranges.
 - **Robots-first**: unknown robots permission prevents page acquisition (fail closed, not open).
+- **Bot challenges are respected, never bypassed**: a response that is a bot-protection interstitial (a challenge header, an error status with a challenge or block-page marker, or a nearly empty 2xx page with a challenge-only marker) is recorded in `coverage.challenged_pages` and never analyzed as site content, so it is never reported as a thin, untitled or broken page. The audit never retries a challenge, runs its script or changes its User-Agent; two challenges in a row, or three in all, end the crawl, and no optional request follows.
+- **Honest empty reports**: when no page could be analyzed, `execution_status` is `insufficient_evidence`, `coverage.acquisition_failure` gives the reason (DNS, TLS, timeout, robots.txt, 401/403, 429, server error, bot challenge, cross-origin redirect, login page, safety policy), the summary, limitations and confidence explanation lead with it, and only checks that never read page content (robots.txt, llms.txt, sitemap, TLS) are reported.
+- **Character encodings**: a byte order mark, then the HTTP charset, then `<meta charset>` or `http-equiv` in the first 2 KB, then UTF-8. Labels that are not web encodings are ignored; ISO-8859-1 and ASCII read as windows-1252, as browsers do. A page sent as UTF-8 that is mostly invalid UTF-8 is read as windows-1252.
 - **Redirects to another site**: never followed during the crawl. When the start URL itself (or its robots.txt) redirects to another origin, such as `example.so` to `example.com` or `http` to `https`, and nothing could be analyzed, the audit moves once to that origin, checks it against the SSRF policy, reads its robots.txt first, and names both URLs in the report.
 - **Sampled, not exhaustive**: sitemap URLs are crawled round-robin across site sections (first path segment), so a bounded crawl reaches every section before any section gets a second page. Overall confidence measures how representative the analyzed sample is (sections reached and sample size), not only the share of discovered URLs; a page fetched but not analyzed counts for nothing, and brand identity is reported beside the score rather than in it. Each finding's confidence says how likely the stated problem is real, and its `coverage` says how many analyzed pages showed it. The confidence block also names its `level` (high, medium or low), the `limiting_factor` that set it, and a plain-English `explanation`. `--max-pages N` (at most 100) crawls deeper on purpose; the request and byte budgets grow with it, the time limit does not.
 - **Bounded**: 50-page crawl cap by default, 90-request budget, 40 MiB body limit, 270-second wall-clock timeout. After the page crawl, at most 6 images and 3 PDFs are fetched (same origin, robots-checked) from the budget that remains; PDF parsing is capped at 4 seconds per file. A site served over plain HTTP gets one GET of `https://<host>/robots.txt` to check whether HTTPS is available. Up to 4 same-origin content images get a Range GET of their first 32 KiB to read file size and format. llms.txt adds at most 1 probe of `/llms-full.txt` and 8 GETs of listed same-origin pages that were not already crawled. Third-party requests are limited to links the site itself declares, and each host's robots.txt is read first (fail closed): the knowledge-graph verification (at most 4 GETs to public `/wiki/` pages of wikidata.org and wikipedia.org, within 15 seconds) and the sameAs and review profiles (at most 8 profile GETs, 2 per host, within 18 seconds). With `PAGESPEED_API_KEY` set, one GET to the PageSpeed Insights API runs alongside the crawl (at most 60 seconds); the key is never written to the report. A failed or blocked lookup only adds a limitation.
@@ -257,6 +267,7 @@ python3 -m pytest tests/test_points_15_21.py  # hreflang, noscript, graphics tex
 python3 -m pytest tests/test_points_6_11.py  # concrete titles, answer formats, location and context, fix snippets, impact x effort
 python3 -m pytest tests/test_precision_traps.py  # false-positive traps, severity gate, rendering-gap evidence
 python3 -m pytest tests/test_benchmark_tools.py  # measurement harness and fixture recall
+python3 -m pytest tests/test_robustness.py  # blocked and empty runs, bot challenges, encodings, --out
 ```
 
 `tests/conftest.py` switches the third-party lookups off for every test, so the suite never leaves the machine; tests of those lookups inject a fake transport.
