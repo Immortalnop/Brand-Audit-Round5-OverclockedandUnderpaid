@@ -267,3 +267,80 @@ def test_a2_dropping_the_agent_file_restores_the_native_finding(tmp_path):
     assert f is not None and f["status"] == "suspected"
     assert all("viewed image" not in (e.get("description") or "") for e in f["evidence"])
     assert {json.loads(p)["skill"] for p in _normalized(f)["contributors"]} == {"crawl-render-audit"}
+
+
+# ------------------------------------------------------------- A3 access guard
+# Short, entirely ordinary pages that happen to load a bot-manager script. A
+# vendor tag is not a block page: misclassifying these removes real content from
+# every downstream check and can raise a bot-wall finding against a site with no
+# wall. These are the positive controls the review asked for.
+_PROTECTED_BUT_NORMAL = {
+    "datadome tag": "<html><head><title>Our pricing</title>"
+                    "<script src='https://js.datadome.co/tags.js'></script></head>"
+                    "<body><nav><a href='/'>Home</a></nav><h1>Pricing</h1>"
+                    "<p>Plans start at $9 per month.</p></body></html>",
+    "cloudflare js detections": "<html><head><title>Contact</title>"
+                                "<script src='/cdn-cgi/challenge-platform/h/b/scripts/jsd/main.js'>"
+                                "</script></head><body><h1>Contact us</h1><p>Call 555-0100.</p></body></html>",
+    "turnstile widget on a form": "<html><head><title>Sign up</title>"
+                                  "<script src='https://challenges.cloudflare.com/turnstile/v0/api.js'></script>"
+                                  "</head><body><h1>Sign up</h1><form><div class='cf-turnstile'></div></form>"
+                                  "</body></html>",
+    "imperva resource script": "<html><head><title>Hours</title></head><body><h1>Opening hours</h1>"
+                               "<p>Mon-Fri 9-5.</p><script src='/_Incapsula_Resource?SWJIYLWA=719d'>"
+                               "</script></body></html>",
+    "aws waf sdk": "<html><head><title>Menu</title><script src='https://abc.awswaf.com/abc/challenge.js'>"
+                   "</script></head><body><h1>Menu</h1><p>Dosa 80. Idli 50.</p></body></html>",
+    "perimeterx tag": "<html><head><title>Shop</title><script>window._pxAppId='PXabc'</script></head>"
+                      "<body><h1>Shop</h1><p>Free delivery over 500.</p></body></html>",
+}
+
+
+def test_a3_short_legitimate_pages_behind_a_bot_manager_are_content():
+    from access_guard import classify_access
+    headers = {"Content-Type": "text/html", "server": "cloudflare", "x-datadome": "protected"}
+    for name, body in _PROTECTED_BUT_NORMAL.items():
+        result = classify_access(200, headers, body, 120)
+        assert result["kind"] == "ok", (name, result)
+
+
+def test_a3_real_interstitials_are_still_detected():
+    from access_guard import classify_access
+    cases = [
+        (403, {"cf-mitigated": "challenge"},
+         "<html><head><title>Just a moment...</title></head><body>"
+         "<script>window._cf_chl_opt={cZone:'x'}</script></body></html>", 40, "cloudflare"),
+        (403, {"x-datadome": "blocked"},
+         "<html><body><script src='https://geo.captcha-delivery.com/captcha/?initialCid=x'></script>"
+         "</body></html>", 20, "datadome"),
+        (403, {}, "<html><body>Request unsuccessful. Incapsula incident ID: 123-456</body></html>", 60, "imperva"),
+        (403, {"server": "AkamaiGHost"},
+         "<html><head><title>Access Denied</title></head><body>Access Denied: reference #18.ab12cd34"
+         "</body></html>", 70, "akamai"),
+        (200, {}, "<html><head><title>Client Challenge</title></head><body>JavaScript is disabled in your "
+                  "browser. Please enable JavaScript to proceed.</body></html>", 90, "generic"),
+        (405, {"x-amzn-waf-action": "captcha"}, "<html><body>x</body></html>", 5, "aws_waf"),
+    ]
+    for status, headers, body, visible, vendor in cases:
+        result = classify_access(status, headers, body, visible)
+        assert result["kind"] == "challenge" and result["vendor"] == vendor, (vendor, result)
+
+
+def test_a3_vendor_presence_alone_needs_a_refusing_status():
+    from access_guard import classify_access
+    body = "<html><body>Forbidden</body></html>"
+    # Refused on a page served behind a bot manager: an access problem, and the
+    # signals say explicitly that no interstitial marker was found.
+    blocked = classify_access(403, {"x-datadome": "protected"}, body, 9)
+    assert blocked["kind"] == "challenge" and blocked["vendor"] == "datadome"
+    assert any("no vendor-specific interstitial marker" in s for s in blocked["signals"])
+    # The same vendor header on a served page is not a challenge.
+    assert classify_access(200, {"x-datadome": "protected"}, body, 9)["kind"] == "ok"
+
+
+def test_a3_long_page_naming_vendors_is_never_a_challenge():
+    from access_guard import classify_access
+    body = ("<html><title>Our CDN</title><body>"
+            + "We moved to Cloudflare and challenges.cloudflare.com and DataDome docs helped. " * 60
+            + "</body></html>")
+    assert classify_access(200, {"server": "cloudflare"}, body, 5000)["kind"] == "ok"
