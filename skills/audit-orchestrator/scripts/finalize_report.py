@@ -12,10 +12,22 @@ Flow (see skills/audit-orchestrator/SKILL.md):
 Agent findings are rebuilt through the shared finding factory (catalog
 enrichment + Invariant I-1), merged with the existing findings by root-cause
 group, re-scored with the report's own scoring_context, re-ordered, re-numbered
-and re-validated. Scoring is idempotent, so running this twice gives the same
-report. Deterministic given the same two input files.
+and re-validated.
+
+Idempotency comes from a preserved base, not from subtraction. Earlier versions
+removed every finding whose provenance mentioned the agent and rebuilt the agent
+side. That is lossy: a finding can have both a script and an agent contributor
+(the script's facts-in-images and the agent's AG-04 for the same page merge into
+one), and dropping it dropped the script's evidence, steps and provenance with
+it. So the first finalize records the report's native, script-authored findings
+under NATIVE_KEY and every later run merges the agent envelope into that same
+immutable base. Repeated finalization is therefore identical, not merely
+same-numbered, and a changed agent file cannot leave stale agent evidence behind.
+The base findings are deep-copied before use, so finalize never mutates the
+report object it was handed.
 """
 import argparse
+import copy
 import json
 import os
 import sys
@@ -32,19 +44,55 @@ from validate_report import validate_report  # noqa: E402
 from ingest_agent_findings import load_agent_findings  # noqa: E402
 
 
+# Where the preserved, script-authored base lives in the report. It is written
+# by the first finalize and read by every later one, so re-running merges the
+# agent envelope into the same base instead of into its own previous output.
+NATIVE_KEY = "native_findings"
+_AGENT_SKILL = "entity-corroboration-agent"
+
+
+def _contributors(finding):
+    """Every provenance record behind a finding (one per contributing check)."""
+    prov = finding.get("provenance") or {}
+    contributors = prov.get("contributing_skills") if isinstance(prov, dict) else None
+    return [p for p in (contributors or [prov]) if isinstance(p, dict)]
+
+
+def _agent_only(finding):
+    """True when the agent stage is the finding's ONLY contributor.
+
+    A finding the script stage also contributed to is native and must survive:
+    removing it to rebuild the agent side is what lost the script's evidence."""
+    skills = {p.get("skill") for p in _contributors(finding)}
+    return bool(skills) and skills <= {_AGENT_SKILL}
+
+
+def native_findings(report):
+    """Deep copies of the report's native, script-authored findings.
+
+    Uses the base preserved by an earlier finalize when there is one; otherwise
+    takes the report's own findings, which on a pass-1 report are native by
+    construction. (A report written by a pre-NATIVE_KEY finalize has already
+    lost the native half of any composite; there is nothing left to recover, so
+    such a finding is reported as the agent-only one it has become.)"""
+    stored = report.get(NATIVE_KEY)
+    if isinstance(stored, list):
+        return copy.deepcopy(stored)
+    findings = list(report.get("findings") or ()) + list(report.get("hygiene_findings") or ())
+    return copy.deepcopy([f for f in findings if not _agent_only(f)])
+
+
 def finalize(report, agent_findings_path):
     from run_audit import finalize_findings
     report = dict(report)
     result, stage = load_agent_findings(agent_findings_path, report.get("site"))
     ctx = ScoringContext.from_dict(report.get("scoring_context") or {})
-    existing = list(report.get("findings", [])) + list(report.get("hygiene_findings", []))
-    # Drop any agent findings from a previous finalize so re-running is idempotent.
-    existing = [f for f in existing
-                if not any((p or {}).get("skill") == "entity-corroboration-agent"
-                           for p in ((f.get("provenance") or {}).get("contributing_skills") or [f.get("provenance") or {}]))]
-    for f in existing:
+    base = native_findings(report)
+    # Preserve the base verbatim so this is the last time it can be derived.
+    report[NATIVE_KEY] = copy.deepcopy(base)
+    for f in base:
         f["tier_override"] = f.pop("tier", None)
-    merged = _group_merge(existing + list(result["findings"]))
+    merged = _group_merge(base + list(result["findings"]))
     core, hygiene = finalize_findings(merged, ctx)
     report["findings"], report["hygiene_findings"] = core, hygiene
     report["action_plan"] = build_action_plan(core)

@@ -11,6 +11,7 @@ Two passes:
     evidence, the most severe member's title/severity/category, and a combined,
     de-duplicated list of steps.
 """
+import json
 import re
 from check_catalog import meta_for
 
@@ -87,6 +88,22 @@ def find_matching_bucket(finding: dict, buckets: dict, similarity_threshold: flo
     return None
 
 
+def _dedup_contributors(records: list) -> list:
+    """One provenance record per contributing check, first occurrence kept.
+    Re-merging the same contributor (a re-run of finalize_report.py) must not
+    grow the contributor list."""
+    out, seen = [], set()
+    for record in records:
+        if not isinstance(record, dict) or not record:
+            continue
+        key = json.dumps(record, sort_keys=True, default=str)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(record)
+    return out
+
+
 def _evidence_key(item: dict) -> tuple:
     """Canonical, hashable key for one evidence entry, used to drop exact
     duplicates when merging evidence from multiple contributing findings."""
@@ -114,7 +131,7 @@ def merge_evidence(group: list) -> dict:
     merged["evidence"] = evidence
     from models import make_evidence_text
     merged["evidence_text"] = make_evidence_text(evidence)
-    merged["provenance"] = {"contributing_skills": provenance}
+    merged["provenance"] = {"contributing_skills": _dedup_contributors(provenance)}
     all_pages = sorted(set(p for f in group for p in (f.get("affected_pages") or [])))
     if all_pages:
         merged["affected_pages"] = all_pages
@@ -177,7 +194,7 @@ def _group_merge(findings: list) -> list:
         for x in (lead, other):
             pv = x.get("provenance") or {}
             prov.extend(pv.get("contributing_skills", [pv]) if isinstance(pv, dict) else [])
-        merged["provenance"] = {"contributing_skills": prov}
+        merged["provenance"] = {"contributing_skills": _dedup_contributors(prov)}
         out[out.index(target)] = merged
     for f in out:
         f.pop("_group", None)

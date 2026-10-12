@@ -16,19 +16,25 @@ from merge_findings import merge_findings
 from generate_recommendations import generate_recommendations
 
 
-def _finding(category, root_cause, pages, finding_type="defect", status="confirmed", severity="medium"):
+def _finding(category, root_cause, pages, finding_type="defect", status="confirmed", severity="medium",
+             skill="test", rule="r"):
     return make_finding(
         category=category, finding_type=finding_type, severity=severity, status=status, confidence=0.8,
         title=root_cause, root_cause=root_cause, evidence=[{"type": "t", "description": "d", "urls": pages}],
         suggested_action={"summary": "s", "steps": [], "priority": "low", "effort": "low",
                            "expected_benefit": "b", "verification": "v"},
-        provenance={"skill": "test", "script": "test.py", "rule_id": "r"}, affected_pages=pages,
+        provenance={"skill": skill, "script": "test.py", "rule_id": rule}, affected_pages=pages,
     )
 
 
 def test_near_duplicates_from_different_skills_merge():
-    a = _finding("ai_discoverability", "robots.txt blocks crawler access to the site", ["https://x/"])
-    b = _finding("ai_discoverability", "robots.txt is blocking crawler access on the site", ["https://x/"])
+    # Distinct contributing checks, as two real skills would supply: the merged
+    # finding keeps one provenance record per contributor (identical records are
+    # the same contributing check twice, and collapse).
+    a = _finding("ai_discoverability", "robots.txt blocks crawler access to the site", ["https://x/"],
+                 skill="skillA", rule="robots-block")
+    b = _finding("ai_discoverability", "robots.txt is blocking crawler access on the site", ["https://x/"],
+                 skill="skillB", rule="ai-crawler-blocked")
     results = [skill_result("skillA", findings=[a]), skill_result("skillB", findings=[b])]
     merged = merge_findings(results)
     assert len(merged) == 1
