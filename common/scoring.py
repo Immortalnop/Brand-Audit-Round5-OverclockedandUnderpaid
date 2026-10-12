@@ -81,14 +81,27 @@ class ScoringContext:
 
 
 def _scope(finding, ctx):
+    """(reach bucket, why that bucket was chosen).
+
+    The bucket feeds REACH; the basis is published in severity_rationale so a
+    reader is never left to assume that "site-wide" was established rather than
+    inferred. Naming the homepage, naming no page at all, and covering half the
+    sample are three different kinds of evidence, and none of them is a
+    measurement of whole-site reach -- they are the reasons this finding is
+    weighted as if it were site-wide."""
     pages = list(finding.get('affected_pages') or [])
+    assessed = finding.get('assessed_pages')
     if not pages:
-        return 'site-wide'
+        return 'site-wide', 'no affected page named: treated as a site-level observation'
+    if isinstance(assessed, int) and assessed > 0 and len(pages) >= assessed:
+        return 'site-wide', f'every one of the {assessed} page(s) this check assessed is affected'
     if ctx.home_url and any(p.rstrip('/') == ctx.home_url.rstrip('/') for p in pages):
-        return 'site-wide'
+        return 'site-wide', 'the homepage is affected: weighted site-wide because it is the site\'s entry point, ' \
+                            'not because every page was shown to be affected'
     if ctx.content_page_count and len(pages) >= max(2, 0.5 * ctx.content_page_count):
-        return 'site-wide'
-    return 'template' if len(pages) >= 2 else 'page'
+        return 'site-wide', (f'{len(pages)} of {ctx.content_page_count} sampled content page(s) are affected '
+                             '(at least half the sample), which is a prevalence in the sample, not a whole-site count')
+    return ('template', f'{len(pages)} pages affected') if len(pages) >= 2 else ('page', 'one page affected')
 
 
 def apply_scoring(finding, ctx):
@@ -103,7 +116,11 @@ def apply_scoring(finding, ctx):
     detector_confidence = prior.get('detector_confidence', finding.get('confidence', 0.5))
     # Site-level checks (robots, bot walls, llms.txt, identity ...) describe the
     # whole site even when evidence names one URL.
-    scope = _scope(finding, ctx) if meta['scope_sensitive'] else 'site-wide'
+    if meta['scope_sensitive']:
+        scope, scope_basis = _scope(finding, ctx)
+    else:
+        scope, scope_basis = 'site-wide', 'site-level check: it describes the whole site even when its evidence ' \
+                                          'names one URL'
     severity, adjustment = detector_severity, 'none'
     pages = list(finding.get('affected_pages') or [])
     if (meta['scope_sensitive'] and scope == 'page' and finding['status'] != 'insufficient_evidence'
@@ -111,15 +128,30 @@ def apply_scoring(finding, ctx):
         severity, adjustment = _step(detector_severity, -1), 'single non-key page: one tier lower'
     confidence = float(detector_confidence)
     strength = None
+    sample_basis = None
     if meta['absence_claim']:
-        strength = sample_strength(ctx.content_page_count, ctx.templates_sampled)
+        # The denominator is the pages THIS check assessed, when the detector
+        # recorded it. Twenty unrelated pages must not be allowed to establish
+        # the strength of an About-page-only assessment, which is what using the
+        # global content count for every absence claim did.
+        assessed = finding.get('assessed_pages')
+        assessed_templates = finding.get('assessed_templates')
+        if isinstance(assessed, int) and assessed >= 0:
+            n_pages = assessed
+            n_templates = assessed_templates if isinstance(assessed_templates, int) else min(ctx.templates_sampled, max(1, assessed))
+            sample_basis = f'{n_pages} page(s) eligible for this check across {n_templates} template(s)'
+        else:
+            n_pages, n_templates = ctx.content_page_count, ctx.templates_sampled
+            sample_basis = (f'the whole content sample ({n_pages} page(s), {n_templates} template(s)); this check '
+                            'did not record how many pages it assessed, so the denominator is wider than the check')
+        strength = sample_strength(n_pages, n_templates)
         confidence = round(confidence * strength, 3)
-        if ctx.content_page_count <= SMALL_SAMPLE_PAGES and SEVERITY_ORDER.index(severity) > SEVERITY_ORDER.index('medium'):
+        if n_pages <= SMALL_SAMPLE_PAGES and SEVERITY_ORDER.index(severity) > SEVERITY_ORDER.index('medium'):
             # "0 of 1 pages has X" is a fact about one page, not about the site:
             # an absence claim from a tiny sample never ranks above medium.
             severity = 'medium'
-            adjustment = (f'absence observed on only {ctx.content_page_count} content page(s): capped at medium'
-                          if adjustment == 'none' else adjustment + f'; capped at medium ({ctx.content_page_count} page sample)')
+            adjustment = (f'absence observed on only {n_pages} assessed page(s): capped at medium'
+                          if adjustment == 'none' else adjustment + f'; capped at medium ({n_pages} page sample)')
     if finding.get('category') in OFF_SITE_CATEGORIES and ctx.identity_confidence is not None:
         # Identity confidence gates only the off-site findings that depend on it.
         confidence = round(min(confidence, max(0.3, ctx.identity_confidence)), 3)
@@ -146,9 +178,11 @@ def apply_scoring(finding, ctx):
     finding['severity_rationale'] = {
         'gate': meta['gate'], 'detector_severity': detector_severity,
         'detector_confidence': detector_confidence, 'scope': scope,
+        'scope_basis': scope_basis,
         'prevalence': f"{len(pages)}/{ctx.content_page_count} sampled content pages" if pages else 'site-level observation',
         'templates_sampled': ctx.templates_sampled, 'adjustment': adjustment,
-        'sample_strength': strength,
+        'sample_strength': strength, 'sample_basis': sample_basis,
+        'assessed_pages': finding.get('assessed_pages'),
         'priority_formula': f"impact {IMPACT[severity]} x reach {reach} x confidence {confidence} / effort {EFFORT_COST[effort]}",
     }
     return finding

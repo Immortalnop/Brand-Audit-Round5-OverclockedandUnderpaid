@@ -112,14 +112,24 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     return out
 
 
+SAMPLE_HEURISTIC_PAGES = 20
+SAMPLE_HEURISTIC_TEMPLATES = 5
+
+
 def overall_confidence(coverage: dict, execution_status: str) -> dict:
     """Report-level confidence with its method shown.
 
     min(sample_quality, access_quality, execution_penalty):
-      sample_quality   = min(1, content pages / 20) x min(1, templates / 5),
-                         floored at 0.3 when at least one page was analysed.
-                         Large sites are not penalised for being large: 20 pages
-                         across 5 templates is an adequate sample of any site.
+      sample_quality   a CENSUS when every discovered URL was analysed -- the
+                       sample is then the site, so the score is 1.0 and a
+                       genuinely complete one-page site is not penalised for
+                       being small. Otherwise an explicit SIZE HEURISTIC,
+                       min(1, pages/20) x min(1, templates/5) floored at 0.3,
+                       which says the sample is large and varied enough to be
+                       worth trusting. It does NOT establish that the sample is
+                       representative of the site, and it does not establish
+                       that discovery was complete on a large site; those are
+                       separate claims this audit does not make.
       access_quality   = content pages / fetched pages (challenged pages lower it)
       execution_penalty 1.0 completed, 0.7 timeouts/degraded, 0.4 deadline hit
     Identity confidence is deliberately NOT part of this minimum: it only limits
@@ -129,10 +139,21 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     # Login pages kept out of scope are a deliberate exclusion, not an access failure.
     fetched = max(0, (coverage.get("pages_fetched_attempted", 0) or 0) - (coverage.get("pages_out_of_scope", 0) or 0))
     templates = coverage.get("templates_sampled", analysed) or 0
+    discovered = coverage.get("pages_discovered", 0) or 0
+    never_attempted = coverage.get("pages_never_attempted", 0) or 0
+    # A census: the crawler discovered N URLs and analysed all N. Then there is no
+    # sampling question left and a complete small site is not marked down for
+    # being small. A missing or zero discovered count is unknown, not complete,
+    # so it is never read as a census.
+    census = bool(analysed > 0 and discovered > 0 and never_attempted == 0
+                  and analysed >= discovered and fetched <= analysed)
     if analysed <= 0:
-        sample_quality = 0.0
+        sample_quality, sample_basis = 0.0, "no_page_analysed"
+    elif census:
+        sample_quality, sample_basis = 1.0, "census"
     else:
-        sample_quality = max(0.3, min(1.0, analysed / 20) * min(1.0, max(1, templates) / 5))
+        sample_quality, sample_basis = max(0.3, min(1.0, analysed / SAMPLE_HEURISTIC_PAGES)
+                                           * min(1.0, max(1, templates) / SAMPLE_HEURISTIC_TEMPLATES)), "size_heuristic"
     access_quality = 1.0 if fetched <= 0 else min(1.0, analysed / fetched)
     execution_penalty = {
         "completed": 1.0, "completed_with_timeouts": 0.7,
@@ -143,9 +164,14 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     limiting = min(parts, key=lambda k: (parts[k], list(parts).index(k)))
     identity = coverage.get("identity_confidence", 0.0) or 0.0
     reasons = {
-        "sample_quality": (f"{analysed} content page(s) across {templates} distinct page template(s) were analysed; "
-                           "20 pages across 5 templates counts as a full sample." if analysed
-                           else "No content page could be analysed."),
+        "sample_quality": ("No content page could be analysed." if not analysed else
+                           f"Every discovered URL was analysed ({analysed} content page(s) across {templates} "
+                           "template(s)), so this is the whole site, not a sample of it." if census else
+                           f"{analysed} content page(s) across {templates} distinct page template(s) were analysed. "
+                           f"This score is an explicit size heuristic ({SAMPLE_HEURISTIC_PAGES} pages across "
+                           f"{SAMPLE_HEURISTIC_TEMPLATES} templates scores 1.0); it says the sample is large and "
+                           "varied enough to be worth trusting, not that it is representative of the site or that "
+                           "discovery was complete."),
         "access_quality": (f"{analysed} of {fetched} fetched page(s) returned real content"
                            + ((f"; {coverage['pages_challenged']} was a bot challenge or rate limit"
                                if coverage["pages_challenged"] == 1 else
@@ -168,8 +194,12 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
         "score": round(score, 2),
         "level": level,
         "limiting_factor": limiting,
-        "method": "min(sample_quality, access_quality, execution_penalty); sample_quality = "
-                  "min(1, pages/20) x min(1, templates/5). Identity confidence limits only off-site findings.",
+        "method": "min(sample_quality, access_quality, execution_penalty); sample_quality is 1.0 for a census "
+                  "(every discovered URL analysed) and otherwise the size heuristic min(1, pages/20) x "
+                  "min(1, templates/5), floored at 0.3 -- a judgement about sample size and variety, not a "
+                  "measurement of representativeness or of discovery completeness. Identity confidence limits "
+                  "only off-site findings.",
+        "sample_basis": sample_basis,
         "components": {
             "sample_quality": round(sample_quality, 2),
             "access_quality": round(access_quality, 2),

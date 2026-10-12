@@ -484,7 +484,15 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     challenged=[p for p in pages if {'bot_challenge','rate_limited'}&set(p.warnings)]
     login=[p for p in pages if 'login_page' in p.warnings]
     if any(p.url==site_url for p in login):warnings.append('start_url_is_login_page')
-    ok=[p for p in pages if p.status_code and 200<=p.status_code<300 and p not in challenged];analyzed=[p for p in ok if p not in login and (p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts'))]
+    ok=[p for p in pages if p.status_code and 200<=p.status_code<300 and p not in challenged]
+    # "Analyzed" must mean exactly what the check modules can actually use, so it
+    # is the same definition every check reads through check_helpers.content_pages
+    # (HTTP 200, parsed, complete, not an interstitial or a login page). The
+    # previous version counted a page truncated at the byte budget as analyzed
+    # whenever it had any text, scripts or JSON-LD -- while content_pages excluded
+    # it -- so coverage reported a page the graph and the checks could not use.
+    from check_helpers import EXCLUDED_WARNINGS
+    analyzed=[p for p in pages if p.status_code==200 and not EXCLUDED_WARNINGS&set(p.warnings)]
     timed=[p for p in pages if 'fetch_timeout' in p.warnings]
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(pages),'urls_fetched_ok':len(ok),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in pages),
          'urls_blocked':len(blocked),'urls_timed_out':len(timed),'urls_failed_other':sum(p.status_code is None and p not in timed for p in pages),

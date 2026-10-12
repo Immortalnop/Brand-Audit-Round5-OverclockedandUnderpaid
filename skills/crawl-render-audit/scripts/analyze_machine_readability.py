@@ -15,6 +15,7 @@ from models import skill_result, make_finding, coverage_ratio
 from check_helpers import content_pages, meta_value
 from identity_signals import best_name
 from structured_data import ORGANIZATION_TYPES
+from url_keys import template_key
 
 # Expected schema.org @type(s) for each page_type that should realistically carry
 # structured data. Types not listed here (e.g. "other", "category") are not held
@@ -154,6 +155,10 @@ def analyze_machine_readability(artifacts, deadline):
             provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py",
                         "rule_id": "no-jsonld"},
         ))
+        # The denominator behind this absence claim: the pages this check
+        # could judge, which is what scoring uses for its sample strength.
+        findings[-1]["assessed_pages"] = len(pages)
+        findings[-1]["assessed_templates"] = len({template_key(p.url) for p in pages})
     else:
         # Some structured data exists somewhere -- check it's the RIGHT structured
         # data for each page's role, per type.
@@ -202,6 +207,8 @@ def analyze_machine_readability(artifacts, deadline):
             provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py",
                         "rule_id": "no-headings"},
         ))
+        findings[-1]["assessed_pages"] = len(pages)
+        findings[-1]["assessed_templates"] = len({template_key(p.url) for p in pages})
 
     return skill_result(
         "crawl-render-audit", findings=findings,

@@ -10,6 +10,7 @@ import re
 from urllib.parse import urlsplit, urljoin
 from check_helpers import content_pages, observation
 from models import skill_result
+from url_keys import template_key
 from url_safety import same_origin
 
 CHECK_IDS = frozenset({'http-transport','redirect-chain','missing-title','missing-description',
@@ -29,6 +30,7 @@ def valid_http_url(value):
 
 def analyze_metadata(artifacts, deadline):
     pages = content_pages(artifacts)
+    templates = len({template_key(p.url) for p in pages})
     out = []
     def emit(rid,title,selected,detail,**kw):
         if selected:
@@ -55,8 +57,11 @@ def analyze_metadata(artifacts, deadline):
          lambda p:f"Observed {p.features['redirect_hops']} hops; final URL: {p.final_url}",confirmed=True,severity='medium')
     emit('missing-title','Pages lack a document title',[p for p in pages if not (p.title or '').strip()],
          lambda p:'No nonempty title was parsed from the complete HTML response.',confirmed=True,severity='medium')
+    # assessed: the denominator behind this absence claim is every content page,
+    # which is what scoring uses for its sample strength (common/scoring.py).
     emit('missing-description','Review missing page descriptions',[p for p in pages if not (p.meta_description or '').strip()],
-         lambda p:'No nonempty meta description was observed; a search engine can still extract a summary.')
+         lambda p:'No nonempty meta description was observed; a search engine can still extract a summary.',
+         assessed=len(pages),assessed_templates=templates)
     emit('missing-language','Pages omit an explicit document language',[p for p in pages if not (p.features.get('lang') or '').strip()],
          lambda p:'The html lang attribute is absent or empty.',confirmed=True,severity='low')
     emit('missing-landmarks','Review primary content landmarks',
@@ -82,7 +87,8 @@ def analyze_metadata(artifacts, deadline):
         elif resolved and not same_origin(resolved[0],p.final_url or p.url):
             external.append(p);canon_details[p.url]='External canonical hint: '+resolved[0]
     emit('missing-canonical','Review preferred URL declarations',missing,
-         lambda p:'No rel=canonical declaration observed. Duplicate content was not established.')
+         lambda p:'No rel=canonical declaration observed. Duplicate content was not established.',
+         assessed=len(pages),assessed_templates=templates)
     emit('invalid-canonical','Canonical declarations are unusable or conflicting',invalid,
          lambda p:canon_details[p.url],confirmed=True,severity='medium')
     emit('cross-origin-canonical','Review external canonical targets',external,lambda p:canon_details[p.url])

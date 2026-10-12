@@ -50,11 +50,17 @@ def numbered(steps):
 
 
 def observation(check_id, title, pages, details, *, skill='crawl-render-audit',
-                script='analyze_metadata.py', severity='low', confirmed=False, category=None):
-    """Absence-based heuristics default to suspected, low-priority opportunities."""
+                script='analyze_metadata.py', severity='low', confirmed=False, category=None,
+                assessed=None, assessed_templates=None):
+    """Absence-based heuristics default to suspected, low-priority opportunities.
+
+    assessed is how many pages this check was actually able to judge -- the
+    denominator behind an absence claim. common/scoring.py uses it instead of the
+    whole content sample when it is supplied, so a check that looked at one About
+    page does not borrow the sample strength of twenty unrelated pages."""
     entry = get_entry(check_id)
     category = category or meta_for(check_id).get('category') or 'ai_discoverability'
-    return make_finding(
+    finding = make_finding(
         category=category, finding_type='defect' if confirmed else 'proactive_improvement',
         severity=severity, status='confirmed' if confirmed else 'suspected',
         confidence=.95 if confirmed else .6, title=title,
@@ -69,6 +75,11 @@ def observation(check_id, title, pages, details, *, skill='crawl-render-audit',
                           'expected_benefit':entry['expected_outcome'],
                           'verification':'Repeat the affected observation and verify the intended behavior.'},
         provenance={'skill':skill, 'script':script, 'rule_id':check_id})
+    if assessed is not None:
+        finding['assessed_pages'] = int(assessed)
+    if assessed_templates is not None:
+        finding['assessed_templates'] = int(assessed_templates)
+    return finding
 
 
 # The site's own contact details (contact-markup-missing and its snippet). A

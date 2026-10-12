@@ -75,6 +75,10 @@ def assess_freshness(facts, artifacts, deadline, today=None):
         # sitemap-lastmod-unreliable reports it once instead.
         lastmods = {}
     expired, contradictions, stale_claims, missing_dates = [], [], [], []
+    # Pages eligible for missing-article-dates: substantial article pages only.
+    # This, not the whole content sample, is the denominator behind that
+    # absence claim (common/scoring.py).
+    article_pages = []
     copyright = []
     dated_signals = 0
     for p in pages:
@@ -117,6 +121,7 @@ def assess_freshness(facts, artifacts, deadline, today=None):
             copyright.append((p.url, max(years)))
         # missing-article-dates
         if p.page_type == 'article' and len((p.visible_text or '').split()) > 150:
+            article_pages.append(p.url)
             has_machine = bool(jd['datePublished'] or jd['dateModified'] or meta_value(p, 'article:published_time')
                                or (p.features or {}).get('time_values'))
             if not has_machine:
@@ -170,6 +175,7 @@ def assess_freshness(facts, artifacts, deadline, today=None):
                                  ['Add datePublished and dateModified to Article/BlogPosting JSON-LD',
                                   'Show the same dates visibly near the headline'],
                                  ftype='proactive_improvement'))
+        findings[-1]['assessed_pages'] = len(article_pages)
     if not dated_signals and not copyright and not findings:
         return insufficient_evidence_result(
             'freshness-corroboration',

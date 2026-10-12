@@ -699,3 +699,124 @@ def test_a7_navigation_absence_excludes_js_shell_pages():
     assert "no-internal-navigation" not in ids, sorted(ids)
     assert "dead-ends" not in ids
     assert result["metrics"]["raw_shell_pages"] == 4
+
+
+# -------------------------------------------- A8 coverage counts and confidence
+def test_a8_analyzed_count_matches_what_the_checks_can_use():
+    """Acquisition counted a page truncated at the byte budget as analyzed if it
+    had any text, scripts or JSON-LD, while check_helpers.content_pages excluded
+    it -- so coverage reported a page the graph and the checks could not use."""
+    from dataclasses import replace
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from check_helpers import content_pages
+    from fixtures_server import start_server
+    url, stop = start_server(sitemap_mode="ok", big_body_bytes=200_000)
+    try:
+        # A tiny response cap truncates the pages that are fetched.
+        limits = replace(Limits(), MAX_RESPONSE_BYTES=600, MAX_PAGES_CRAWLED=4)
+        artifacts = acquire_site(url + "/", make_deadline(limits), limits, allow_private_targets=True)
+    finally:
+        stop()
+    reported = artifacts.acquisition_metadata["coverage"]["urls_analyzed"]
+    usable = len(content_pages(artifacts, require_features=False))
+    assert reported == usable, (reported, usable, [list(p.warnings) for p in artifacts.pages])
+
+
+def test_a8_absence_confidence_uses_the_pages_the_check_assessed():
+    """A sample multiplier must not use twenty unrelated pages to establish the
+    strength of a check that could only assess two."""
+    from scoring import ScoringContext, apply_scoring, sample_strength
+    from models import make_finding
+    ctx = ScoringContext(20, 5, {}, SITE)
+
+    def absence(assessed=None):
+        f = make_finding(category="ai_discoverability", finding_type="proactive_improvement", severity="low",
+                         status="confirmed", confidence=0.9, title="t", root_cause="no description",
+                         evidence=[{"type": "x", "description": "d", "urls": [SITE + "a"]}],
+                         suggested_action={"summary": "s", "steps": ["a"], "priority": "low", "effort": "low",
+                                           "expected_benefit": "b", "verification": "v"},
+                         provenance={"skill": "s", "script": "x.py", "rule_id": "missing-description"},
+                         affected_pages=[SITE + "a"])
+        if assessed is not None:
+            f["assessed_pages"] = assessed
+            f["assessed_templates"] = 1
+        return apply_scoring(f, ctx)
+
+    wide = absence()
+    narrow = absence(assessed=2)
+    assert wide["severity_rationale"]["sample_strength"] == sample_strength(20, 5)
+    assert narrow["severity_rationale"]["sample_strength"] == sample_strength(2, 1)
+    assert narrow["confidence"] < wide["confidence"]
+    assert "eligible for this check" in narrow["severity_rationale"]["sample_basis"]
+    assert "wider than the check" in wide["severity_rationale"]["sample_basis"]
+
+
+def test_a8_absence_detectors_record_their_denominator():
+    from constants import Limits
+    from models import make_deadline
+    from analyze_metadata import analyze_metadata
+    pages = [_page(f"<html><title>Page {i} of the shop</title><h1>P{i}</h1>"
+                   f"<p>{'word ' * 60}</p></html>", SITE + f"p{i}") for i in range(4)]
+    result = analyze_metadata(_snapshot(pages), make_deadline(Limits()))
+    absence = [f for f in result["findings"] if f["check_id"] in ("missing-description", "missing-canonical")]
+    assert absence, [f["check_id"] for f in result["findings"]]
+    for f in absence:
+        assert f["assessed_pages"] == 4, (f["check_id"], f.get("assessed_pages"))
+
+
+def test_a8_scope_label_publishes_the_basis_it_was_inferred_from():
+    """"Site-wide" is a weighting decision, not a measurement. Each route to it
+    now says which one it took."""
+    from scoring import ScoringContext, apply_scoring
+    from models import make_finding
+    ctx = ScoringContext(10, 3, {}, SITE)
+
+    def scored(pages, assessed=None):
+        f = make_finding(category="engagement", finding_type="defect", severity="medium", status="confirmed",
+                         confidence=0.9, title="t", root_cause="orphan pages",
+                         evidence=[{"type": "x", "description": "d", "urls": pages}],
+                         suggested_action={"summary": "s", "steps": ["a"], "priority": "medium", "effort": "low",
+                                           "expected_benefit": "b", "verification": "v"},
+                         provenance={"skill": "s", "script": "x.py", "rule_id": "orphan-pages"},
+                         affected_pages=pages)
+        if assessed is not None:
+            f["assessed_pages"] = assessed
+        return apply_scoring(f, ctx)
+
+    home = scored([SITE])
+    assert home["severity_rationale"]["scope"] == "site-wide"
+    assert "entry point" in home["severity_rationale"]["scope_basis"]
+    half = scored([SITE + f"p{i}" for i in range(6)])
+    assert "prevalence in the sample" in half["severity_rationale"]["scope_basis"]
+    one = scored([SITE + "deep"])
+    assert one["severity_rationale"]["scope"] == "page"
+    whole = scored([SITE + "a", SITE + "b"], assessed=2)
+    assert "every one of the 2 page(s) this check assessed" in whole["severity_rationale"]["scope_basis"]
+    # A site-level check says so instead of implying a measurement.
+    site_level = scored([SITE + "deep"])
+    site_level["check_id"] = "robots-block"
+    site_level.pop("severity_rationale")
+    site_level = apply_scoring(site_level, ctx)
+    assert "site-level check" in site_level["severity_rationale"]["scope_basis"]
+
+
+def test_a8_complete_small_site_is_a_census_not_a_thin_sample():
+    """The size heuristic penalised a genuinely complete one-page site. A census
+    has no sampling question left, and the basis says which one applies."""
+    from execution_summary import overall_confidence
+    census = overall_confidence({"pages_analyzed": 1, "pages_discovered": 1, "pages_fetched_attempted": 1,
+                                 "pages_never_attempted": 0, "templates_sampled": 1}, "completed")
+    assert census["sample_basis"] == "census"
+    assert census["components"]["sample_quality"] == 1.0
+    assert "not a sample of it" in census["reasons"]["sample_quality"]
+    sampled = overall_confidence({"pages_analyzed": 4, "pages_discovered": 40, "pages_fetched_attempted": 4,
+                                  "pages_never_attempted": 36, "templates_sampled": 2}, "completed")
+    assert sampled["sample_basis"] == "size_heuristic"
+    assert "not that it is representative" in sampled["reasons"]["sample_quality"]
+    assert "explicit size heuristic" in sampled["reasons"]["sample_quality"]
+    # An unknown discovered count is unknown, never read as completeness.
+    unknown = overall_confidence({"pages_analyzed": 4, "pages_fetched_attempted": 5, "pages_out_of_scope": 1,
+                                  "templates_sampled": 2}, "completed")
+    assert unknown["sample_basis"] == "size_heuristic"
