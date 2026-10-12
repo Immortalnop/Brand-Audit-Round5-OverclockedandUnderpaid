@@ -14,32 +14,75 @@ import codecs,re
 _META_CHARSET=re.compile(rb'<meta[^>]+charset\s*=\s*["\']?\s*([A-Za-z0-9._:-]{1,40})',re.I)
 _BOMS=((codecs.BOM_UTF8,'utf-8-sig'),(codecs.BOM_UTF16_LE,'utf-16'),(codecs.BOM_UTF16_BE,'utf-16'))
 
+# Canonical Python names of the encodings a browser will use for a web document
+# (the WHATWG Encoding set, as far as the standard library implements it).
+#
+# This whitelist is the point: codecs.lookup() alone is not a charset validator.
+# It happily resolves rot13, base64, hex, quopri, uu, bz2 and zlib -- codecs that
+# are not text encodings at all -- so a Content-Type of "text/html; charset=rot13"
+# passed as a known encoding and then raised LookupError inside bytes.decode(),
+# turning an ordinary page into a transport failure. A label outside this set is
+# ignored exactly as a browser ignores an unknown one, and the body is read with
+# the next source of truth instead.
+_WEB_ENCODINGS=frozenset({
+ 'ascii','big5','big5hkscs','cp1006','cp1250','cp1251','cp1252','cp1253','cp1254','cp1255',
+ 'cp1256','cp1257','cp1258','cp866','cp874','cp932','cp949','cp950','euc_jis_2004',
+ 'euc_jisx0213','euc_jp','euc_kr','gb18030','gb2312','gbk','hz','iso2022_jp','iso2022_jp_1',
+ 'iso2022_jp_2','iso2022_jp_2004','iso2022_jp_3','iso2022_jp_ext','iso2022_kr','iso8859-1',
+ 'iso8859-10','iso8859-11','iso8859-13','iso8859-14','iso8859-15','iso8859-16','iso8859-2',
+ 'iso8859-3','iso8859-4','iso8859-5','iso8859-6','iso8859-7','iso8859-8','iso8859-9','johab',
+ 'koi8-r','koi8-t','koi8-u','mac-cyrillic','mac-greek','mac-iceland','mac-latin2','mac-roman',
+ 'mac-turkish','ptcp154','shift_jis','shift_jis_2004','shift_jisx0213','tis-620','utf-16',
+ 'utf-16-be','utf-16-le','utf-32','utf-32-be','utf-32-le','utf-7','utf-8','utf-8-sig',
+})
+# Bodies a text decode would only waste work on. Their text is never built unless
+# something asks for it (Response.text is lazy), so a 1.5 MB PDF or image costs
+# nothing to decode.
+_BINARY_TYPES=re.compile(r'^(?:image|audio|video|font)/|^application/(?:pdf|zip|octet-stream|x-|vnd\.(?!.*\+xml))',re.I)
+
 
 def _web_charset(label):
-    """A charset label as browsers use it: unknown labels are ignored, and
-    ISO-8859-1/ASCII mean windows-1252 (WHATWG Encoding)."""
+    """A charset label as browsers use it: unknown labels and non-text codecs are
+    ignored, and ISO-8859-1/ASCII mean windows-1252 (WHATWG Encoding)."""
     if not label:return None
     try:name=codecs.lookup(label.strip().strip('"\'').lower()).name
     except LookupError:return None
+    if name not in _WEB_ENCODINGS:return None
     return 'cp1252' if name in ('latin_1','iso8859-1','ascii') else name
 
 
-def decode_body(content,content_type=''):
+def decode_body(content,content_type='',provenance=None):
     """Text of a response body, decoded the way a browser does: byte order mark,
     then the HTTP charset, then <meta charset> / http-equiv in the first 2 KB,
     then UTF-8. A body sent as UTF-8 that is mostly invalid UTF-8 is read as
     windows-1252, so a mislabelled legacy page does not turn into replacement
-    characters."""
+    characters.
+
+    provenance, when a dict is passed, is filled with which source decided the
+    encoding and what was ignored, so a garbled page can be explained rather than
+    guessed at."""
+    note=provenance if provenance is not None else {}
     for bom,name in _BOMS:
-        if content.startswith(bom):return content.decode(name,errors='replace')
+        if content.startswith(bom):
+            note.update(encoding=name,source='byte_order_mark')
+            return content.decode(name,errors='replace')
     m=re.search(r'charset=["\']?([^;"\' ]+)',content_type or '',re.I)
-    charset=_web_charset(m[1]) if m else None
+    declared=m[1] if m else None
+    charset=_web_charset(declared) if declared else None
+    if charset:note.update(encoding=charset,source='http_content_type',declared=declared)
+    elif declared:note.update(ignored_label=declared,ignored_reason='not a web text encoding')
     if charset is None:
         mm=_META_CHARSET.search(content[:2048])
-        charset=_web_charset(mm[1].decode('ascii','ignore')) if mm else None
-    charset=charset or 'utf-8'
+        meta_label=mm[1].decode('ascii','ignore') if mm else None
+        charset=_web_charset(meta_label) if meta_label else None
+        if charset:note.update(encoding=charset,source='meta_charset',declared=meta_label)
+        elif meta_label and 'ignored_label' not in note:
+            note.update(ignored_label=meta_label,ignored_reason='not a web text encoding')
+    if charset is None:
+        charset='utf-8';note.update(encoding='utf-8',source='default')
     text=content.decode(charset,errors='replace')
-    if charset=='utf-8' and text.count('�')>max(3,len(text)//200):
+    if charset=='utf-8' and text.count('\ufffd')>max(3,len(text)//200):
+        note.update(encoding='cp1252',source='utf8_mostly_invalid_fallback')
         text=content.decode('cp1252',errors='replace')
     return text
 
@@ -48,7 +91,22 @@ class Response:
     def __init__(self,status,headers,content,url,truncated=False,hops=0):
         self.status_code=status;self.headers=headers;self.content=content;self.final_url=url
         self.truncated=truncated;self.redirect_hops=hops;self.history=[]
-        self.text=decode_body(content,headers.get('Content-Type',''))
+        self._text=None;self.encoding_provenance={}
+    @property
+    def text(self):
+        """Decoded body, built on first use. A binary body (image, PDF, archive)
+        decodes to nothing a caller wants, so it is not decoded at all unless
+        something actually reads .text."""
+        if self._text is None:
+            ctype=self.headers.get('Content-Type','')
+            if _BINARY_TYPES.match((ctype or '').split(';')[0].strip()):
+                self.encoding_provenance={'encoding':None,'source':'binary_content_type','declared':ctype}
+                self._text=''
+            else:
+                note={}
+                self._text=decode_body(self.content,ctype,note)
+                self.encoding_provenance=note
+        return self._text
     @property
     def ok(self):return 200<=self.status_code<300
 

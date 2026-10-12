@@ -935,3 +935,72 @@ def test_a9_price_mismatch_respects_truncation_and_variant_context():
     mism = [f for f in result["findings"] if f["check_id"] == "schema-visible-mismatch"]
     assert mism and mism[0]["status"] == "suspected"
     assert "variant" in mism[0]["evidence"][0]["description"]
+
+
+# ---------------------------------------------------------- A10 text decoding
+def test_a10_non_text_codec_labels_are_ignored_not_fatal():
+    """codecs.lookup is not a charset validator: it resolves rot13, base64, hex,
+    quopri, uu, bz2 and zlib, none of which bytes.decode can use. A
+    Content-Type of charset=rot13 used to raise LookupError and turn an ordinary
+    page into a transport failure."""
+    from transport import decode_body, _web_charset
+    for label in ("rot13", "rot-13", "base64", "hex", "quopri", "uu", "bz2", "zlib", "nonsense-7"):
+        assert _web_charset(label) is None, label
+        # The body is read with the next source of truth, exactly as a browser does.
+        assert decode_body(b"<html>hello</html>", f"text/html; charset={label}") == "<html>hello</html>"
+
+
+def test_a10_real_web_encodings_still_resolve():
+    import codecs
+    from transport import _web_charset, _WEB_ENCODINGS
+    assert _web_charset("Shift_JIS") == "shift_jis"
+    assert _web_charset("windows-1251") == "cp1251"
+    assert _web_charset("EUC-KR") == "euc_kr"
+    assert _web_charset("gb18030") == "gb18030"
+    # WHATWG: ISO-8859-1 and US-ASCII mean windows-1252.
+    assert _web_charset("iso-8859-1") == "cp1252" and _web_charset("us-ascii") == "cp1252"
+    # Every name in the whitelist is a real codec, so a typo cannot silently
+    # shrink it.
+    for name in _WEB_ENCODINGS:
+        assert codecs.lookup(name).name == name or codecs.lookup(name)
+
+
+def test_a10_malformed_label_regressions_still_hold():
+    from transport import decode_body
+    # A mislabelled legacy page is read as windows-1252 rather than filled with
+    # replacement characters.
+    body = ("<html><body>" + "caf\xe9 " * 40 + "</body></html>").encode("cp1252")
+    assert "caf\xe9" in decode_body(body, "text/html; charset=utf-8")
+    # A byte order mark wins over a conflicting declared charset.
+    assert decode_body("﻿<html>x</html>".encode("utf-8-sig"), "text/html; charset=iso-8859-5") \
+        .lstrip("﻿") == "<html>x</html>"
+    # An empty or absent label falls through to UTF-8.
+    assert decode_body("<html>é</html>".encode(), "") == "<html>é</html>"
+    assert decode_body("<html>é</html>".encode(), "text/html; charset=") == "<html>é</html>"
+
+
+def test_a10_encoding_provenance_is_recorded():
+    from transport import decode_body, Response
+    note = {}
+    decode_body(b"<html>x</html>", "text/html; charset=windows-1251", note)
+    assert note["encoding"] == "cp1251" and note["source"] == "http_content_type"
+    note = {}
+    decode_body(b"<html>x</html>", "text/html; charset=rot13", note)
+    assert note["ignored_label"] == "rot13" and note["source"] == "default"
+    note = {}
+    decode_body(b'<meta charset="shift_jis"><html>x</html>', "text/html", note)
+    assert note["source"] == "meta_charset" and note["encoding"] == "shift_jis"
+    r = Response(200, {"Content-Type": "text/html; charset=utf-8"}, b"<html>hi</html>", SITE)
+    assert r.text == "<html>hi</html>"
+    assert r.encoding_provenance["encoding"] == "utf-8"
+
+
+def test_a10_binary_bodies_are_not_decoded():
+    from transport import Response
+    pdf = Response(200, {"Content-Type": "application/pdf"}, b"%PDF-1.4 \x80\x81\xfe", SITE + "a.pdf")
+    assert pdf.text == "" and pdf.encoding_provenance["source"] == "binary_content_type"
+    png = Response(200, {"Content-Type": "image/png"}, b"\x89PNG\r\n\x1a\n\xff", SITE + "a.png")
+    assert png.text == ""
+    # An XML-ish body is still text.
+    xml = Response(200, {"Content-Type": "application/xml"}, b"<urlset></urlset>", SITE + "sitemap.xml")
+    assert xml.text == "<urlset></urlset>"
