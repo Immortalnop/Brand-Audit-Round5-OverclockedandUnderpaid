@@ -77,7 +77,7 @@ def test_redirects_are_counted_distinctly_from_ordinary_requests():
 def test_timeouts_are_counted_distinctly_from_other_failures():
     base_url, shutdown = start_server(slow_delay_s=2.0)
     try:
-        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
+        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, CRITICAL_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
         deadline = make_deadline(limits)
         instrumentation = Instrumentation()
         acquire_site(base_url + "/slow", deadline, limits, instrumentation, allow_private_targets=True)

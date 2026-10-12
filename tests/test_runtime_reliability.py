@@ -99,7 +99,7 @@ def test_real_cli_interrupt_returns_json_and_130(tmp_path):
 sys.path.insert(0, %r)
 import run_audit
 
-def slow(site,limits,allow_private):
+def slow(site,limits,allow_private,export_evidence,audit_id):
     while True:time.sleep(1)
 
 if __name__=='__main__':
