@@ -91,12 +91,21 @@ def static_render_signals(page):
             "missing_share": share, "examples": missing[:3]}
 
 
-def _render_with_headless_browser(urls: list, limits, timeout_s: float = None) -> dict:
+def _render_with_headless_browser(urls: list, limits, timeout_s: float = None,
+                                   request_allowance: int = 0, byte_allowance: int = 0) -> tuple:
     """Tier 2 (optional): actually renders each URL with a real headless browser and
-    returns {url: rendered_text_length_or_None}. A per-page failure degrades that
-    page to None; it never raises out of this function. Bounded by MAX_RENDERED_PAGES
-    (how many pages get rendered at all) -- retained evidence is further capped by
-    MAX_RETAINED_RENDERED_PAGES by the caller.
+    returns ({url: rendered_text_length_or_None}, timed_out, error, usage). A
+    per-page failure degrades that page to None; it never raises out of this
+    function. Bounded by MAX_RENDERED_PAGES (how many pages get rendered at all)
+    -- retained evidence is further capped by MAX_RETAINED_RENDERED_PAGES by the
+    caller.
+
+    This tier DOES make requests to the audited site, from a child process with
+    its own Transport. It cannot share the parent's live counters across the
+    process boundary, so the caller passes a reserved slice of the audit's
+    remaining request and byte allowance, and `usage` reports what the child
+    actually spent so the report can account for it. A zero allowance means the
+    audit has no requests left and rendering is skipped rather than run off-budget.
 
     Runs inside a genuine child process (common/subprocess_isolation.py), not just
     inside Playwright's own cooperative per-navigation timeout: a real browser
@@ -108,23 +117,38 @@ def _render_with_headless_browser(urls: list, limits, timeout_s: float = None) -
     past its own timeout.
     """
     from subprocess_isolation import run_isolated
+    no_usage = {"requests": 0, "bytes": 0, "request_allowance": request_allowance, "byte_allowance": byte_allowance}
+    if request_allowance < 1 or byte_allowance < 1:
+        return {}, False, "no request allowance left for headless rendering", no_usage
     timeout_s = timeout_s if timeout_s is not None else (limits.PER_FETCH_TIMEOUT_MS / 1000) * max(1, len(urls)) + 5
-    result = run_isolated(_render_urls_in_child, args=(urls, limits.MAX_RENDERED_PAGES, limits.PER_FETCH_TIMEOUT_MS),
+    result = run_isolated(_render_urls_in_child,
+                           args=(urls, limits.MAX_RENDERED_PAGES, limits.PER_FETCH_TIMEOUT_MS,
+                                 request_allowance, byte_allowance),
                            timeout_s=timeout_s)
     if not result.ok:
         # Killed, crashed, or errored -- never fabricate rendered content. The
         # caller treats an empty dict the same as "headless rendering unavailable
         # this run": pages fall back to insufficient_evidence, never a defect.
-        return {}, result.timed_out, result.error
-    return result.value, False, None
+        # A killed child may have spent requests this process cannot read back,
+        # so its reserved allowance is reported as spent rather than as zero.
+        return {}, result.timed_out, result.error, {**no_usage, "requests": request_allowance,
+                                                    "reservation_unaccounted": True}
+    value = result.value or {}
+    usage = {**no_usage, "requests": value.get("requests", 0), "bytes": value.get("bytes", 0)}
+    return value.get("lengths") or {}, False, None, usage
 
 
-def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout_ms: int) -> dict:
+def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout_ms: int,
+                           request_allowance: int, byte_allowance: int) -> dict:
     """Runs in the child process spawned by run_isolated(). Must stay picklable-by-
     reference (top-level function, plain-type args/return) and must not touch
-    anything from the parent's memory beyond its arguments."""
+    anything from the parent's memory beyond its arguments.
+
+    Returns {"lengths": {url: len|None}, "requests": n, "bytes": n} so the parent
+    can charge the child's real request and byte spend to the audit's budget."""
     urls = urls[:max_rendered_pages]
     rendered_lengths = {}
+    tr = None
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
@@ -137,17 +161,21 @@ def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout
             from time import monotonic
             part = urlsplit(urls[0])
             origin = f"{part.scheme}://{part.netloc}"
-            tr = Transport(origin, monotonic() + 25, replace(DEFAULT_LIMITS, MAX_TOTAL_BYTES=4_000_000, MAX_TOTAL_HTTP_REQUESTS=20), Instrumentation())
+            # Bounded by the slice of the audit's remaining allowance the parent
+            # reserved for this stage, not by a private budget of its own.
+            tr = Transport(origin, monotonic() + 25,
+                           replace(DEFAULT_LIMITS, MAX_TOTAL_BYTES=byte_allowance,
+                                   MAX_TOTAL_HTTP_REQUESTS=request_allowance), Instrumentation())
             robots, status = tr.get(origin + "/robots.txt", robots_exempt=True)
             if status != "ok" or robots.status_code not in (200, 404) or robots.truncated:
-                return {}
+                return {"lengths": {}, "requests": tr.requests, "bytes": tr.bytes}
             if robots.status_code == 200:
                 try:
                     robots_text = robots.content.decode("utf-8", "strict")
                     if robots_text.lstrip().lower().startswith(("<html", "<!doctype")):
-                        return {}
+                        return {"lengths": {}, "requests": tr.requests, "bytes": tr.bytes}
                 except UnicodeDecodeError:
-                    return {}
+                    return {"lengths": {}, "requests": tr.requests, "bytes": tr.bytes}
             else:
                 robots_text = ""
             tr.robots = RobotsPolicy(robots_text)
@@ -165,7 +193,8 @@ def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout
                               headers={"Content-Type": response.headers.get("Content-Type", "text/plain")})
             context.route("**/*", route_request)
             if not hasattr(context, "route_web_socket"):
-                browser.close(); return {}  # Older versions cannot enforce websocket isolation.
+                # Older versions cannot enforce websocket isolation.
+                browser.close(); return {"lengths": {}, "requests": tr.requests, "bytes": tr.bytes}
             context.route_web_socket("**/*", lambda ws: ws.close())
             page = context.new_page()
             for url in urls:
@@ -177,8 +206,8 @@ def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout
                     rendered_lengths[url] = None
             browser.close()
     except Exception:
-        return {}
-    return rendered_lengths
+        return {"lengths": {}, "requests": getattr(tr, "requests", 0), "bytes": getattr(tr, "bytes", 0)}
+    return {"lengths": rendered_lengths, "requests": tr.requests, "bytes": tr.bytes}
 
 
 def analyze_rendering(artifacts, deadline, limits, capabilities=None):
@@ -206,9 +235,18 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
     confirmed_gap_pages = []
     rendered_count = 0
 
+    render_usage = {"requests": 0, "bytes": 0, "request_allowance": 0, "byte_allowance": 0}
     if headless_available and heuristic_gap_pages:
-        rendered_lengths, subprocess_timed_out, subprocess_error = _render_with_headless_browser(
-            heuristic_gap_pages, limits, timeout_s=max(.01, min(25., deadline.remaining_seconds())))
+        # Rendering makes real requests to the site, so it draws on the same
+        # allowance acquisition spent from -- it never gets a budget of its own.
+        acq = artifacts.acquisition_metadata or {}
+        requests_left = max(0, limits.MAX_TOTAL_HTTP_REQUESTS - (acq.get("total_requests") or 0))
+        bytes_left = max(0, limits.MAX_TOTAL_BYTES - (acq.get("total_bytes") or 0))
+        reserved_requests = min(requests_left, getattr(limits, "MAX_RENDER_REQUESTS", 20))
+        reserved_bytes = min(bytes_left, 4_000_000)
+        rendered_lengths, subprocess_timed_out, subprocess_error, render_usage = _render_with_headless_browser(
+            heuristic_gap_pages, limits, timeout_s=max(.01, min(25., deadline.remaining_seconds())),
+            request_allowance=reserved_requests, byte_allowance=reserved_bytes)
         if subprocess_timed_out:
             findings.append(apply_invariant_i1(make_finding(
                 category="ai_discoverability", finding_type="proactive_improvement", severity="low",
@@ -351,5 +389,8 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
         "crawl-render-audit", findings=findings,
         metrics={"rendered_pages": rendered_count, "raw_rendered_gap_pages": confirmed_gap_pages or heuristic_gap_pages,
                  "static_signals": {u: {k: v for k, v in sig.items() if k != "examples"} for u, sig in list(candidates.items())[:20]},
-                 "rendering_mode": "headless_browser" if headless_available else "heuristic_only"},
+                 "rendering_mode": "headless_browser" if headless_available else "heuristic_only",
+                 # This stage's real request/byte spend, so the report's accounting
+                 # covers it instead of claiming no analysis script makes requests.
+                 "render_request_usage": render_usage},
     )

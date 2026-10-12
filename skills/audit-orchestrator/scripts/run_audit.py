@@ -366,6 +366,34 @@ def _platform_brief(artifacts, pages, brand):
             "queries": [f'"{brand}" {p}' for p in _PLATFORMS[kind] if not p.startswith("an ")][:3] if brand else []}
 
 
+def _request_accounting(artifacts, independent, dependent, telemetry, limits):
+    """Every request this audit made to the site or to a search provider, by
+    stage, against the one shared allowance.
+
+    Acquisition is the only stage that crawls, but it is not the only stage that
+    makes requests: optional headless rendering fetches pages through its own
+    child-process Transport, and the optional search provider calls an external
+    API. Both are reported here with their real counts, so the budget the report
+    states is the budget the audit actually spent."""
+    acq = dict(artifacts.acquisition_metadata.get("request_accounting") or {})
+    render = dict((independent.get("rendering") or {}).get("metrics", {}).get("render_request_usage") or {})
+    searches = ((dependent.get("corroboration") or {}).get("metrics", {}).get("queries_attempted", 0) or 0) \
+        + ((dependent.get("footprint") or {}).get("metrics", {}).get("queries_attempted", 0) or 0)
+    on_site = (acq.get("total") or 0) + (render.get("requests") or 0)
+    return {
+        "allowance": limits.MAX_TOTAL_HTTP_REQUESTS,
+        "on_site_requests": on_site,
+        "within_allowance": on_site <= limits.MAX_TOTAL_HTTP_REQUESTS,
+        "acquisition": acq,
+        "headless_rendering": render or {"requests": 0, "bytes": 0},
+        "external_search_queries": searches,
+        "external_fetches_attempted": telemetry.get("external_fetches_attempted", 0),
+        "note": "acquisition covers robots, sitemap and llms.txt probes, page fetches, redirect hops, retries "
+                "and the auxiliary HTTPS/PDF diagnostics. headless_rendering is an optional stage that reserves "
+                "from the same allowance. external_search_queries go to a search provider, not to the site.",
+    }
+
+
 def finalize_findings(findings, ctx):
     """Score, split core vs hygiene, order and number. Shared by run_audit
     and finalize_report so both paths produce identical structure."""
@@ -466,6 +494,12 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "targeted_urls": list(seed_urls or []),
         "skip_reason_counts": acq_coverage.get("skip_reason_counts", {}),
         "rendered_pages": independent["rendering"].get("metrics", {}).get("rendered_pages", 0),
+        # One accounting of every request the audit made, by stage, against one
+        # allowance. Acquisition's probes, redirects, retries and auxiliary
+        # diagnostics are in acq_coverage's own total; optional headless
+        # rendering and optional search calls are added here so no stage's
+        # requests sit outside the budget the report states.
+        "request_accounting": _request_accounting(artifacts, independent, dependent, telemetry, limits),
         "external_claims_checked": dependent["corroboration"].get("metrics", {}).get("claims_checked", 0),
         "external_footprint_queries": dependent["footprint"].get("metrics", {}).get("queries_attempted", 0),
         "agent_corroboration_stage": dependent["agent_corroboration"].get("metrics", {}).get("agent_stage", "not_supplied"),

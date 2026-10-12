@@ -381,3 +381,82 @@ def test_a4_robots_policy_table_is_documented():
     assert "ROBOTS_POLICY" in source
     assert "THE ONE EXCEPTION" in source
     assert "2.3.1.3" in source and "2.3.1.4" in source
+
+
+# ------------------------------------------------- A5 one shared request budget
+def _acquire_with_cap(cap):
+    from dataclasses import replace
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from fixtures_server import start_server
+    url, stop = start_server(sitemap_mode="ok")
+    try:
+        limits = replace(Limits(), MAX_TOTAL_HTTP_REQUESTS=cap)
+        return acquire_site(url + "/", make_deadline(limits), limits, allow_private_targets=True), cap
+    finally:
+        stop()
+
+
+def test_a5_auxiliary_probes_never_exceed_the_request_cap():
+    """The HTTPS probe used to build its own one-request Transport and add its
+    counters back afterwards, so MAX_TOTAL_HTTP_REQUESTS=4 produced 5 requests."""
+    for cap in (3, 4, 5, 6, 8, 12):
+        artifacts, _ = _acquire_with_cap(cap)
+        total = artifacts.acquisition_metadata["total_requests"]
+        assert total <= cap, (cap, total)
+
+
+def test_a5_request_accounting_adds_up_to_the_total():
+    artifacts, cap = _acquire_with_cap(12)
+    acct = dict(artifacts.acquisition_metadata["request_accounting"])
+    parts = acct["robots"] + acct["sitemap_and_llms"] + acct["pages"] + acct["auxiliary_probes"]
+    assert parts == acct["total"] == artifacts.acquisition_metadata["total_requests"]
+    assert acct["allowance"] == cap and acct["remaining"] == cap - acct["total"]
+    # Redirect hops and retries are inside the same total, not beside it.
+    assert "redirect_hops_followed" in acct and "retries" in acct
+
+
+def test_a5_probe_is_skipped_rather_than_run_off_budget():
+    from dataclasses import replace
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from fixtures_server import start_server
+    url, stop = start_server(sitemap_mode="ok")
+    try:
+        limits = replace(Limits(), MAX_TOTAL_HTTP_REQUESTS=5)
+        artifacts = acquire_site(url + "/", make_deadline(limits), limits, allow_private_targets=True)
+    finally:
+        stop()
+    probe = dict(artifacts.acquisition_metadata["https_probe"])
+    assert probe["attempted"] is False
+    assert artifacts.acquisition_metadata["total_requests"] <= 5
+
+
+def test_a5_headless_rendering_reserves_from_the_remaining_allowance():
+    """Rendering makes real requests from a child process. With no allowance left
+    it is skipped and says so, instead of running on a private budget."""
+    from analyze_rendering import _render_with_headless_browser
+    from constants import Limits
+    lengths, timed_out, error, usage = _render_with_headless_browser(
+        ["https://example.invalid/"], Limits(), timeout_s=1, request_allowance=0, byte_allowance=0)
+    assert lengths == {} and not timed_out
+    assert "no request allowance" in (error or "")
+    assert usage["requests"] == 0
+
+
+def test_a5_report_accounts_for_every_stage_that_makes_requests():
+    from run_audit import run_audit
+    from constants import Limits
+    from fixtures_server import start_server
+    url, stop = start_server(clean=True)
+    try:
+        report = run_audit(url + "/", Limits(), allow_private_targets=True)
+    finally:
+        stop()
+    acct = report["coverage"]["request_accounting"]
+    assert acct["within_allowance"] is True
+    assert acct["allowance"] == Limits().MAX_TOTAL_HTTP_REQUESTS
+    assert acct["on_site_requests"] == acct["acquisition"]["total"] + acct["headless_rendering"]["requests"]
+    assert "external_search_queries" in acct

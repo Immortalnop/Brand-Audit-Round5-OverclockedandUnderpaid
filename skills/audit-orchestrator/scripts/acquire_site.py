@@ -150,15 +150,21 @@ _ASSET_RE=re.compile(r'\.(pdf|docx?|xlsx?|pptx?)(?:$|\?)',re.I)
 def _probe_https(host,tr,limits,i,allow_private_targets):
     """Is HTTPS available for an http-served site? One GET of /robots.txt on the
     https origin -- the URL a crawler may always request -- so the probe never
-    exempts itself from an origin whose robots.txt it has not read."""
-    probe_tr=Transport('https://'+host,tr.deadline,_replace(limits,MAX_TOTAL_HTTP_REQUESTS=1),i,allow_private_targets)
+    exempts itself from an origin whose robots.txt it has not read.
+
+    The probe runs on its own Transport (it targets a different origin), but it
+    starts from the shared request and byte counters and hands them back, so its
+    request is spent OUT OF the audit's allowance rather than added beside it."""
+    probe_tr=Transport('https://'+host,tr.deadline,limits,i,allow_private_targets)
     probe_tr.delay=tr.delay;probe_tr.last_request=tr.last_request  # same host: same crawl-delay courtesy
+    probe_tr.requests=tr.requests;probe_tr.bytes=tr.bytes          # one shared allowance
     url='https://'+host+'/robots.txt'
     pr,pst=probe_tr.get(url,robots_exempt=True,max_bytes=8192)
-    tr.requests+=probe_tr.requests;tr.bytes+=probe_tr.bytes
+    used=probe_tr.requests-tr.requests
+    tr.requests=probe_tr.requests;tr.bytes=probe_tr.bytes
     return {'attempted':True,'probe_url':url,'https_available':pst=='ok',
             'status':pr.status_code if pr else None,'outcome':pst,
-            'requests_used':probe_tr.requests}
+            'requests_used':used}
 
 
 def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_targets=False,seed_urls=None):
@@ -215,6 +221,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
                 if resp.truncated or robots_text.lstrip().lower().startswith(('<html','<!doctype')):raise ValueError()
                 robots_status='ok'
             except (ValueError,UnicodeDecodeError):robots_status='malformed';robots_text=None
+    requests_after_robots=tr.requests
     conservative=robots_text is None
     rp=RobotsPolicy(robots_text if not conservative else 'User-agent: *\nDisallow: /')
     tr.robots=rp;tr.delay=max(tr.delay,rp.crawl_delay(USER_AGENT))
@@ -267,6 +274,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         else:
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
+    requests_after_discovery=tr.requests
     # Representative sampling. A priority frontier replaces the FIFO queue:
     # home first, then site-wide navigation/footer links, then key-intent pages,
     # then sitemap and body links -- and no URL template may take more than
@@ -343,6 +351,14 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             discovered.add(visit_key(link))
             if visit_key(link) not in visited and not targeted:push(link,depth+1,1 if link in region else 3)
     if heap and not challenge_stop:i.record_skip('acquisition_limit_reached')
+    requests_after_pages=tr.requests
+    # Auxiliary diagnostics (the HTTPS probe and the PDF range reads) share one
+    # allowance, taken OUT OF the global request budget rather than added beside
+    # it: aux_left() is the binding constraint, so a diagnostic can never be the
+    # request that pushes the audit past MAX_TOTAL_HTTP_REQUESTS.
+    aux_cap=getattr(limits,'MAX_AUX_PROBE_REQUESTS',4)
+    def aux_left():
+        return min(aux_cap-(tr.requests-requests_after_pages),limits.MAX_TOTAL_HTTP_REQUESTS-tr.requests)
     # The HTTPS-availability probe for HTTP-served sites runs here, through a
     # Transport (budgeted, SSRF-checked, logged), instead of inside an analysis
     # script. It asks for /robots.txt on the https origin, not the homepage: that
@@ -353,7 +369,11 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     home_page=next((p for p in pages if p.url==site_url),None)
     if home_page and urlsplit(home_page.final_url or home_page.url).scheme=='http' and monotonic()<tr.deadline:
         host=urlsplit(home_page.final_url or home_page.url).netloc
-        https_probe=_probe_https(host,tr,limits,i,allow_private_targets)
+        if aux_left()>=1:
+            https_probe=_probe_https(host,tr,limits,i,allow_private_targets)
+        else:
+            https_probe={'attempted':False,'skipped':'request_allowance_exhausted'}
+            i.record_skip('https_probe_request_allowance_exhausted')
     # Record document links (PDF/Office) instead of silently dropping them, and
     # range-read up to MAX_ASSET_PROBES key-fact PDFs to see if they carry a text layer.
     asset_links=[];seen_assets=set()
@@ -367,7 +387,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
                                 'fact_keyword':bool(_FACT_RE.search(link.rsplit('/',1)[-1]) or _FACT_RE.search(text or ''))})
     asset_probes=[]
     for a in [a for a in asset_links if a['fact_keyword'] and a['url'].lower().split('?')[0].endswith('.pdf')][:getattr(limits,'MAX_ASSET_PROBES',3)]:
-        if monotonic()>=tr.deadline or conservative or tr.requests>=limits.MAX_TOTAL_HTTP_REQUESTS-2:break
+        if monotonic()>=tr.deadline or conservative or aux_left()<1:break
         if not rp.can_fetch(USER_AGENT,a['url']):continue
         ar,ast=tr.get(a['url'],max_bytes=getattr(limits,'ASSET_PROBE_BYTES',65536))
         if ast!='ok' or not ar:asset_probes.append({'url':a['url'],'outcome':ast});continue
@@ -389,6 +409,18 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
          'asset_links_found':len(asset_links),'challenge_stop':challenge_stop,
          'urls_out_of_scope':len(login),
          'out_of_scope_pages':[{'url':p.url,'reason':'login_page','signals':list((p.features or {}).get('login_signals',()))} for p in login][:20]}
+    # Where every request of the shared allowance went. Robots reads, sitemap and
+    # llms.txt probes, page fetches, redirect hops, retries and the auxiliary
+    # diagnostics are all inside this one total -- no stage keeps a private
+    # budget, so the numbers add up to total_requests by construction.
+    accounting={'allowance':limits.MAX_TOTAL_HTTP_REQUESTS,'total':tr.requests,
+                'robots':requests_after_robots,
+                'sitemap_and_llms':requests_after_discovery-requests_after_robots,
+                'pages':requests_after_pages-requests_after_discovery,
+                'auxiliary_probes':tr.requests-requests_after_pages,
+                'auxiliary_allowance':aux_cap,
+                'redirect_hops_followed':i.redirects_followed,'retries':i.requests_retried,
+                'remaining':max(0,limits.MAX_TOTAL_HTTP_REQUESTS-tr.requests)}
     i.end_stage('acquisition')
     return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,
         # The one documented exception to fail-closed, so no reader has to infer it.
@@ -397,4 +429,5 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_paths':ai_paths,'fetch_outcome':status,'attempt_outcomes':robots_attempts,
         'access':robots_access,'http_status':resp.status_code if resp else None}),
         freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'challenged_probes':challenged_probes,'https_probe':https_probe,
-        'asset_links':asset_links[:60],'asset_probes':asset_probes,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings))
+        'asset_links':asset_links[:60],'asset_probes':asset_probes,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,
+        'request_accounting':accounting,'coverage':cov}),tuple(warnings))

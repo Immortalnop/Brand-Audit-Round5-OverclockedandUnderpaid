@@ -35,6 +35,15 @@ class Limits:
     # Non-text facts: small, robots-checked range reads of key-fact PDFs.
     MAX_ASSET_PROBES: int = 3
     ASSET_PROBE_BYTES: int = 65_536
+    # Auxiliary diagnostics (the HTTPS-availability probe and the PDF range
+    # reads) share this allowance, on top of -- never beside -- the global
+    # MAX_TOTAL_HTTP_REQUESTS. A diagnostic may never be the request that takes
+    # the audit past its cap.
+    MAX_AUX_PROBE_REQUESTS: int = 4
+    # Optional headless rendering runs in a child process and makes real requests
+    # to the site. This is the slice of the audit's REMAINING allowance it may
+    # reserve -- never a second budget beside MAX_TOTAL_HTTP_REQUESTS.
+    MAX_RENDER_REQUESTS: int = 20
 
 
 DEFAULT_LIMITS = Limits()
