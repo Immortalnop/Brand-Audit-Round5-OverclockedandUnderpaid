@@ -49,14 +49,19 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
         title_terms=set(terms(p.title or ''));body_terms=Counter(terms(p.visible_text))
         if len(body_words)>=200 and len(title_terms)>=3 and len(title_terms & body_terms.keys())<=1:
             mismatch.append(p);details[p.url]='Unmatched literal title terms: '+', '.join(sorted(title_terms-body_terms.keys()))+'. Synonyms and semantic equivalence were not evaluated.'
-        # The brand's own name is expected to recur on its own site, so it is not
-        # counted as a repeated term.
-        repeat_terms=Counter({t:c for t,c in body_terms.items() if t not in brand})
-        if len(body_words)>=300 and repeat_terms:
+        # Stuffing is written into sentences. Short blocks (list items, card labels,
+        # "3 colours available", "5 years ago", "Chapter 4" in a table of contents)
+        # repeat a word by design, so only blocks of at least 12 words are counted
+        # (html_features running_text). The brand's own name is expected to recur
+        # on its own site, so it is not counted as a repeated term either.
+        prose=p.features.get('running_text') or ''
+        prose_words=re.findall(r"[a-z]+(?:'[a-z]+)?",prose.lower())
+        repeat_terms=Counter({t:c for t,c in Counter(terms(prose)).items() if t not in brand})
+        if len(prose_words)>=300 and repeat_terms:
             term,count=repeat_terms.most_common(1)[0]
-            if count/len(body_words)>.06:
+            if count/len(prose_words)>.06:
                 repeated.append(p)
-                details[p.url+'#repeat']=f"Term '{term}' occurs {count} times among {len(body_words)} words. Repetition alone is not proof of spam."
+                details[p.url+'#repeat']=f"Term '{term}' occurs {count} times among {len(prose_words)} words of running text. Repetition alone is not proof of spam."
     emit('title-body-alignment','Title words do not appear in the body text on '+page_share(mismatch,lexical),mismatch,lambda p:details[p.url])
     emit('term-repetition','One word makes up more than 6% of the text on '+page_share(repeated,lexical),repeated,lambda p:details[p.url+'#repeat'])
     content=[p for p in lexical if p.page_type in ('article','product','service','software') and len(p.visible_text.split())>=200]

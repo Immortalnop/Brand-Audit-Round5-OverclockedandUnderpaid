@@ -119,6 +119,12 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
         response_headers=freeze_value(dict(resp.headers) if resp else {}),final_url=base)
 
 _SITEMAP_CHUNK=65536
+# Sitemap URLs kept as crawl candidates, chosen round-robin across sections from
+# the first _SITEMAP_READ_URLS entries read. A sitemap listed section by section
+# would otherwise leave every section after the 200th entry out of the sample.
+# Reading more entries costs no request: the sitemap byte cap is unchanged.
+_SITEMAP_READ_URLS=2000
+_SITEMAP_KEPT_URLS=200
 
 def _parse_sitemap(content,truncated):
     """(kind, locs, entries) from a sitemap read incrementally: kind is 'urlset' or
@@ -626,7 +632,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
                     kind,found,entries=_parse_sitemap(r.content,r.truncated)
                     if kind=='sitemapindex':maps.extend(found[:4-len(seen_maps)])
                     else:
-                        locs.extend(found[:200-len(locs)])
+                        locs.extend(found[:_SITEMAP_READ_URLS-len(locs)])
                         _collect_lastmod(entries,origin,lastmods,url_entries)
                         _collect_sitemap_hreflang(entries,origin,sitemap_hreflang)
                     outcome='ok'
@@ -636,7 +642,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
                 except ET.ParseError:outcome='malformed'
             statuses.append(outcome)
             if len(checked)<8:checked.append({'url':sm,'status':outcome,'truncated':bool(r and st=='ok' and r.truncated)})
-        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200],
+        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':stratify_by_section(list(dict.fromkeys(locs)))[:_SITEMAP_KEPT_URLS],
                  'url_entries':url_entries[0],'lastmod':lastmods,'hreflang':sitemap_hreflang,'checked':checked,
                  'partial':partial}
         r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
@@ -655,6 +661,9 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     login_pages=[];out_of_scope=[]
     # Bot-challenge interstitials: requested, never analyzed as site content.
     challenged=[];challenged_pages=[];consecutive_challenges=0;challenge_stop=False
+    # Final URLs of the pages kept so far, so URLs redirecting to one page add it
+    # once. The extra copies answered a request, so they still count as fetched.
+    kept_finals=set();redirect_copies=[]
     # What the start URL answered, for the reason given when no page is analyzed.
     start_outcome=None
     sitemap_urls=[]
@@ -697,6 +706,11 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
                 challenge_stop=True;break
             continue
         consecutive_challenges=0
+        # Several URLs can redirect to one page (/br/ and /ach/ to /en-US/). The
+        # page is analyzed once: a second copy would count its findings twice.
+        final_key=page.final_url or url
+        if final_key!=url and final_key in kept_finals:redirect_copies.append(page);i.record_deduplicated();continue
+        kept_finals.add(final_key)
         signals=login_page_signals(url,page.final_url,page.title,page.headings,page.features,page.jsonld_blocks) if page.status_code and 200<=page.status_code<300 else []
         if signals:
             login_pages.append(page);i.record_skip('login_page_out_of_scope')
@@ -725,7 +739,9 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
                         f'stopped there. The audit does not retry or get around challenges.')
     elif queue:i.record_skip('acquisition_limit_reached')
     # Every fetched page, login and challenge pages included: they answered a request.
-    fetched=pages+login_pages+challenged
+    fetched=pages+login_pages+challenged+redirect_copies
+    # A discovered URL that a fetched page redirected to was reached, not skipped.
+    reached={p.url for p in fetched}|{p.final_url for p in fetched if p.final_url}
     # After a challenge stop no optional request is made.
     https_probe=_probe_https(tr,origin,[] if challenge_stop else fetched,limits,i,allow_private_targets)
     if llms.get('links') and not challenge_stop:_verify_llms_links(tr,llms,fetched,origin,limits)
@@ -737,7 +753,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
          'urls_out_of_scope':len(login_pages),'out_of_scope_pages':out_of_scope,
          'urls_challenged':len(challenged),'challenged_pages':challenged_pages,'crawl_stopped_by_challenge':challenge_stop,
          'start_url_out_of_scope':any(p.url==site_url for p in login_pages),
-         'urls_analyzed':len(analyzed),'urls_never_attempted':max(0,len(discovered)-len(fetched)),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
+         'urls_analyzed':len(analyzed),'urls_never_attempted':len(discovered-reached),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
          # Representativeness of the sample: site sections (first path segment)
          # discovered versus sections with at least one analyzed page.
          'sections_discovered':len({site_section(u) for u in discovered}),

@@ -14,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[1]
 for rel in ('common','skills/audit-orchestrator/scripts','skills/crawl-render-audit/scripts',
             'skills/freshness-corroboration/scripts','skills/engagement-audit/scripts'):
     sys.path.insert(0,str(ROOT/rel))
-from check_catalog import CATALOG, get_entry
+from check_catalog import CATALOG, RETIRED_CHECK_IDS, get_entry
 from constants import Limits
 from models import AuditArtifacts, freeze_value, make_deadline, hash_artifacts
 from transport import Response, Transport
@@ -62,7 +62,9 @@ def test_catalog_covers_static_and_dynamic_production_rules():
     declared.update('stale-dates:'+k for k in _CATEGORY_CALIBRATION)
     declared.update(('noindex','nosnippet'))
     declared.update('baseline:'+k for k in ('ai_discoverability','engagement','off_site_presence'))
-    assert declared == set(CATALOG), {'missing':declared-set(CATALOG),'unused':set(CATALOG)-declared}
+    # Retired IDs keep their entries for saved reports and are emitted by no script.
+    assert not declared & RETIRED_CHECK_IDS
+    assert declared | RETIRED_CHECK_IDS == set(CATALOG), {'missing':declared-set(CATALOG),'unused':set(CATALOG)-declared-RETIRED_CHECK_IDS}
     for check_id in declared:
         assert all(get_entry(check_id)[k].strip() for k in ('mechanism','implementation_detail','expected_outcome'))
 

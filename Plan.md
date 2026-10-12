@@ -125,4 +125,14 @@ Output design
 1. (Fixed, see FIXED Issues.) Pages built by JS not read properly.
 2. (Fixed, see FIXED Issues.) Location evidence missed addresses written in a plain <div>.
 3. results.json at the repo root is UTF-16 and breaks the em-dash test; examples/sample-report.json is missing (test_2_6). Fix: delete results.json, regenerate the sample with Out-File -Encoding utf8.
-4. Timing-flaky subprocess tests (test_process_large_result_does_not_deadlock, test_spawn_is_used_and_large_result_is_preserved) occasionally fail under full-suite load.
+4. (Fixed 2026-10-12.) Timing-flaky subprocess tests: every run_isolated timing bound in the suite now leaves room for a slow Windows process start (timeouts 30 s, elapsed bounds 10-15 s), and each still proves its point.
+
+## Calibration results (2026-10-12)
+
+Sites: 7 dev (basecamp, mit.edu, theguardian, tartinebakery, svelte.dev, bellroy, mozilla.org) and 6 holdout (ox.ac.uk, npr.org, fastmail, patagonia, zingermansdeli, vuejs.org); none of the 7 tuning sites. Labels by the agent from evidence plus live-page checks; review them before relying on the numbers. Lists and labels are local in benchmark_runs/ (not committed).
+
+- Dev, last run before the final duplicate-titles fix and the new confidences: precision 0.901 (142 labelled), 0 false high/critical, ECE 0.223.
+- Rules fixed on dev: page-orientation (short H1s), teaser question headings, muted autoplay background video, noscript images, term-repetition (running text only), markup-ratio (3%), Google Maps place profiles, email-summary (now a warning), question headings over tables, duplicate titles (query variants, hreflang alternates), the 200-entry sitemap read limit, URLs redirecting to one page analyzed twice, redirect targets counted as never attempted.
+- --suggest confidences set for 10 checks in CALIBRATED_CONFIDENCE (common/check_catalog.py).
+- Holdout, scored once with rules frozen: precision 0.653 (49 labelled), 1 false high (patagonia no-jsonld), ECE 0.137; fixture recall 25/25. 3 of 6 holdout sites gave no analyzable page (two bot challenges, one robots.txt timeout), reported honestly as insufficient_evidence. patagonia served a "Hang Tight! Routing to checkout..." waiting-room page for every URL; the audit analyzed it as the site and all 12 of its labelled findings are false. Without patagonia: 0.865 (37 labelled).
+- Open: detect waiting-room interstitials (queue pages served for every URL) as a gate, like bot challenges; then score a fresh holdout set, since this one has now been seen.

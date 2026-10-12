@@ -10,6 +10,7 @@ different fixes at different priorities. page_type is set during acquisition
 this script only reads it, never assigns it.
 """
 from collections.abc import Mapping
+from check_catalog import calibrated_confidence
 from check_helpers import commerce_evidence
 from models import skill_result, make_finding, coverage_ratio, scale_confidence, step_down_severity
 
@@ -118,7 +119,7 @@ def analyze_machine_readability(artifacts, deadline):
             findings.append(make_finding(
                 category="ai_discoverability", finding_type="defect",
                 severity=step_down_severity(spec["severity"], crawl_ratio),
-                status="confirmed", confidence=0.8,
+                status="confirmed", confidence=calibrated_confidence(f"page-type-schema-gap:{page_type}", 0.8),
                 title=f"{page_type.capitalize()} pages are missing {spec['label']} structured data",
                 root_cause=f"{len(urls)} page(s) classified as '{page_type}' carry no "
                            f"{spec['label']} JSON-LD, so explicit machine-readable context may be improved",

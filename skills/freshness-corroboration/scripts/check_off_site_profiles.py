@@ -203,6 +203,10 @@ def evaluate_profile(url, resp, status, site_host, brand_names):
         return "soft_broken", "redirects to the platform home page"
     if site_host and site_host.encode() in resp.content.lower():
         return "verified", "links to the site"
+    # A Google Maps place page draws the place's name with script; its HTML names
+    # only the map application, so it can neither confirm nor contradict the brand.
+    if google_maps_link(url) == "place" or google_maps_link(final) == "place":
+        return "unverified", "map_place_not_readable"
     identity = " " + " ".join(re.findall(r"\w+", summary["identity"].lower())) + " "
     handle = _handle(final) or _handle(url)
     for name in brand_names:

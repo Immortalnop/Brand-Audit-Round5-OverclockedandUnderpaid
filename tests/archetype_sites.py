@@ -435,9 +435,10 @@ SPLASH = {
 
 # 9. Store with consumer segments. Navigation names Men, Women and Kids; a
 #    product gallery repeats one descriptive alt text on four views of the same
-#    shoe. Defects that must still be found: a footer newsletter signup (the
-#    email-summary suggestion), a footer address with no location markup, and no
-#    saved or recently viewed items on product pages.
+#    shoe. Defects that must still be found: a footer address with no location
+#    markup and no saved or recently viewed items on product pages. Its footer
+#    newsletter signup must be named in the warnings (the emails it sends cannot
+#    be checked), not reported as a finding.
 _STORE_NAV = ('<header><nav><a href="/">Home</a> <a href="/collections/men">Men</a> '
               '<a href="/collections/women">Women</a> <a href="/collections/kids">Kids</a></nav>'
               '<form role="search" action="/search"><input type="search" name="q" aria-label="Search"></form></header>')

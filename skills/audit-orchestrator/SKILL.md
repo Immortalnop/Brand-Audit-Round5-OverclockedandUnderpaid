@@ -133,8 +133,8 @@ real (a `confirmed` finding needs at least 0.7) and its `coverage` states how
 many of the analyzed pages it was seen on. Login pages (a visible password input, at most 1,500
 characters of visible text, no entity structured data, plus an auth path, a
 login title or a login form outside the page chrome) are fetched but not analyzed;
-`coverage.out_of_scope_pages` lists them with their signals. Sitemap URLs are crawled round-robin across site sections, so a
-bounded crawl samples every section first; `--max-pages N` (at most 100)
+`coverage.out_of_scope_pages` lists them with their signals. Sitemap URLs (chosen from the first 2,000 entries) are crawled round-robin across site sections, so a
+bounded crawl samples every section first, including sections a large sitemap lists late; `--max-pages N` (at most 100)
 crawls deeper with proportionally larger request and byte budgets. Recommend-only -- no skill ever modifies a live site.
 
 `common/report_markdown.py` turns a saved JSON report into a Markdown report

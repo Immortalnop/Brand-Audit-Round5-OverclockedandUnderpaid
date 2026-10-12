@@ -819,6 +819,33 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
 
 REQUIRED_FIELDS = ("mechanism", "implementation_detail", "expected_outcome")
 
+# Check IDs that no script emits any more. Their entries stay so that a report
+# saved by an earlier version still validates when the agent stage is merged in.
+RETIRED_CHECK_IDS = frozenset({"email-summary"})
+
+# Base confidence per check, measured on hand-labelled dev sites with
+# tests/score_benchmark.py --suggest (2026-10-12: 7 dev sites; only checks with at
+# least 5 labelled findings). Each value is the measured precision rounded down to
+# a 0.1 step, at most 0.9. A check not listed keeps the confidence its script
+# states. Holdout sites were not used to set these values.
+CALIBRATED_CONFIDENCE = MappingProxyType({
+    "contact-markup-missing": 0.9,
+    "cwv-risk": 0.9,
+    "heading-hierarchy": 0.9,
+    "markup-ratio": 0.8,
+    "missing-description": 0.9,
+    "no-llms-txt": 0.9,
+    "page-type-schema-gap:about": 0.9,
+    "responsive-images": 0.9,
+    "social-metadata": 0.9,
+    "title-length": 0.8,
+})
+
+
+def calibrated_confidence(check_id, default):
+    """The measured base confidence of a check, or its script's default."""
+    return CALIBRATED_CONFIDENCE.get(check_id, default)
+
 def get_entry(check_id):
     entry = CATALOG[check_id]
     if not all(isinstance(entry.get(k), str) and entry[k].strip() for k in REQUIRED_FIELDS):

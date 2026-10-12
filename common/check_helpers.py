@@ -1,7 +1,7 @@
 """Shared, network-free helpers for snapshot check modules."""
 import re
 from urllib.parse import unquote, urlsplit
-from check_catalog import get_entry
+from check_catalog import calibrated_confidence, get_entry
 from models import make_finding
 from structured_data import iter_nodes, types_of
 
@@ -229,7 +229,7 @@ def observation(check_id, title, pages, details, *, skill='crawl-render-audit',
     return make_finding(
         category='ai_discoverability', finding_type='defect' if confirmed else 'proactive_improvement',
         severity=severity, status='confirmed' if confirmed else 'suspected',
-        confidence=.95 if confirmed else .6, title=title,
+        confidence=.95 if confirmed else calibrated_confidence(check_id, .6), title=title,
         root_cause=entry['mechanism'],
         affected_pages=[p.url for p in pages],
         evidence=[{'type':'snapshot_observation', 'description':details[p.url], 'urls':[p.url]}

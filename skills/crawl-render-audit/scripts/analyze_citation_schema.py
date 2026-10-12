@@ -224,9 +224,10 @@ def _opportunities(page, found):
     out = []
     # FAQPage fits only questions the page itself answers: a question heading
     # followed by answer text. Headline teasers that link to other pages are not
-    # counted as question headings at all (common/html_features.py).
+    # counted as question headings at all, and neither are teasers whose text a
+    # link to another page repeats (common/html_features.py).
     answered = sum(1 for qa in features.get("question_answers") or ()
-                   if (qa.get("answer") or "").strip())
+                   if (qa.get("answer") or "").strip() and not qa.get("teaser"))
     if "FAQPage" not in found and answered >= 3:
         out.append(f"{answered} question-shaped H2/H3 headings with no FAQPage markup")
     headings = list(page.headings or ())

@@ -368,6 +368,10 @@ class Document(HTMLParser):
         # them), location and site-search observations, and icon links for the logo.
         self.tables=[];self.definition_lists=0;self.unordered_lists=0
         self.question_answers=[];self._qa=None
+        # Text or aria-label of links to other pages, lowercased, so a heading that
+        # repeats one (a news card whose link is an empty overlay labelled with the
+        # headline) can be told apart from a question the page answers.
+        self.link_labels=[]
         # Question-shaped H2/H3 headings this page answers, and headings that are
         # links to other pages (not counted as questions).
         self.question_heading_count=0;self.linked_question_headings=0;self.linked_headings=0
@@ -419,6 +423,13 @@ class Document(HTMLParser):
             if label:form['labels'].append(label[:80])
     def _block_break(self):
         if self.flow and self.flow[-1]!='\n':self.flow.append('\n')
+    def _links_elsewhere(self,heading):
+        """True when a link to another page carries this heading's text as its own
+        text or aria-label: the heading is a teaser for that page. A label of at
+        least 15 characters inside the heading counts, so a kicker joined to the
+        headline ("FashionThe industry...") still matches."""
+        text=' '.join((heading or '').lower().split())
+        return bool(text) and any(label in text for label in self.link_labels)
     def _add_saved_state_hint(self,text):
         if len(self.saved_state_hints)>=5:return
         m=_SAVED_STATE_HINT.search(text or '')
@@ -624,12 +635,15 @@ class Document(HTMLParser):
             self.images+=1
             if not (re.fullmatch(r'[0-9]{1,9}',a.get('width','')) and int(a['width'])>0 and re.fullmatch(r'[0-9]{1,9}',a.get('height','')) and int(a['height'])>0):self.images_missing_dims+=1
             if a.get('loading','').lower()=='lazy':self.images_lazy+=1
+            # An image inside <noscript> is a fallback for visitors without script
+            # (usually a tracking pixel or a copy of a lazy-loaded image), not content.
+            in_noscript=any(f['tag']=='noscript' for f in self.stack)
             # alt="" is valid for decorative images; only missing attributes count.
-            if 'alt' not in a and a.get('role') not in ('presentation','none'):self.missing_alt+=1
+            if 'alt' not in a and a.get('role') not in ('presentation','none') and not in_noscript:self.missing_alt+=1
             # Bounded per-page record of visible images for the non-text media checks.
             src=(a.get('src') or a.get('data-src') or a.get('data-lazy-src') or a.get('srcset','').split(',')[0].strip().split(' ')[0]).strip()
             record=None
-            if src and not src.lower().startswith('data:') and not frame['hidden'] and len(self.image_records)<60:
+            if src and not src.lower().startswith('data:') and not frame['hidden'] and not in_noscript and len(self.image_records)<60:
                 record={'src':src,'alt':a['alt'] if 'alt' in a else None,'title':a.get('title') or None,
                         'width':a.get('width') or None,'height':a.get('height') or None,
                         'role':a.get('role','').lower() or None}
@@ -668,7 +682,10 @@ class Document(HTMLParser):
         if tag in ('video','audio','iframe','embed','object') and len(self.media_records)<30:
             record={'tag':tag,'src':(a.get('src') or a.get('data-src') or a.get('data') or '').strip()[:500] or None,
                     'title':(a.get('title') or a.get('aria-label') or '').strip()[:200] or None,
-                    'hidden':frame['hidden'],'sized':_sized(a),'tracks':[]}
+                    'hidden':frame['hidden'],'sized':_sized(a),'tracks':[],
+                    # A video that plays muted by itself with no controls is a moving
+                    # background, not something a visitor watches or listens to.
+                    'decorative':tag=='video' and 'autoplay' in a and 'muted' in a and 'controls' not in a}
             self.media_records.append(record)
             if tag in ('video','audio'):frame['media']=record
             if tag in ('video','iframe','embed','object') and not record['sized'] and not frame['hidden']:
@@ -709,6 +726,9 @@ class Document(HTMLParser):
             self.text.append(stripped);self.flow.append(stripped)
             qa=self._qa
             if qa is not None and qa['chars']<600 and not tags & _HEADING_TAGS:
+                # Where the text after the heading starts: a table or list holds
+                # items, not a sentence, so its length says nothing about an answer.
+                if not qa['parts']:qa['starts_in']='table' if tags & {'td','th'} else 'list' if tags & {'li','dt','dd'} else 'text'
                 qa['parts'].append(stripped);qa['chars']+=len(stripped)+1
             if 'noscript' in tags and self._noscript_len<8000:
                 self.noscript_parts.append(stripped);self._noscript_len+=len(stripped)+1
@@ -756,6 +776,9 @@ class Document(HTMLParser):
         if not frame['hidden']:
             if tag=='a' and a.get('href'):
                 self.links.append((a['href'],text))
+                label=' '.join((a.get('aria-label') or text).lower().split())
+                if not a['href'].strip().startswith('#') and len(label)>=15 and len(self.link_labels)<400:
+                    self.link_labels.append(label)
                 # Link text inside a heading, so a heading that is a link to another
                 # page (a headline teaser on a news or listing page) can be told apart.
                 heading=next((f for f in reversed(self.stack[:idx]) if f['tag'] in _HEADING_TAGS),None)
@@ -857,10 +880,12 @@ class Document(HTMLParser):
                 'modal_dialogs':self.modal_dialogs,'scroll_lock':self.scroll_lock,'fullscreen_fixed':self.fullscreen_fixed,
                 'tables':self.tables,'definition_lists':self.definition_lists,'unordered_lists':self.unordered_lists,
                 'question_answers':[{'question':q['question'],'answer':' '.join(q['parts'])[:600],
-                                     'answered_by_subheadings':bool(q['next_level'] and q['next_level']>q['level'])}
+                                     'answered_by_subheadings':bool(q['next_level'] and q['next_level']>q['level']),
+                                     'teaser':self._links_elsewhere(q['question']),
+                                     'starts_in':q.get('starts_in')}
                                     for q in self.question_answers],
                 'address_text':self.address_text,'icon_links':self.icon_links,'search_form':self.search_form,
-                **self._text_scans(),
+                **self._text_scans(),'running_text':self._running_text(),
                 'search_hint':self.search_hint,'saved_state_hints':self.saved_state_hints,
                 'contact_markup':self.contact_markup}
     def _text_scans(self):
@@ -870,3 +895,14 @@ class Document(HTMLParser):
         text=' '.join(self.flow)
         if len(text)>_SCAN_HEAD+_SCAN_TAIL:text=text[:_SCAN_HEAD]+' \n '+text[-_SCAN_TAIL:]
         return {'postal_address_text':find_postal_addresses(text),'contact_text':find_contact_details(text)}
+    def _running_text(self):
+        """Blocks of at least 12 words, joined, at most 20,000 characters: the
+        sentences of the page, without the labels, list items and link captions
+        that repeat a word by design."""
+        out=[];size=0
+        for block in ' '.join(self.flow).split('\n'):
+            words=block.split()
+            if len(words)>=12:
+                out.append(' '.join(words));size+=len(out[-1])+1
+                if size>=20000:break
+        return ' '.join(out)[:20000]

@@ -37,6 +37,7 @@ from collections import Counter
 from urllib.parse import urlsplit
 from check_helpers import (eligible_pages, split_script_dependent, script_dependent_warning, contact_details,
                            page_share)
+from check_catalog import calibrated_confidence
 from models import make_finding, skill_result
 from structured_data import iter_nodes, types_of, LOCAL_BUSINESS_TYPES, LOCATION_PROPERTIES, LOCATION_TYPES
 
@@ -230,7 +231,7 @@ def analyze_context_signals(artifacts, deadline):
         contacts.sort(key=lambda item: item[0].page_type not in ("home", "contact"))
         findings.append(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
-            status="suspected", confidence=0.7,
+            status="suspected", confidence=calibrated_confidence("contact-markup-missing", 0.7),
             title="Email or phone shown on " + page_share([p for p, _ in contacts], pages)
                   + " but stated in no structured data",
             root_cause="Assistants answer \"how do I contact them?\" from machine-readable email, telephone and "

@@ -97,6 +97,7 @@ decorative image is correct and never counted), `media-transcript-missing`
 track on native players; captions inside embedded players cannot be seen and are
 reported as not checked) and `media-schema-missing` (no VideoObject or
 AudioObject markup, or VideoObject without name, thumbnailUrl or uploadDate).
+A muted autoplay video with no controls is a background and is not judged.
 
 ## Citation-oriented markup
 

@@ -131,6 +131,10 @@ def _media_items(page):
     items = []
     for record in (page.features or {}).get("media_records", ()):
         tag, src = record.get("tag"), record.get("src") or ""
+        # A muted autoplay video with no controls is a moving background: there
+        # is nothing to transcribe or describe as a VideoObject.
+        if record.get("decorative"):
+            continue
         if tag == "video":
             items.append(("video", "native video player", record))
         elif tag == "audio":

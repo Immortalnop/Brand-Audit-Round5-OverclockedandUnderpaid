@@ -78,7 +78,7 @@ def features(html):
 EXPECTED = {
     "news": {"citation-schema-opportunity": {"/faq"}, "question-answer-indirect": {"/faq"}, "no-llms-txt": None},
     "splash": {"render-gap-unconfirmed": {"/"}, "no-llms-txt": None},
-    "store": {"email-summary": None, "location-markup-missing": None, "context-retention-missing": None,
+    "store": {"location-markup-missing": None, "context-retention-missing": None,
               "review-platform-missing": None},
 }
 # Check IDs each trap site must not raise.
@@ -95,8 +95,8 @@ ABSENT = {
                "email-summary", "email-summary-readable", "comparison-table-missing", "question-answer-indirect",
                "review-platform-missing", "broken-pages"},
     # Men, Women and Kids navigation; one descriptive alt on four views of one shoe.
-    "store": {"audience-segment-missing", "alt-text-quality", "email-summary-readable", "broken-pages",
-              "render-gap"},
+    "store": {"audience-segment-missing", "alt-text-quality", "email-summary", "email-summary-readable",
+              "broken-pages", "render-gap"},
 }
 
 
@@ -150,6 +150,17 @@ def test_real_defects_next_to_traps_are_reported(trap_audits, name):
         assert check_id in found, f"{name}: expected {check_id}, got {sorted(found)}"
         if pages is not None:
             assert found[check_id] == pages, f"{name}: {check_id} named {sorted(found[check_id])}"
+
+
+def test_newsletter_signup_is_a_stated_limit_not_a_finding(trap_audits):
+    # The emails a signup sends are out of reach of a site audit: the report says
+    # so in its warnings and raises no finding about them.
+    _, report, _ = trap_audits["store"]
+    assert any(w.startswith("An email signup form appears on ") and "was not checked" in w
+               for w in report["warnings"])
+    _, splash, _ = trap_audits["splash"]
+    # A contact form with an email field is not a signup.
+    assert not any(w.startswith("An email signup form") for w in splash["warnings"])
 
 
 @pytest.mark.parametrize("name", sorted(TRAPS))

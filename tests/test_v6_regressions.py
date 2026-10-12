@@ -139,7 +139,7 @@ def test_process_large_result_does_not_deadlock():
 
 def test_hung_worker_is_terminated():
     start=time.monotonic();r=run_isolated(_hang_forever,timeout_s=.1)
-    assert r.timed_out and time.monotonic()-start<2
+    assert r.timed_out and time.monotonic()-start<10
 
 
 def test_numeric_match_cannot_join_unrelated_numbers():

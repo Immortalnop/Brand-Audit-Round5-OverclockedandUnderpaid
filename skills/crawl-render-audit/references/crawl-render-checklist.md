@@ -52,7 +52,8 @@
     video or podcast embed, on a page whose text and links offer no transcript,
     unless every player has captions (a captions or subtitles track, or
     `cc_load_policy=1` on a YouTube embed). Captions inside embedded players are
-    reported as not checked.
+    reported as not checked. A muted autoplay video with no controls is a moving
+    background and is judged by neither media check.
   - `media-schema-missing` (low): video without VideoObject (JSON-LD or
     microdata), VideoObject without name, thumbnailUrl or uploadDate, or spoken
     audio without AudioObject or PodcastEpisode.
@@ -95,8 +96,9 @@
   - `question-answer-indirect` (low, suspected, English pages only): a
     question-shaped H2 or H3 followed by no text, a first sentence over 40
     words, or a filler opener such as "Great question". Call-to-action
-    headings ("Need more information?") and questions answered by their own
-    subheadings are skipped.
+    headings ("Need more information?"), questions answered by their own
+    subheadings and teasers (a heading whose text a link to another page
+    repeats as its text or aria-label, as on a news front) are skipped.
   - `table-headers-missing` (low, confirmed): a data table of two or more rows
     and columns, not `role="presentation"`, with no `<th>` cells.
   - `comparison-table-missing` (low, suspected): a title or main heading with

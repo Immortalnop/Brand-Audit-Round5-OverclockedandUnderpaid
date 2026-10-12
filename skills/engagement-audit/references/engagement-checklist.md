@@ -17,12 +17,15 @@
   for engagement, not duplicated as a separate finding
 - Generic internal anchor text (for example "read more", "click here") when a
   meaningful sample of internal anchors is available
-- Weak page orientation on substantial non-home pages that lack a descriptive
-  primary heading above the fold
+- Weak page orientation on substantial non-home pages with no H1, or whose
+  first headings are all empty or longer than 14 words (a short H1 such as
+  "About us" orients a visitor)
 - Internal discoverability gaps: substantial pages that expose almost no
   internal links onward
 - Email-summary-friendly formatting (Appendix Concept F): email-capture pages
-  whose substance is carried in images rather than readable text
+  whose substance is carried in images rather than readable text. A newsletter
+  signup on its own is named in the report warnings, not reported as a finding:
+  the emails it sends cannot be checked from the site
 
 - Accessibility beyond alt text (`analyze_accessibility.py`): unlabeled form
   fields (`form-label-missing`), links and buttons with no accessible name

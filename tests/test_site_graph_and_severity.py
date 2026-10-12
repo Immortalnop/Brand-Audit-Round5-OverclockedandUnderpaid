@@ -7,9 +7,10 @@
   - Sampled crawls: when the crawl did not reach every discovered URL, orphan
     pages and isolated clusters are counted, never reported, and the report says
     they were not assessed. Complete crawls still report them.
-  - End to end: a site whose sitemap is far larger than the crawl cap, with
-    paginated section indexes (each lists only its first items) and a redirected
-    sitemap URL, produces no orphan or cluster finding.
+  - End to end: a 300-URL sitemap, listed section by section, with paginated
+    section indexes (each lists only its first items) and a redirected sitemap
+    URL, sampled down to the default 50 pages: no orphan or cluster finding, and
+    every section is reached, including those listed after the 200th entry.
   - Rendering: a framework bundle and its serialized state count as one sign of
     client-side rendering, so a thin Next.js-style page alone is medium, not high.
 
@@ -196,35 +197,43 @@ def _html(title, body):
             f"<body>{body}</body></html>")
 
 
+# 13 sections, each listed in the sitemap as its index then 22 items, after one
+# retired URL: 1 + 13 x 23 = 300 entries. Sections 9 to 12 start after entry 200.
+_SECTIONS = tuple(f"section{n:02d}" for n in range(13))
+_ITEMS_PER_SECTION = 22
+
+
 def _large_site():
-    sections = ("news", "people", "research")
-    items = {s: [f"/{s}/item-{i}/" for i in range(40)] for s in sections}
-    nav = "<nav>" + " ".join(f'<a href="/{s}/">{s.title()}</a>' for s in sections) + ' <a href="/">Home</a></nav>'
+    items = {s: [f"/{s}/item-{i}/" for i in range(_ITEMS_PER_SECTION)] for s in _SECTIONS}
+    nav = "<nav>" + " ".join(f'<a href="/{s}/">{s.title()}</a>' for s in _SECTIONS) + ' <a href="/">Home</a></nav>'
     pages = {"/": _html("Home", nav + "<main><h1>Welcome</h1>" + COPY + "</main>")}
-    for s in sections:
+    for s in _SECTIONS:
         # Each index lists only its five newest items; the rest are on later pages.
         newest = "".join(f'<a href="{u}">Item {u}</a> ' for u in items[s][:5])
         pages[f"/{s}/"] = _html(s.title(), nav + f"<main><h1>{s.title()}</h1>" + newest
                                 + f'<a href="/{s}/?page=2">Older</a>' + COPY + "</main>")
         for u in items[s]:
             pages[u] = _html(u, nav + f"<main><h1>{u}</h1>" + COPY + "</main>")
-    urls = ["/", "/old-news/"] + [f"/{s}/" for s in sections] + [u for s in sections for u in items[s]]
+    # Listed section by section, as many CMSs write them.
+    urls = ["/old-news/"] + [u for s in _SECTIONS for u in [f"/{s}/"] + items[s]]
+    assert len(urls) == 300
     sitemap = ("<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"
                + "".join(f"<url><loc>http://HOST{u}</loc></url>" for u in urls) + "</urlset>")
     return {"robots": ALLOW_ALL, "sitemap": sitemap, "pages": pages,
-            # A retired URL the sitemap still lists, redirecting to the news index.
-            "responses": {"/old-news/": (301, "", "text/html", (("Location", "/news/"),))}}
+            # A retired URL the sitemap still lists, redirecting to the first section index.
+            "responses": {"/old-news/": (301, "", "text/html", (("Location", f"/{_SECTIONS[0]}/"),))}}
 
 
 @pytest.fixture(scope="module")
 def large_site_report():
+    """A 300-URL sitemap audited with the default limits (50 pages)."""
     from run_audit import run_audit
     from test_precision_traps import _OFFLINE_ENV
     saved = {k: os.environ.get(k) for k in _OFFLINE_ENV}
     os.environ.update(_OFFLINE_ENV)
     base, stop, seen = serve(_large_site())
     try:
-        report = run_audit(base + "/", limits=Limits(MAX_PAGES_CRAWLED=20), allow_private_targets=True)
+        report = run_audit(base + "/", limits=Limits(), allow_private_targets=True)
     finally:
         stop()
         for k, v in saved.items():
@@ -238,14 +247,36 @@ def large_site_report():
 def test_large_sampled_site_reports_no_orphans_or_clusters(large_site_report):
     base, report, seen = large_site_report
     assert report["execution_status"] == "completed"
-    assert report["coverage"]["pages_analyzed"] <= 20
-    assert report["coverage"]["pages_discovered"] > 100
+    assert report["coverage"]["pages_analyzed"] == Limits().MAX_PAGES_CRAWLED
+    # 200 sitemap URLs are kept as candidates, plus the links the crawl found.
+    assert report["coverage"]["pages_discovered"] > 200
     checks = {c for f in report["findings"] + report["recommendations"] for c in (f.get("check_ids") or [f["check_id"]])}
     assert not {"orphan-pages", "isolated-clusters"} & checks
     assert any("Orphan pages and isolated page clusters were not assessed" in w for w in report["warnings"])
-    # Read-only and bounded.
+
+
+def test_large_sitemap_sample_reaches_every_section(large_site_report):
+    # Sections listed after the 200th sitemap entry are sampled too, so a bounded
+    # crawl is not limited to whichever sections the sitemap happens to list first.
+    base, report, seen = large_site_report
+    fetched = {path.split("?")[0] for _, path in seen}
+    for s in _SECTIONS:
+        assert any(p.startswith(f"/{s}/") for p in fetched), s
+    coverage = report["coverage"]
+    assert coverage["sections_analyzed"] >= len(_SECTIONS)
+    # Round-robin: no section gets a fifth page while another has fewer than three.
+    per_section = [sum(p.startswith(f"/{s}/") for p in fetched) for s in _SECTIONS]
+    assert max(per_section) - min(per_section) <= 2, per_section
+
+
+def test_large_sitemap_crawl_is_read_only_and_bounded(large_site_report):
+    base, report, seen = large_site_report
     assert {method for method, _ in seen} == {"GET"}
     assert len(seen) <= Limits().MAX_TOTAL_HTTP_REQUESTS
+    # No sitemap URL is fetched twice, and the crawl stops at the page cap.
+    page_paths = [path for _, path in seen if path not in ("/robots.txt", "/sitemap.xml", "/llms.txt", "/llms-full.txt")]
+    assert len(page_paths) == len(set(page_paths))
+    assert report["coverage"]["runtime_seconds"] < Limits().TOTAL_AUDIT_TIMEOUT_S
 
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,8 @@ from models import skill_result, make_finding
 
 def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
     from analyze_experience import analyze_experience
-    findings = analyze_experience(artifacts, deadline)["findings"]
+    experience = analyze_experience(artifacts, deadline)
+    findings = experience["findings"]
     graph = site_graph.get("data", {})
     orphans = graph.get("orphans", [])
     dead_ends = graph.get("dead_ends", [])
@@ -153,7 +154,7 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
         ))
 
     gap_pages = rendering_result.get("metrics", {}).get("raw_rendered_gap_pages", [])
-    warnings = []
+    warnings = list(experience.get("warnings") or ())
     if not crawl_complete and graph.get("nodes"):
         warnings.append("Orphan pages and isolated page clusters were not assessed: the crawl analyzed a sample, "
                         "and a page the sample does not link to may be linked from a page that was not fetched.")

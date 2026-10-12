@@ -296,10 +296,14 @@ def test_same_origin_redirect_is_followed():
     try:
         limits = Limits()
         deadline = make_deadline(limits)
-        artifacts = acquire_site(base_url + "/", deadline, limits, allow_private_targets=True)
+        # Start at the redirecting URL, so it is the first page and is kept (a
+        # later URL that redirects to an already analyzed page is not analyzed twice).
+        artifacts = acquire_site(base_url + "/redirect", deadline, limits, allow_private_targets=True)
         redirected_page = next(p for p in artifacts.pages if p.url == base_url + "/redirect")
         assert redirected_page.status_code == 200  # followed through to /about
+        assert redirected_page.final_url == base_url + "/about"
         assert any(w.startswith("redirected_") for w in redirected_page.warnings)
+        assert sum((p.final_url or p.url) == base_url + "/about" for p in artifacts.pages) == 1
     finally:
         shutdown()
 

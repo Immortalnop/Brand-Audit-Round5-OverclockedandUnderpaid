@@ -16,6 +16,7 @@ companion /llms-full.txt. This script reports:
 A link that could not be checked (cross-origin, robots rules, the request cap, a
 server error) is counted in metrics, never reported as broken.
 """
+from check_catalog import calibrated_confidence
 from models import skill_result, make_finding, apply_invariant_i1
 
 
@@ -39,7 +40,7 @@ def check_llms_txt(artifacts, deadline):
                              "urls": [_url(artifacts, "/llms-full.txt")]})
         findings.append(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
-            status="confirmed", confidence=0.9,
+            status="confirmed", confidence=calibrated_confidence("no-llms-txt", 0.9),
             title="No llms.txt file found",
             root_cause="Site does not publish an llms.txt guidance file",
             evidence=evidence,
