@@ -130,7 +130,7 @@ Brand-AI-Readiness-Audit/
     schema_rules.py          JSON-LD required/recommended properties and validators
     dates.py                 date parsing and context classification
     identity_signals.py      brand-name fallbacks
-    action_catalog.py, capabilities.py, check_helpers.py, constants.py, errors.py,
+    action_catalog.py, auth_pages.py, capabilities.py, check_helpers.py, constants.py,
     html_features.py, instrumentation.py, models.py, robots_policy.py,
     search_provider.py, structured_data.py, subprocess_isolation.py,
     tls_context.py, transport.py, url_safety.py
