@@ -313,6 +313,50 @@ def test_agent_brief_lists_fact_images_and_platform_kind():
     assert brief["ag06"]["business_kind"] == "general" and brief["ag05"]["queries"][0].startswith('"Cafe"')
 
 
+# ------------------------------------------------------------- determinism and --explain
+def test_two_audits_of_one_site_produce_the_same_report():
+    """Determinism is a claim the README and SKILL.md make, so it is pinned here:
+    the same site audited twice gives the same findings, scores, order, hygiene
+    split, action plan and passed checks. Only the clock and the measured timings
+    differ."""
+    from fixtures_server import start_server
+    from run_audit import run_audit
+    url, stop = start_server(sitemap_mode="broken_nav")
+    try:
+        first, second = (run_audit(url + "/", allow_private_targets=True) for _ in range(2))
+    finally:
+        stop()
+    shape = lambda r: json.dumps({
+        "findings": [[f["id"], f["check_id"], sorted(f.get("check_ids") or []), f["severity"], f["confidence"],
+                      f["priority_score"], sorted(f["affected_pages"])] for f in r["findings"]],
+        "hygiene": [[f["id"], f["check_id"]] for f in r["hygiene_findings"]],
+        "plan": r["action_plan"], "quick_wins": r["quick_wins"],
+        "working": [[w["check"], w["evidence"]] for w in r["whats_working"]],
+        "confidence": r["confidence"]["score"],
+    }, sort_keys=True, default=str)
+    assert shape(first) == shape(second)
+
+
+def test_explain_reports_measured_behaviour():
+    from run_audit import explain_run
+    report = json.loads((ROOT / "examples" / "sample-report.json").read_text())
+    text = explain_run(report)
+    cov = report["coverage"]
+    assert f"{cov['runtime_seconds']} s (budget 270 s)" in text
+    assert f"{cov['instrumentation']['requests_attempted']} attempted" in text
+    assert f"{cov['pages_analyzed']} analysed of {cov['pages_fetched_attempted']} fetched" in text
+    assert "acquisition" in text and "% of measured stage time" in text
+    # Every line is prefixed, so it can never be mistaken for the JSON on stdout.
+    assert all(line.startswith("[explain]") for line in text.splitlines())
+
+
+def test_explain_survives_a_report_with_no_telemetry():
+    """A timed-out run has no instrumentation; --explain must still print."""
+    from run_audit import explain_run
+    text = explain_run({"coverage": {}, "confidence": {}})
+    assert text.startswith("[explain]") and "budget 270 s" in text
+
+
 # ------------------------------------------------------------- hygiene
 def test_catalog_source_has_no_placeholder_text():
     source = (ROOT / "common" / "check_catalog.py").read_text()

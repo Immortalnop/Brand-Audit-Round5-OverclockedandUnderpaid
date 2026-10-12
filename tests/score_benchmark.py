@@ -101,8 +101,10 @@ def score(rows):
 
 
 def fixture_recall():
-    """(found, expected, trap_hits) over the offline fixture corpus: planted defects
-    found, planted defects in total, and trap check IDs wrongly raised."""
+    """Audit every offline fixture site and score it against the corpus
+    expectations. Returns {found, expected, trap_hits, rows, traps}, where rows is
+    one (site, check_id, detected, pages_ok) per planted defect and traps is one
+    (site, check_id) per trap check wrongly raised."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, os.path.join(root, "tests"))
     import test_archetype_fixtures as corpus
@@ -111,7 +113,7 @@ def fixture_recall():
     from run_audit import run_audit
     saved = {k: os.environ.get(k) for k in corpus.OFFLINE_ENV}
     os.environ.update(corpus.OFFLINE_ENV)
-    found = expected = trap_hits = 0
+    rows, traps = [], []
     try:
         for name, site in corpus.SITES.items():
             base, stop, _ = serve(site)
@@ -121,16 +123,17 @@ def fixture_recall():
                 stop()
             checks = corpus.by_check(base, report)
             for check_id, pages in corpus.EXPECTED[name].items():
-                expected += 1
-                found += check_id in checks and (pages is None or pages <= checks[check_id])
-            trap_hits += len(corpus.ABSENT[name] & set(checks))
+                detected = check_id in checks
+                rows.append((name, check_id, detected, detected and (pages is None or pages <= checks[check_id])))
+            traps.extend((name, c) for c in sorted(corpus.ABSENT[name] & set(checks)))
     finally:
         for k, v in saved.items():
             if v is None:
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
-    return found, expected, trap_hits
+    return {"found": sum(1 for *_, ok in rows if ok), "expected": len(rows),
+            "trap_hits": len(traps), "rows": rows, "traps": traps}
 
 
 def main(argv):
@@ -155,9 +158,16 @@ def main(argv):
         for check_id, (step, precision, count) in suggest_base_confidence(rows).items():
             print(f"  {check_id:40} {step}  {precision}  ({count})")
     if "--recall" in argv:
-        found, expected, trap_hits = fixture_recall()
-        print(f"fixture recall: {found}/{expected} = {round(found / expected, 3) if expected else None}; "
-              f"trap check IDs wrongly raised: {trap_hits}")
+        r = fixture_recall()
+        print(f"\nfixture corpus ({len(set(site for site, *_ in r['rows']))} offline sites): recall "
+              f"{r['found']}/{r['expected']} = {round(r['found'] / r['expected'], 3) if r['expected'] else None}; "
+              f"trap check IDs wrongly raised: {r['trap_hits']}")
+        print(f"  {'site':8} {'planted check':34} detected")
+        for site, check_id, detected, ok in r["rows"]:
+            mark = "yes" if ok else ("wrong pages" if detected else "NO")
+            print(f"  {site:8} {check_id:34} {mark}")
+        for site, check_id in r["traps"]:
+            print(f"  {site:8} {check_id:34} FALSE POSITIVE (must not fire)")
     return 0
 
 

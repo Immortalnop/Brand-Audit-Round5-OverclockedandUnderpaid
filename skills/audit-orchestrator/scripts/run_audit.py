@@ -568,6 +568,44 @@ def write_outputs(report, out_dir):
         fh.write(render_markdown(report))
 
 
+def explain_run(report):
+    """--explain: how the audit spent its budget, from the telemetry this run
+    recorded. It reports measured behaviour, never a restated design claim:
+    acquisition is where the network cost sits, every analysis stage is CPU over
+    one immutable snapshot, and the skipped URLs are the politeness rules as data.
+    """
+    cov = report.get("coverage") or {}
+    tel = cov.get("instrumentation") or {}
+    limits = DEFAULT_LIMITS
+    stages = tel.get("stage_timings_s") or {}
+    total_stage = sum((s or {}).get("duration", 0) for s in stages.values()) or 0
+    acquisition = (stages.get("acquisition") or {}).get("duration", 0)
+    rows = [
+        ("runtime", f"{cov.get('runtime_seconds', 0)} s (budget {limits.TOTAL_AUDIT_TIMEOUT_S:g} s)"),
+        ("requests", f"{tel.get('requests_attempted', 0)} attempted, {tel.get('requests_completed', 0)} completed, "
+                     f"{tel.get('requests_failed', 0)} failed (budget {limits.MAX_TOTAL_HTTP_REQUESTS})"),
+        ("bytes downloaded", f"{(tel.get('bytes_downloaded', 0) / 1_048_576):.2f} MiB "
+                             f"(budget {limits.MAX_TOTAL_BYTES // 1_048_576} MiB)"),
+        ("pages", f"{cov.get('pages_analyzed', 0)} analysed of {cov.get('pages_fetched_attempted', 0)} fetched; "
+                  f"{cov.get('templates_sampled', 0)} distinct templates; {cov.get('pages_discovered', 0)} discovered"),
+        ("excluded", f"{cov.get('pages_challenged', 0)} bot-challenged, {cov.get('pages_out_of_scope', 0)} login page(s)"),
+        ("stage timings", "; ".join(f"{name} {(s or {}).get('duration', 0):.2f} s" for name, s in stages.items()) or "-"),
+        ("acquisition share", f"{(acquisition / total_stage * 100):.0f}% of measured stage time, and all of the "
+                              "network cost: every analysis stage is CPU over one immutable snapshot"
+         if total_stage else "-"),
+        ("skips", ", ".join(f"{n} {reason}" for reason, n in (cov.get("skip_reason_counts") or {}).items()) or "none"),
+        ("rendering", "headless browser" if cov.get("rendered_pages") else "heuristic only (no browser available)"),
+        ("agent stage", (report.get("agent_stage") or {}).get("status", "not_supplied")),
+        ("confidence", f"{(report.get('confidence') or {}).get('score')} "
+                       f"({(report.get('confidence') or {}).get('level')}), limited by "
+                       f"{(report.get('confidence') or {}).get('limiting_factor')}"),
+    ]
+    width = max(len(name) for name, _ in rows)
+    out = ["[explain] how this audit spent its budget (measured, not configured):"]
+    out += [f"[explain]   {name.ljust(width)}  {value}" for name, value in rows]
+    return "\n".join(out)
+
+
 def console_summary(report):
     """Ten-line human summary on stderr; stdout stays pure JSON (A25)."""
     s = report.get("summary", {})
@@ -599,6 +637,9 @@ def main(argv=None):
                         help="Progress on stderr. This is already the default; the flag is kept so existing "
                              "command lines (e.g. the Round-4 REPLAY file) keep working.")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress on stderr; JSON output is unchanged.")
+    parser.add_argument("--explain", action="store_true",
+                        help="Print how the run spent its budget (timings, requests, sampling, skips) on stderr. "
+                             "The same numbers are in coverage.instrumentation; JSON output is unchanged.")
     parsed = parser.parse_args(argv)
     import math
     if parsed.timeout is not None and (not math.isfinite(parsed.timeout) or parsed.timeout<=0):
@@ -617,6 +658,9 @@ def main(argv=None):
         if parsed.out_dir:
             write_outputs(report, parsed.out_dir)
         print(json.dumps(report, indent=2, default=str))
+        if parsed.explain:
+            # Explicitly asked for, so it prints even under --quiet.
+            sys.stderr.write(explain_run(report) + "\n")
         if not parsed.quiet:
             sys.stderr.write(console_summary(report) + "\n")
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)

@@ -84,7 +84,19 @@ python3 skills/audit-orchestrator/scripts/finalize_report.py --report audit_out/
         --agent-findings audit_out/agent_findings.json
 ```
 
-Useful options: `--urls FILE` audits exactly the listed same-site pages (for example the landing pages of prompts a brand is losing); `--timeout S` lowers the 270 s cap; `--quiet` silences stderr. stdout is always pure JSON.
+Useful options: `--urls FILE` audits exactly the listed same-site pages (for example the landing pages of prompts a brand is losing); `--timeout S` lowers the 270 s cap; `--quiet` silences stderr; `--explain` prints how the run spent its budget. stdout is always pure JSON.
+
+```
+$ python3 skills/audit-orchestrator/scripts/run_audit.py https://pypi.org --quiet --explain
+[explain]   runtime            11.865 s (budget 270 s)
+[explain]   requests           17 attempted, 17 completed, 0 failed (budget 90)
+[explain]   pages              9 analysed of 10 fetched; 9 distinct templates; 223 discovered
+[explain]   stage timings      acquisition 11.72 s; independent_batch 0.06 s; ...
+[explain]   acquisition share  99% of measured stage time, and all of the network cost: ...
+[explain]   skips              209 robots_disallowed, 1 sensitive_route, 3 template_cap_reached
+```
+
+Those are measured numbers, not configured ones, and they are the reason the architecture is "acquire once, analyse many": acquisition carries the whole network cost, every analysis stage is CPU over one immutable snapshot, and the skipped URLs are the robots rules showing up as data.
 
 No installation required beyond Python 3.10+. Optional: `ENABLE_RENDERING=1` with `pip install playwright && playwright install chromium` confirms render gaps with a real browser; `SEARCH_API_URL` enables scripted corroboration.
 
@@ -141,7 +153,9 @@ python3 -m pytest -q                       # full suite, offline (local fixture 
 python3 examples/make_sample_report.py     # regenerate examples/sample-report.{json,md}
 ```
 
-Generalization is tested by construction: `tests/archetype_sites.py` builds nine small sites offline -- a single-page app, a shop, a local business, a documentation site, a blog, a multi-language site, and three precision traps (a news publisher, a splash page, a store) -- with defects planted on purpose and page shapes that commonly trip heuristics. `tests/test_archetype_fixtures.py` asserts which checks must fire (and on which pages) and which must not.
+The same site audited twice produces the same findings, scores, order and passed checks (pinned by `test_two_audits_of_one_site_produce_the_same_report`); only the clock and the measured timings differ. `finalize_report.py` is idempotent, so re-running pass 2 cannot drift.
+
+Generalization is tested by construction: `tests/archetype_sites.py` builds nine small sites offline -- a single-page app, a shop, a local business, a documentation site, a blog, a multi-language site, and three precision traps (a news publisher, a splash page, a store) -- with defects planted on purpose and page shapes that commonly trip heuristics. `tests/test_archetype_fixtures.py` asserts which checks must fire (and on which pages) and which must not. `python3 tests/score_benchmark.py <csv> --recall` prints that corpus as a scored table (17 planted defects, recall and trap checks wrongly raised).
 
 Precision on real sites is measured with an opt-in harness that never runs in the suite:
 

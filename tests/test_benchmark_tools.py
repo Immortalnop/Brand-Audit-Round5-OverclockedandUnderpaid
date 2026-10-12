@@ -90,5 +90,6 @@ def test_suggested_base_confidence_never_exceeds_measured_precision():
 
 
 def test_fixture_recall_is_complete_with_no_trap_hits():
-    found, expected, trap_hits = score_benchmark.fixture_recall()
-    assert expected >= 17 and found == expected and trap_hits == 0
+    r = score_benchmark.fixture_recall()
+    assert r["expected"] >= 17 and r["found"] == r["expected"] and r["trap_hits"] == 0
+    assert all(ok for *_, ok in r["rows"]) and not r["traps"]

@@ -22,6 +22,8 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 - `site_url`: a URL or bare domain.
 - Optional `--urls FILE`: audit exactly these same-site pages (e.g. the landing
   pages for prompts a brand is losing) instead of a sampled crawl.
+- Optional `--explain`: print how the run spent its budget (timings, requests,
+  sampling, skips) on stderr. The same numbers are in `coverage.instrumentation`.
 
 ## Procedure
 1. **Pass 1 -- deterministic audit.** Run
