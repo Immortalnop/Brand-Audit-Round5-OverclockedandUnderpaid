@@ -31,8 +31,8 @@ def _robots(ctx):
         return None
     if r.get("status") == "ok":
         return "robots.txt was read and lets crawlers fetch the start URL.", None
-    if r.get("status") in ("absent", "unavailable_4xx"):
-        return "The site has no robots.txt (HTTP 4xx), so crawlers may fetch it by default.", None
+    if r.get("status") == "absent":
+        return "The site has no robots.txt (HTTP 404), so crawlers may fetch it by default.", None
     return None
 
 

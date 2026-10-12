@@ -1,4 +1,33 @@
-"""One bounded acquisition. All probes, redirects and HTML share one transport."""
+"""One bounded acquisition. All probes, redirects and HTML share one transport.
+
+ROBOTS_POLICY -- what each robots.txt outcome permits, and where this audit is
+deliberately stricter than RFC 9309:
+
+  ok                 parsed; its groups are obeyed for every request.
+  absent (404/410)   unambiguous: no robots file, so unrestricted (RFC 2.3.1.3).
+  unavailable_4xx    any other 4xx (401, 403, 405, 451 ...). RFC 2.3.1.3 would
+                     permit unrestricted access; this audit records permission as
+                     UNKNOWN and crawls nothing beyond the homepage diagnostic
+                     below. A 401 or 403 is the server refusing this client, not
+                     a statement that no robots file exists, and an audit that
+                     crawls anyway is presuming a permission it was not given.
+  rate_limited (429) also a 4xx by the RFC's classification, and likewise treated
+                     as permission unknown here. The RFC does not mandate
+                     disallow for 429; this is project policy.
+  challenged         robots.txt itself is behind a bot wall: permission unknown.
+  inaccessible (5xx) RFC 2.3.1.4 requires assuming complete disallow.
+  timeout/malformed  permission unknown; nothing is crawled.
+
+THE ONE EXCEPTION, stated so "fail-closed" is never claimed without it: when
+permission is unknown *because the server refused or throttled us* --
+unavailable_4xx, rate_limited or challenged -- exactly one robots-exempt GET of
+the homepage is made, to tell "only robots.txt is refused" apart from "the whole
+site is refused". There are no robots directives to violate in those cases
+(none were obtained), it is a single request, and no link found on that page is
+followed. robots_data['homepage_diagnostic'] records whether it was used, and
+execution_summary lists it under limitations. For timeout, malformed and 5xx the
+server is already failing or unparsable, so not even that request is made.
+"""
 from urllib.parse import urljoin,urlsplit,urlunsplit
 from xml.etree import ElementTree as ET
 from collections import Counter
@@ -118,6 +147,20 @@ def _ai_crawler_paths(rp,key_urls,conservative):
 _FACT_RE=re.compile(r'(?<![a-z])('+'|'.join(re.escape(k) for k in FACT_KEYWORDS)+r')(?![a-z])',re.I)
 _ASSET_RE=re.compile(r'\.(pdf|docx?|xlsx?|pptx?)(?:$|\?)',re.I)
 
+def _probe_https(host,tr,limits,i,allow_private_targets):
+    """Is HTTPS available for an http-served site? One GET of /robots.txt on the
+    https origin -- the URL a crawler may always request -- so the probe never
+    exempts itself from an origin whose robots.txt it has not read."""
+    probe_tr=Transport('https://'+host,tr.deadline,_replace(limits,MAX_TOTAL_HTTP_REQUESTS=1),i,allow_private_targets)
+    probe_tr.delay=tr.delay;probe_tr.last_request=tr.last_request  # same host: same crawl-delay courtesy
+    url='https://'+host+'/robots.txt'
+    pr,pst=probe_tr.get(url,robots_exempt=True,max_bytes=8192)
+    tr.requests+=probe_tr.requests;tr.bytes+=probe_tr.bytes
+    return {'attempted':True,'probe_url':url,'https_available':pst=='ok',
+            'status':pr.status_code if pr else None,'outcome':pst,
+            'requests_used':probe_tr.requests}
+
+
 def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_targets=False,seed_urls=None):
     """seed_urls (targeted mode): audit exactly these same-origin pages plus the
     homepage, without sampling the sitemap or following links."""
@@ -147,16 +190,24 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             # robots file is challenged" apart from "the whole site is challenged".
             robots_status='challenged';robots_text=None
         elif robots_access['kind']=='rate_limited':
-            # RFC 9309: a 429 robots.txt is "unreachable", so compliant crawlers
-            # assume complete disallow. Reported as an access problem; one homepage
-            # request below shows whether the content itself is also refused.
+            # A 429 is a 4xx, which RFC 9309 2.3.1.3 classifies as "unavailable"
+            # (no restrictions). This audit does not take that permission: a
+            # server actively rate-limiting us has not told us what we may crawl,
+            # so permission is recorded as unknown. That is this project's policy,
+            # stricter than the RFC, not an RFC requirement. One homepage request
+            # below shows whether the content itself is also refused.
             robots_status='rate_limited';robots_text=None
         elif resp.status_code in (404,410):robots_status='absent';robots_text=''
-        elif 400<=resp.status_code<500 and resp.status_code!=429:
-            # RFC 9309 2.3.1.3: an "unavailable" robots.txt (4xx) means no restrictions.
-            robots_status='unavailable_4xx';robots_text=''
+        elif 400<=resp.status_code<500:
+            # Any other 4xx (401, 403, 405, 451 ...). RFC 9309 2.3.1.3 would allow
+            # unrestricted access here; this audit fails closed instead, because a
+            # 401/403 is the server refusing *us* rather than saying "there is no
+            # robots file". Deliberately stricter than the RFC; see
+            # ROBOTS_POLICY below.
+            robots_status='unavailable_4xx';robots_text=None
         elif resp.status_code!=200:
-            # RFC 9309 2.3.1.4: 429/5xx means "unreachable" -- assume complete disallow.
+            # RFC 9309 2.3.1.4: a 5xx or network failure is "unreachable" and the
+            # RFC itself requires assuming complete disallow.
             robots_status='inaccessible';robots_text=None
         else:
             try:
@@ -253,7 +304,9 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     if not targeted:
         for u in order:push(u,1,2)
     consecutive_challenges=0;challenge_stop=False
-    homepage_only=robots_status in ('challenged','rate_limited')
+    # The single documented exception to fail-closed (see ROBOTS_POLICY): one
+    # robots-exempt homepage GET when the server refused or throttled robots.txt.
+    homepage_only=robots_status in ('challenged','rate_limited','unavailable_4xx')
     while heap and monotonic()<tr.deadline and len(pages)<limits.MAX_PAGES_CRAWLED:
         _,_,_,_,url,_,depth,source_rank,intent=heapq.heappop(heap)
         key=visit_key(url)
@@ -291,16 +344,16 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             if visit_key(link) not in visited and not targeted:push(link,depth+1,1 if link in region else 3)
     if heap and not challenge_stop:i.record_skip('acquisition_limit_reached')
     # The HTTPS-availability probe for HTTP-served sites runs here, through a
-    # Transport (budgeted, SSRF-checked, logged), instead of inside an analysis script.
+    # Transport (budgeted, SSRF-checked, logged), instead of inside an analysis
+    # script. It asks for /robots.txt on the https origin, not the homepage: that
+    # is the one URL a crawler may always request, so the probe needs no robots
+    # exemption on an origin whose permissions it has not read, and a completed
+    # TLS handshake plus HTTP response already answers "is HTTPS available?".
     https_probe={'attempted':False}
     home_page=next((p for p in pages if p.url==site_url),None)
     if home_page and urlsplit(home_page.final_url or home_page.url).scheme=='http' and monotonic()<tr.deadline:
         host=urlsplit(home_page.final_url or home_page.url).netloc
-        probe_tr=Transport('https://'+host,tr.deadline,_replace(limits,MAX_TOTAL_HTTP_REQUESTS=1),i,allow_private_targets)
-        probe_tr.delay=tr.delay;probe_tr.last_request=tr.last_request  # same host: same crawl-delay courtesy
-        pr,pst=probe_tr.get('https://'+host+'/',robots_exempt=True,max_bytes=4096)
-        https_probe={'attempted':True,'https_available':pst=='ok','status':pr.status_code if pr else None,'outcome':pst}
-        tr.requests+=probe_tr.requests;tr.bytes+=probe_tr.bytes
+        https_probe=_probe_https(host,tr,limits,i,allow_private_targets)
     # Record document links (PDF/Office) instead of silently dropping them, and
     # range-read up to MAX_ASSET_PROBES key-fact PDFs to see if they carry a text layer.
     asset_links=[];seen_assets=set()
@@ -337,7 +390,11 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
          'urls_out_of_scope':len(login),
          'out_of_scope_pages':[{'url':p.url,'reason':'login_page','signals':list((p.features or {}).get('login_signals',()))} for p in login][:20]}
     i.end_stage('acquisition')
-    return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent','unavailable_4xx'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_paths':ai_paths,'fetch_outcome':status,'attempt_outcomes':robots_attempts,
+    return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent'),'status':robots_status,'conservative_fail_closed':conservative,
+        # The one documented exception to fail-closed, so no reader has to infer it.
+        'homepage_diagnostic':bool(conservative and homepage_only and any(p.url==site_url for p in pages)),
+        'homepage_diagnostic_allowed':bool(conservative and homepage_only),
+        'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_paths':ai_paths,'fetch_outcome':status,'attempt_outcomes':robots_attempts,
         'access':robots_access,'http_status':resp.status_code if resp else None}),
         freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'challenged_probes':challenged_probes,'https_probe':https_probe,
         'asset_links':asset_links[:60],'asset_probes':asset_probes,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}),tuple(warnings))

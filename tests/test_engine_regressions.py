@@ -77,13 +77,31 @@ def test_challenge_pages_excluded_from_content_checks():
 
 
 # ----------------------------------------------------------------
-def test_robots_4xx_means_allowed_per_rfc9309():
+def test_robots_403_is_permission_unknown_not_permission_granted():
+    """RFC 9309 2.3.1.3 would read a 4xx robots.txt as "no restrictions". This
+    audit is deliberately stricter: a 401/403 is the server refusing this client,
+    not a statement that no robots file exists, so permission is unknown and only
+    the one documented homepage diagnostic is fetched (acquire_site ROBOTS_POLICY)."""
     url, stop = start_server(routes={'/robots.txt': (403, 'Forbidden', {'Content-Type': 'text/plain'})})
     try:
         a = acquire_site(url + '/', make_deadline(LIMITS), LIMITS, allow_private_targets=True)
     finally:
         stop()
-    assert a.robots_data['status'] == 'unavailable_4xx' and not a.robots_data['conservative_fail_closed']
+    assert a.robots_data['status'] == 'unavailable_4xx'
+    assert a.robots_data['conservative_fail_closed'] is True
+    assert a.robots_data['allowed_general'] is False
+    assert [p.url for p in a.pages] == [url + '/']
+    assert a.robots_data['homepage_diagnostic'] is True
+
+
+def test_robots_404_is_the_only_4xx_that_grants_permission():
+    url, stop = start_server(robots_mode='absent')
+    try:
+        a = acquire_site(url + '/', make_deadline(LIMITS), LIMITS, allow_private_targets=True)
+    finally:
+        stop()
+    assert a.robots_data['status'] == 'absent' and not a.robots_data['conservative_fail_closed']
+    assert a.robots_data['homepage_diagnostic'] is False
     assert len(a.pages) > 1
 
 

@@ -1,11 +1,16 @@
 # Crawl & render checklist
 
 Gate 1 -- access (can a crawler get in and receive the content?)
-- robots.txt per RFC 9309: `ok` obeyed; `absent`/`unavailable_4xx` = no
-  restrictions; `inaccessible` (5xx/timeout) = disallow-all; `challenged` and
-  `rate_limited` (HTTP 429) = permission unknown (homepage-only probe);
-  `malformed`/`blocked` = unknown.
-  Only `ok`/`absent`/`unavailable_4xx` produce allow/disallow verdicts.
+- robots.txt, per RFC 9309 where it applies and stricter where stated (see the
+  ROBOTS_POLICY block in acquire_site.py): `ok` obeyed; `absent` (404/410) = no
+  restrictions; `inaccessible` (5xx/timeout) = disallow-all (RFC 2.3.1.4);
+  `unavailable_4xx` (any other 4xx, including 401/403), `rate_limited` (429),
+  `challenged` and `malformed`/`blocked` = permission unknown, crawl nothing.
+  RFC 2.3.1.3 would permit unrestricted access for those 4xx cases; this audit
+  does not take that permission. Only `ok`/`absent` produce allow/disallow
+  verdicts. The single exception to fail-closed is one robots-exempt homepage
+  GET when the server refused or throttled robots.txt (`unavailable_4xx`,
+  `rate_limited`, `challenged`), recorded in `robots_data.homepage_diagnostic`.
 - Bot walls (`analyze_access.py`): `bot-challenge-robots` (high, confirmed),
   `bot-challenge-sitewide` (high, suspected -- verified-bot allowlists cannot be
   proven from outside), `bot-challenge-rate` (medium, confirmed),

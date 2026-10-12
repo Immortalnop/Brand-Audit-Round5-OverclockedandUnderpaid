@@ -344,3 +344,40 @@ def test_a3_long_page_naming_vendors_is_never_a_challenge():
             + "We moved to Cloudflare and challenges.cloudflare.com and DataDome docs helped. " * 60
             + "</body></html>")
     assert classify_access(200, {"server": "cloudflare"}, body, 5000)["kind"] == "ok"
+
+
+# -------------------------------------------------- A4 acquisition policy
+def test_a4_https_probe_asks_robots_not_the_homepage(monkeypatch):
+    """The probe used to GET the https homepage with robots_exempt=True, i.e.
+    fetch content from an origin whose permissions it had not read. It now asks
+    for /robots.txt, the one URL a crawler may always request."""
+    import acquire_site as acq
+
+    asked = []
+    original_get = acq.Transport.get
+
+    def spy_get(self, url, **kwargs):
+        asked.append((url, kwargs.get("robots_exempt", False)))
+        return original_get(self, url, **kwargs)
+
+    monkeypatch.setattr(acq.Transport, "get", spy_get)
+    from constants import Limits
+    from instrumentation import Instrumentation
+    from models import make_deadline
+    limits = Limits()
+    deadline = make_deadline(limits)
+    i = Instrumentation()
+    tr = acq.Transport("http://127.0.0.1:1", deadline.deadline_monotonic, limits, i, True)
+    probe = acq._probe_https("127.0.0.1:1", tr, limits, i, True)
+    assert probe["probe_url"] == "https://127.0.0.1:1/robots.txt"
+    assert asked and asked[0][0].endswith("/robots.txt")
+    # The probe's requests are charged back to the shared acquisition counter.
+    assert tr.requests >= probe["requests_used"]
+
+
+def test_a4_robots_policy_table_is_documented():
+    """"Fail-closed" is only an honest description if the one exception is stated."""
+    source = (ROOT / "skills/audit-orchestrator/scripts/acquire_site.py").read_text()
+    assert "ROBOTS_POLICY" in source
+    assert "THE ONE EXCEPTION" in source
+    assert "2.3.1.3" in source and "2.3.1.4" in source

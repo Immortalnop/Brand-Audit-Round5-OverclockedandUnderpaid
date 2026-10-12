@@ -39,12 +39,20 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
         status = artifacts.robots_data.get("status")
         why = ("robots.txt is served behind a bot challenge" if status == "challenged"
                else "robots.txt answered HTTP 429 (rate limited)" if status == "rate_limited"
+               else "robots.txt answered a 4xx other than 404, so the server refused this client rather "
+                    "than saying no robots file exists" if status == "unavailable_4xx"
                else f"robots.txt could not be reliably retrieved or parsed (status: '{status}')")
         out.append(
             f"{why}; crawl permission is unknown, so the audit fetched {fetched} page(s)"
-            + (" (homepage only, to identify the cause)" if fetched == 1 and status in ("challenged", "rate_limited") else "")
             + " and most on-site checks are insufficient_evidence rather than confirmed."
         )
+        # The fail-closed crawl has exactly one documented exception; it is stated
+        # rather than left for a reader to infer from the page count.
+        if artifacts.robots_data.get("homepage_diagnostic"):
+            out.append("Permission being unknown, the crawl was fail-closed with one stated exception: a single "
+                       "homepage request was made without robots directives (none could be obtained) purely to tell "
+                       "\"only robots.txt is refused\" apart from \"the whole site is refused\". No link found on "
+                       "that page was followed.")
     if "start_url_is_login_page" in (getattr(artifacts, "warnings", None) or ()):
         out.append("The start URL is a login page, which the audit does not analyse; audit the public homepage "
                    "or a public landing page instead.")

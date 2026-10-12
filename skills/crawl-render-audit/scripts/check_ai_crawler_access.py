@@ -45,7 +45,7 @@ def check_ai_crawler_access(artifacts, deadline):
     blocked = sorted(paths)
 
     findings = []
-    if not directives and robots_status not in ("ok", "absent", "unavailable_4xx", "not_checked", "challenged"):
+    if not directives and robots_status not in ("ok", "absent", "not_checked", "challenged"):
         findings.append(apply_invariant_i1(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
             status="insufficient_evidence", confidence=0.3,
