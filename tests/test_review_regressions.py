@@ -1004,3 +1004,55 @@ def test_a10_binary_bodies_are_not_decoded():
     # An XML-ish body is still text.
     xml = Response(200, {"Content-Type": "application/xml"}, b"<urlset></urlset>", SITE + "sitemap.xml")
     assert xml.text == "<urlset></urlset>"
+
+
+# ------------------------------------------------- A11 crawler product tokens
+def test_a11_applebot_group_does_not_apply_to_applebot_extended():
+    """Substring matching applied an `Applebot` group to Applebot-Extended, so a
+    site that blocks Apple's search crawler appeared to have opted out of AI
+    training too -- two different tokens with two different purposes."""
+    from robots_policy import RobotsPolicy
+    rp = RobotsPolicy("User-agent: *\nAllow: /\n\nUser-agent: Applebot\nDisallow: /\n")
+    assert rp.can_fetch("Applebot", "https://x.example/a") is False
+    assert rp.can_fetch("Applebot-Extended", "https://x.example/a") is True
+    # And the other way round: an Extended-only block says nothing about search.
+    rp = RobotsPolicy("User-agent: *\nAllow: /\n\nUser-agent: Applebot-Extended\nDisallow: /\n")
+    assert rp.can_fetch("Applebot", "https://x.example/a") is True
+    assert rp.can_fetch("Applebot-Extended", "https://x.example/a") is False
+
+
+def test_a11_equivalent_prefix_cases_stay_separate():
+    from robots_policy import RobotsPolicy
+    for blocked, others in (("Claude-SearchBot", ("Claude-User", "ClaudeBot")),
+                            ("Google-Extended", ("Googlebot",)),
+                            ("Googlebot", ("Google-Extended",)),
+                            ("Perplexity-User", ("PerplexityBot",)),
+                            ("ChatGPT-User", ("OAI-SearchBot", "GPTBot"))):
+        rp = RobotsPolicy(f"User-agent: *\nAllow: /\n\nUser-agent: {blocked}\nDisallow: /\n")
+        assert rp.can_fetch(blocked, "https://x.example/a") is False, blocked
+        for other in others:
+            assert rp.can_fetch(other, "https://x.example/a") is True, (blocked, other)
+
+
+def test_a11_product_token_extraction_and_own_user_agent():
+    from robots_policy import RobotsPolicy, product_token
+    from transport import USER_AGENT
+    assert product_token("Applebot-Extended") == "applebot-extended"
+    assert product_token(USER_AGENT) == "brandaireadinessauditbot"
+    assert product_token("Googlebot/2.1") == "googlebot"
+    assert product_token("") == ""
+    # A group naming this audit's own token is still honoured.
+    rp = RobotsPolicy("User-agent: BrandAIReadinessAuditBot\nDisallow: /private\n")
+    assert rp.can_fetch(USER_AGENT, "https://x.example/private") is False
+    assert rp.can_fetch(USER_AGENT, "https://x.example/public") is True
+
+
+def test_a11_wildcard_and_crawl_delay_follow_the_same_token_rule():
+    from robots_policy import RobotsPolicy
+    rp = RobotsPolicy("User-agent: *\nCrawl-delay: 2\nDisallow: /admin\n\n"
+                      "User-agent: Applebot\nCrawl-delay: 5\nDisallow: /\n")
+    # Applebot takes its own group's delay; Applebot-Extended falls to the wildcard.
+    assert rp.crawl_delay("Applebot") == 5.0
+    assert rp.crawl_delay("Applebot-Extended") == 2.0
+    assert rp.can_fetch("Applebot-Extended", "https://x.example/admin") is False
+    assert rp.can_fetch("Applebot-Extended", "https://x.example/pricing") is True
