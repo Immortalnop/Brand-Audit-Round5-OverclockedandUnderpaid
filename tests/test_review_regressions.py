@@ -575,3 +575,127 @@ def test_a6_template_cap_exemptions_are_bounded_and_counted():
     assert isinstance(dict(cov["template_cap_exemptions"]), dict)
     # No template may exceed the hard ceiling, exempt or not.
     assert all(n <= limits.MAX_PER_TEMPLATE_HARD for n in dict(cov["pages_per_template"]).values())
+
+
+# ------------------------------------------------------------ A7 site graph
+def _page(html, url=SITE, status=200, headers=None, final_url=None):
+    from constants import Limits
+    from transport import Response
+    from acquire_site import _extract_page
+    r = Response(status, {"Content-Type": "text/html", **(headers or {})}, html.encode(), url)
+    r.network_duration_ms = 10
+    if final_url:
+        r.final_url = final_url
+    return _extract_page(url, r, 10, Limits())
+
+
+def _snapshot(pages, coverage=None):
+    from models import AuditArtifacts, freeze_value
+    return AuditArtifacts(SITE, SITE.rstrip("/"), tuple(pages),
+                          freeze_value({"status": "ok", "ai_crawler_directives": {}}),
+                          freeze_value({"present": False, "status": "absent"}),
+                          freeze_value({"status": "ok", "urls": [], "lastmod": {}}),
+                          freeze_value({"coverage": coverage or {}}), ())
+
+
+def test_a7_complete_requires_readable_links_not_just_attempted_urls():
+    """An unread 503 may be the page that links to an apparent orphan. Excluding
+    the failed node does not supply its missing inbound links, so "complete" is
+    no longer "urls_never_attempted == 0"."""
+    from build_site_graph import build_site_graph
+    from models import make_deadline
+    from constants import Limits
+    home = _page("<html><title>H</title><h1>Home</h1><a href='/a'>A</a></html>", SITE)
+    a = _page("<html><title>A</title><h1>A</h1><a href='/'>Home</a></html>", SITE + "a")
+    broken = _page("<html><body>error</body></html>", SITE + "b", status=503)
+    graph = build_site_graph(_snapshot([home, a, broken], {"urls_discovered": 3, "urls_never_attempted": 0}),
+                             make_deadline(Limits()))["data"]
+    ev = graph["link_evidence"]
+    assert ev["urls_never_attempted"] == 0
+    assert ev["urls_fetched_but_unread"] == 1 and ev["complete"] is False
+    assert SITE + "b" in ev["unread_pages"]
+    # With every page readable the ledger is complete again.
+    graph = build_site_graph(_snapshot([home, a], {"urls_discovered": 2, "urls_never_attempted": 0}),
+                             make_deadline(Limits()))["data"]
+    assert graph["link_evidence"]["complete"] is True
+
+
+def test_a7_js_shell_pages_are_not_dead_ends():
+    """A page whose navigation is assembled in the browser delivers no links in
+    the HTML we read. Calling that a dead end states a rendering fact as an
+    engagement defect."""
+    from build_site_graph import build_site_graph
+    from models import make_deadline
+    from constants import Limits
+    home = _page("<html><title>H</title><h1>Home</h1><a href='/app'>App</a></html>", SITE)
+    shell = _page("<html><title>App</title><body><div id='root'></div>"
+                  "<script>window.__NEXT_DATA__={\"props\":{\"nav\":\"Pricing and plans for teams\"}}</script>"
+                  "</body></html>", SITE + "app")
+    graph = build_site_graph(_snapshot([home, shell]), make_deadline(Limits()))["data"]
+    assert SITE + "app" in graph["rendering_scope"]["raw_shell_pages"]
+    assert SITE + "app" not in graph["dead_ends"]
+    assert graph["nodes"][SITE + "app"]["raw_shell"] is True
+    # A genuinely link-free static page is still a dead end.
+    static = _page("<html><title>T</title><h1>Terms</h1><p>No links here at all.</p></html>", SITE + "terms")
+    graph = build_site_graph(_snapshot([home, static]), make_deadline(Limits()))["data"]
+    assert SITE + "terms" in graph["dead_ends"]
+
+
+def test_a7_redirect_aliases_collapse_into_one_node():
+    """/a and /b both delivering /c is one page with two aliases. Keying nodes by
+    requested URL split one page's inbound links across two entries."""
+    from build_site_graph import build_site_graph
+    from models import make_deadline
+    from constants import Limits
+    home = _page("<html><title>H</title><h1>Home</h1><a href='/a'>A</a> <a href='/b'>B</a></html>", SITE)
+    via_a = _page("<html><title>C</title><h1>C</h1><a href='/'>Home</a></html>", SITE + "a",
+                  final_url=SITE + "c")
+    via_b = _page("<html><title>C</title><h1>C</h1><a href='/'>Home</a></html>", SITE + "b",
+                  final_url=SITE + "c")
+    graph = build_site_graph(_snapshot([home, via_a, via_b]), make_deadline(Limits()))["data"]
+    assert len(graph["nodes"]) == 2, sorted(graph["nodes"])
+    node = graph["nodes"][SITE + "a"]
+    assert sorted(node["aliases"]) == [SITE + "b", SITE + "c"]
+    # Both links from the homepage land on the same node, and it is no orphan.
+    assert node["in_degree"] == 1 and graph["orphans"] == []
+
+
+def test_a7_orphans_in_an_incomplete_graph_are_not_confirmed_defects():
+    from build_site_graph import build_site_graph
+    from analyze_engagement import analyze_engagement
+    from models import make_deadline, skill_result
+    from constants import Limits
+    home = _page("<html><title>H</title><h1>Home</h1><a href='/a'>A</a></html>", SITE)
+    a = _page("<html><title>A</title><h1>A</h1><a href='/'>Home</a></html>", SITE + "a")
+    orphan = _page("<html><title>O</title><h1>Orphan</h1><a href='/'>Home</a></html>", SITE + "orphan")
+    broken = _page("<html><body>error</body></html>", SITE + "b", status=503)
+    snap = _snapshot([home, a, orphan, broken], {"urls_discovered": 4, "urls_analyzed": 3,
+                                                 "urls_never_attempted": 0})
+    deadline = make_deadline(Limits())
+    graph = build_site_graph(snap, deadline)
+    result = analyze_engagement(snap, graph, skill_result("r", metrics={"raw_rendered_gap_pages": []}), deadline)
+    orphan_findings = [f for f in result["findings"] if f["check_id"] == "orphan-pages"]
+    assert orphan_findings, [f["check_id"] for f in result["findings"]]
+    f = orphan_findings[0]
+    assert f["status"] == "suspected" and f["finding_type"] == "proactive_improvement"
+    assert "could not be read" in f["root_cause"]
+    assert result["metrics"]["link_evidence_complete"] is False
+    assert result["metrics"]["pages_fetched_but_unread"] == 1
+
+
+def test_a7_navigation_absence_excludes_js_shell_pages():
+    from build_site_graph import build_site_graph
+    from analyze_engagement import analyze_engagement
+    from models import make_deadline, skill_result
+    from constants import Limits
+    shells = [_page(f"<html><title>P{i}</title><body><div id='app'></div>"
+                    "<script>window.__INITIAL_STATE__={\"nav\":\"Products, pricing and support\"}</script>"
+                    "</body></html>", SITE + f"p{i}") for i in range(4)]
+    snap = _snapshot(shells, {"urls_discovered": 4, "urls_analyzed": 4, "urls_never_attempted": 0})
+    deadline = make_deadline(Limits())
+    result = analyze_engagement(snap, build_site_graph(snap, deadline),
+                                skill_result("r", metrics={"raw_rendered_gap_pages": []}), deadline)
+    ids = {f["check_id"] for f in result["findings"]}
+    assert "no-internal-navigation" not in ids, sorted(ids)
+    assert "dead-ends" not in ids
+    assert result["metrics"]["raw_shell_pages"] == 4

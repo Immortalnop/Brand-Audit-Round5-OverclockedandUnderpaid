@@ -17,7 +17,15 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
     dead_ends = graph.get("dead_ends", [])
     isolated_clusters = graph.get("isolated_clusters", [])
     crawl_scope = graph.get("crawl_scope", {"complete": True, "urls_never_attempted": 0})
-    crawl_complete = crawl_scope.get("complete", True)
+    # Link evidence, not merely crawl coverage, decides whether an
+    # absence-of-inbound-links claim can be confirmed: a discovered URL that was
+    # never fetched, and one that was fetched but could not be read (503,
+    # timeout, bot challenge, truncation), are both pages whose outbound links
+    # are missing from the graph. See build_site_graph.py.
+    link_evidence = graph.get("link_evidence", {})
+    crawl_complete = link_evidence.get("complete", crawl_scope.get("complete", True))
+    unread = link_evidence.get("urls_fetched_but_unread", 0)
+    raw_shell_pages = set((graph.get("rendering_scope") or {}).get("raw_shell_pages") or ())
     # Proportional evidence-completeness ratio: a crawl
     # that reached 45/50 discovered pages is much stronger evidence for an orphan
     # finding than one that reached 5/50, even though both are technically
@@ -43,12 +51,18 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
         root_cause = "Pages exist but are not linked from anywhere else on the site"
         if not crawl_complete:
             root_cause += (
-                f" (within the {len(graph.get('nodes', {}))} pages actually crawled; "
-                f"{crawl_scope.get('urls_never_attempted', 0)} discovered URLs were never fetched, "
-                "so a linking page may simply not have been crawled)"
+                f" (within the {len(graph.get('nodes', {}))} pages whose links were actually read; "
+                f"{link_evidence.get('urls_never_attempted', crawl_scope.get('urls_never_attempted', 0))} "
+                "discovered URL(s) were never fetched"
+                + (f" and {unread} fetched page(s) could not be read" if unread else "")
+                + ", so a linking page may simply not have been read)"
             )
         findings.append(make_finding(
-            category="engagement", finding_type="defect", severity="medium",
+            category="engagement",
+            # An orphan observed in an incomplete link graph is a scoped
+            # observation to follow up, not a confirmed site defect.
+            finding_type="defect" if crawl_complete else "proactive_improvement",
+            severity="medium",
             status=status, confidence=confidence,
             title="Orphan pages with no internal links pointing to them",
             root_cause=root_cause,
@@ -75,7 +89,8 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
         status = "confirmed" if crawl_complete else "suspected"
         confidence = round(0.4 + 0.3 * graph_ratio, 3)
         findings.append(make_finding(
-            category="engagement", finding_type="defect", severity="medium",
+            category="engagement",
+            finding_type="defect" if crawl_complete else "proactive_improvement", severity="medium",
             status=status, confidence=confidence,
             title="Isolated page clusters not reachable from the main site structure",
             root_cause=f"{len(isolated_clusters)} cluster(s) totalling {total_isolated_pages} page(s) are "
@@ -101,7 +116,10 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
             category="engagement", finding_type="proactive_improvement", severity="low",
             status="confirmed", confidence=0.7,
             title="Dead-end pages with no outgoing links",
-            root_cause="Pages provide no next step for the visitor",
+            root_cause="Pages provide no next step for the visitor in the HTML they deliver"
+                       + (f" (pages whose links are built by JavaScript are excluded: "
+                          f"{len(raw_shell_pages)} such page(s) are listed in the graph's rendering_scope)"
+                          if raw_shell_pages else ""),
             evidence=[{"type": "site_graph", "description": f"{len(dead_ends)} dead-end pages found",
                        "urls": dead_ends[:10]}],
             affected_pages=dead_ends,
@@ -140,17 +158,28 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
                 provenance={"skill": "engagement-audit", "script": "analyze_engagement.py", "rule_id": "homepage-orientation"},
                 affected_pages=[home.url]))
 
-    if len(cpages) >= 3:
+    # Pages whose navigation is assembled by JavaScript deliver no links in the
+    # HTML we read. Counting them here would state a rendering fact as a missing
+    # navigation defect, so they are left out of the denominator entirely (and
+    # if every sampled page is one, there is nothing to conclude).
+    static_pages = [p for p in cpages if p.url not in raw_shell_pages]
+    if len(static_pages) >= 3:
         # Do not infer a missing nav from flattened headings; use link density and
         # cross-page reachability instead, which is observable in this artifact model.
-        pages_with_links = sum(1 for p in cpages if p.internal_links)
+        pages_with_links = sum(1 for p in static_pages if p.internal_links)
         if pages_with_links == 0:
             findings.append(make_finding(
                 category="engagement", finding_type="defect", severity="medium",
                 status="confirmed", confidence=0.78,
                 title="Sampled pages expose no internal navigation links",
-                root_cause="Visitors landing on the sampled pages have no observed internal link path to related content",
-                evidence=[{"type": "navigation", "description": f"0/{len(cpages)} sampled pages contain internal links", "urls": [p.url for p in cpages[:10]]}],
+                root_cause="Visitors landing on the sampled pages have no observed internal link path to related "
+                           "content in the HTML those pages deliver"
+                           + (f"; {len(raw_shell_pages)} page(s) that build their links in the browser are "
+                              "excluded from this count" if raw_shell_pages else ""),
+                evidence=[{"type": "navigation",
+                           "description": f"0/{len(static_pages)} sampled pages that deliver their own markup "
+                                          "contain internal links",
+                           "urls": [p.url for p in static_pages[:10]]}],
                 suggested_action={
                     "summary": "Add persistent navigation and contextual next-step links",
                     "steps": ["Expose primary destinations in a semantic nav landmark", "Link related pages from body content", "Ensure every important landing page has a clear next step"],
@@ -184,7 +213,10 @@ def analyze_engagement(artifacts, site_graph, rendering_result, deadline):
         metrics={"orphan_pages": len(orphans), "dead_end_pages": len(dead_ends),
                  "isolated_clusters": len(isolated_clusters),
                  "rendering_gap_pages": len(gap_pages),
-                 "crawl_scope_complete": crawl_complete},
+                 "crawl_scope_complete": crawl_complete,
+                 "link_evidence_complete": crawl_complete,
+                 "pages_fetched_but_unread": unread,
+                 "raw_shell_pages": len(raw_shell_pages)},
         coverage={"pages_analyzed": len(graph.get("nodes", {})), "pages_skipped": 0,
                   "queries_attempted": 0, "queries_completed": 0},
     )
