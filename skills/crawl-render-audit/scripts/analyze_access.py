@@ -62,6 +62,32 @@ def analyze_access(artifacts, deadline):
                 'verification': 'curl -sI <site>/robots.txt returns 200 text/plain with no challenge markers'},
             provenance={'skill': 'crawl-render-audit', 'script': 'analyze_access.py', 'rule_id': 'bot-challenge-robots'}))
 
+    if artifacts.robots_data.get('status') == 'rate_limited':
+        # A 429 on robots.txt, the first request of the audit. One observation can
+        # be transient, so this is suspected; if it persists, RFC 9309 crawlers
+        # treat the whole site as disallowed.
+        robots_url = artifacts.normalized_origin + '/robots.txt'
+        findings.append(make_finding(
+            category='ai_discoverability', finding_type='defect', severity='medium', status='suspected',
+            confidence=0.6,
+            title='robots.txt answered HTTP 429 (rate limited)',
+            root_cause='The first request of the audit, for robots.txt, was refused with HTTP 429. Under RFC 9309 a '
+                       'crawler that receives 429 for robots.txt treats the site as fully disallowed until the file '
+                       'is reachable again.',
+            evidence=[{'type': 'access', 'description': f"{robots_url} -> {'; '.join((robots_access.get('signals') or ['HTTP 429'])[:2])}",
+                       'urls': [robots_url]}]
+                     + ([{'type': 'access', 'description': f'homepage then answered HTTP {home.status_code}'
+                          + (' with a challenge' if home_challenged else ''), 'urls': [home.url]}] if home is not None else []),
+            affected_pages=[robots_url],
+            suggested_action={
+                'summary': 'Exempt /robots.txt from rate limiting and serve it as a fast, cacheable 200',
+                'steps': ['Add a rate-limit and bot-management exemption for /robots.txt, /sitemap*.xml and /llms.txt',
+                          hint, 'Re-test from a fresh client: the first request for /robots.txt must return 200 text/plain'],
+                'priority': 'medium', 'effort': 'low',
+                'expected_benefit': 'Crawlers get a stable permission verdict instead of assuming disallow-all',
+                'verification': 'curl -sI <site>/robots.txt returns 200 from a client that has made no other request'},
+            provenance={'skill': 'crawl-render-audit', 'script': 'analyze_access.py', 'rule_id': 'robots-rate-limited'}))
+
     if home_challenged or (challenged and not served):
         sample = ([home] if home_challenged else []) + [p for p in challenged if p is not home]
         sig = _access(sample[0]).get('signals', [])

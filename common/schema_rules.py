@@ -18,8 +18,10 @@ RULES = {
     "AggregateOffer": {"required": ("lowPrice", "priceCurrency"), "recommended": ("highPrice", "offerCount")},
     "Organization": {"required": ("name",), "required_any": (("url", "@id"),), "recommended": ("logo", "sameAs")},
     "LocalBusiness": {"required": ("name", "address"), "recommended": ("telephone", "openingHoursSpecification", "geo", "url")},
-    "Article": {"required": ("headline",), "required_any": (("datePublished", "dateCreated"),),
-                "recommended": ("dateModified", "author", "image")},
+    # Google lists no required Article properties; dates are recommended. Their
+    # absence is reported once by missing-article-dates (freshness), not here.
+    "Article": {"required": ("headline",),
+                "recommended": ("datePublished", "dateModified", "author", "image")},
     "FAQPage": {"required": ("mainEntity",), "recommended": ()},
     "WebSite": {"required": ("name",), "required_any": (("url", "@id"),), "recommended": ()},
     "BreadcrumbList": {"required": ("itemListElement",), "recommended": ()},
@@ -29,6 +31,13 @@ ALIASES = {"BlogPosting": "Article", "NewsArticle": "Article", "TechArticle": "A
            "Store": "LocalBusiness", "Restaurant": "LocalBusiness", "OnlineStore": "Organization",
            "Corporation": "Organization", "EducationalOrganization": "Organization",
            "NGO": "Organization", "IndividualProduct": "Product", "ProductGroup": "Product"}
+# Organization subtypes are validated as their parent: LocalBusiness subtypes need
+# an address, every other Organization subtype a name and url.
+from structured_data import LOCAL_BUSINESS_TYPES, ORGANIZATION_TYPES  # noqa: E402
+for _t in LOCAL_BUSINESS_TYPES:
+    ALIASES.setdefault(_t, "LocalBusiness")
+for _t in ORGANIZATION_TYPES - LOCAL_BUSINESS_TYPES:
+    ALIASES.setdefault(_t, "Organization")
 # Properties that matter enough to keep in the core report when missing.
 CORE_RECOMMENDED = {"dateModified", "sameAs", "offers", "availability"}
 

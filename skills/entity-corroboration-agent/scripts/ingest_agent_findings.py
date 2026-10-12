@@ -78,6 +78,50 @@ _AG_RULES = {
                   "Correct the fact where it is wrong",
                   "State the accurate version explicitly on-site and in markup"),
     },
+    # AG-04: the agent read an image listed in brief.ag04.images with its own
+    # vision and found facts (prices, hours, items) that the page text does not
+    # state. Same check as the script's facts-in-images, so the two merge.
+    "AG-04": {
+        "rule_id": "facts-in-images",
+        "category": "ai_discoverability",
+        "default_severity": "medium",
+        "default_status": "confirmed",
+        "default_type": "defect",
+        "title": "Facts are carried inside images (read by the agent)",
+        "summary": "Publish the facts shown in the image as HTML text on the same page.",
+        "steps": ("Copy the prices, hours or items shown in the image into an HTML table or list",
+                  "Give the image alt text that states what it shows",
+                  "Keep the image as decoration or a download, not as the only source"),
+    },
+    # AG-05: a namesake search found other entities with the brand's name and
+    # nothing on the site tells them apart (Appendix D: mistaken identity).
+    "AG-05": {
+        "rule_id": "kg-namesake-ambiguity",
+        "category": "corroboration",
+        "default_severity": "medium",
+        "default_status": "confirmed",
+        "default_type": "defect",
+        "title": "Other entities share the brand's name and the site does not distinguish itself",
+        "summary": "Declare the brand's own knowledge-graph entity and use its distinctive full name.",
+        "steps": ("Add the brand's Wikidata item (create one if eligible) to Organization sameAs",
+                  "Use the full distinctive name, with category or location, in titles and the About passage",
+                  "Keep the name and profile links identical across official profiles"),
+    },
+    # AG-06: the agent searched the review/directory platforms the brand's
+    # category uses and found no profile for the brand.
+    "AG-06": {
+        "rule_id": "review-platform-missing",
+        "category": "off_site_presence",
+        "default_severity": "low",
+        "default_status": "confirmed",
+        "default_type": "proactive_improvement",
+        "title": "No profile on the review or directory platforms the category uses",
+        "summary": "Claim or create the brand's profile on the platforms its category uses.",
+        "steps": ("Pick the two or three platforms the category uses (for example G2 or Capterra for software, "
+                  "Google Business Profile or Yelp for a local business)",
+                  "Use the exact brand name and site URL there",
+                  "Link the profiles from Organization sameAs"),
+    },
 }
 
 _VALID_SEVERITY = {"critical", "high", "medium", "low"}
@@ -135,6 +179,10 @@ def _build_finding(raw):
     steps = action.get("steps")
     steps = list(steps) if isinstance(steps, (list, tuple)) and steps else list(rule["steps"])
 
+    evidence = _evidence_list(raw)
+    # Evidence may name the page or image it is about; those become the
+    # finding's pages so it can merge with the script finding for the same pages.
+    pages = [str(u) for u in (raw.get("affected_pages") or []) if isinstance(u, str)][:10]
     finding = make_finding(
         category=rule["category"],
         finding_type=finding_type,
@@ -142,8 +190,9 @@ def _build_finding(raw):
         status=status,
         confidence=0.7 if status == "confirmed" else 0.55,
         title=str(raw.get("title") or rule["title"]),
-        root_cause=_evidence_list(raw)[0]["description"],
-        evidence=_evidence_list(raw),
+        root_cause=evidence[0]["description"],
+        evidence=evidence,
+        affected_pages=pages or None,
         suggested_action={
             "summary": summary,
             "steps": steps,

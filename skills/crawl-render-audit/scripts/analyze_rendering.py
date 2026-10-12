@@ -44,13 +44,25 @@ def _threshold_for(page_type) -> int:
     return _MIN_SUBSTANTIAL_CHARS_BY_TYPE.get(page_type, _MIN_SUBSTANTIAL_CHARS)
 
 
+def runs_scripts(page):
+    """Whether the page could build content in the browser: it loads or inlines
+    JavaScript, or its <noscript> says JavaScript is required. A page that runs no
+    script cannot have a JavaScript rendering gap; if it is short, it is short."""
+    f = page.features or {}
+    if "executable_scripts" not in f:
+        return True  # older observations: keep the cautious reading
+    return f["executable_scripts"] > 0 or bool(_JS_REQUIRED.search(f.get("noscript_text") or ""))
+
+
 def _heuristic_gap_pages(pages):
     """Executable today: raw HTML with very little visible text, judged against a
     page-type-appropriate threshold rather than one flat number. Bot-challenge
-    interstitials are excluded: they are thin because they are not the page (A1)."""
+    interstitials and login pages are excluded (they are not the site's content),
+    and so are pages that run no script."""
     return [p.url for p in pages
             if len((p.visible_text or "").strip()) < _threshold_for(p.page_type)
-            and p.status_code == 200 and "non_html_content" not in p.warnings and not is_challenged(p)]
+            and p.status_code == 200 and "non_html_content" not in p.warnings and not is_challenged(p)
+            and "login_page" not in p.warnings and runs_scripts(p)]
 
 
 _JS_REQUIRED = re.compile(r"(enable|turn on|requires?)\s+javascript|javascript (is )?(required|disabled)", re.I)
@@ -185,7 +197,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
     # content missing from its HTML (A18).
     candidates = {}
     for p in artifacts.pages:
-        if p.status_code != 200 or is_challenged(p) or "non_html_content" in p.warnings:
+        if p.status_code != 200 or is_challenged(p) or "non_html_content" in p.warnings or "login_page" in p.warnings:
             continue
         sig = static_render_signals(p)
         if p.url in heuristic_gap_pages or (sig["missing_share"] >= 0.6 and sig["hydration_missing"] >= 5):

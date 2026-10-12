@@ -46,8 +46,9 @@ def analyze_crawlability(artifacts, deadline):
             provenance={"skill": "crawl-render-audit", "script": "analyze_crawlability.py",
                         "rule_id": "robots-block"},
         ))
-    elif general_disallow is None and robots_status not in ("not_checked", "challenged"):
-        # A challenged robots.txt is reported by analyze_access.py (bot-challenge-robots).
+    elif general_disallow is None and robots_status not in ("not_checked", "challenged", "rate_limited"):
+        # A challenged or rate-limited robots.txt is reported by analyze_access.py
+        # (bot-challenge-robots / robots-rate-limited).
         fetched_ok = acq_coverage.get("urls_fetched_ok", 0)
         findings.append(apply_invariant_i1(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",

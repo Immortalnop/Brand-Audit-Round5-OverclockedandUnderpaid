@@ -14,6 +14,7 @@ from collections.abc import Mapping
 from models import skill_result, make_finding, coverage_ratio
 from check_helpers import content_pages
 from identity_signals import best_name
+from structured_data import ORGANIZATION_TYPES
 
 # Expected schema.org @type(s) for each page_type that should realistically carry
 # structured data. Types not listed here (e.g. "other", "category") are not held
@@ -21,14 +22,14 @@ from identity_signals import best_name
 _EXPECTED_SCHEMA = {
     "service": {"types": {"Service"}, "severity": "low", "label": "Service"},
     "software": {"types": {"SoftwareApplication", "MobileApplication", "WebApplication"}, "severity": "low", "label": "SoftwareApplication"},
-    "home": {"types": {"Organization", "WebSite", "LocalBusiness"}, "severity": "high",
+    "home": {"types": {"WebSite"} | ORGANIZATION_TYPES, "severity": "high",
              "label": "Organization/WebSite"},
     "product": {"types": {"Product", "Offer"}, "severity": "high", "label": "Product/Offer"},
     "article": {"types": {"Article", "BlogPosting", "NewsArticle"}, "severity": "medium",
                 "label": "Article/BlogPosting"},
-    "contact": {"types": {"LocalBusiness", "Organization", "ContactPage"}, "severity": "medium",
+    "contact": {"types": {"ContactPage"} | ORGANIZATION_TYPES, "severity": "medium",
                 "label": "LocalBusiness/Organization/ContactPage"},
-    "about": {"types": {"Organization", "AboutPage"}, "severity": "low", "label": "Organization/AboutPage"},
+    "about": {"types": {"AboutPage"} | ORGANIZATION_TYPES, "severity": "low", "label": "Organization/AboutPage"},
 }
 
 

@@ -3,7 +3,7 @@
 Stable check IDs are distinct from per-report finding IDs. This catalog contains
 implemented checks only. Observed evidence, scope and status stay with detectors.
 Unknown IDs fail validation on the public audit path rather than silently acquiring
-empty enrichment. Donor IDs are aliases for traceability, never duplicate jobs.
+empty enrichment.
 """
 from types import MappingProxyType
 
@@ -29,16 +29,6 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                               'mechanism': 'When independent sources describe the brand differently from the '
                                            'site, retrieval surfaces the discrepancy and confidence drops '
                                            'across every associated fact.'},
- 'ai-crawler-blocked': {'expected_outcome': 'Improves the affected sampled pages when the observed condition '
-                                            'is confirmed.',
-                        'implementation_detail': 'Review the affected evidence and apply the page-specific '
-                                                 'action steps; verify the change by repeating the audit.',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
- 'ai-crawler-unchecked': {'expected_outcome': 'Enables a real verdict',
-                          'implementation_detail': 'Re-run once reachable',
-                          'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                       'sampled pages.'},
  'answer-headings': {'expected_outcome': 'May improve answer readability; questions are not required for '
                                          'retrieval or citation.',
                      'implementation_detail': 'Review audience questions and add useful question headings '
@@ -84,18 +74,11 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                       'mechanism': 'An explicit short description can reduce ambiguity about an '
                                    'organization.'},
  'breadcrumb-mismatch': {'expected_outcome': 'Improves machine understanding of site structure',
-                         'implementation_detail': 'Add BreadcrumbList schema to pages with visible '
-                                                  'breadcrumbs',
-                         'mechanism': 'Breadcrumb navigation is visible but not machine-readable'},
- 'broken-pages': {'expected_outcome': 'Improves crawl completeness',
-                  'implementation_detail': 'Audit error pages Add 301 redirects or restore content',
-                  'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                               'pages.'},
- 'contradicted-claim': {'expected_outcome': 'Reduces risk of assistants surfacing conflicting facts',
-                        'implementation_detail': 'Compare the on-site value to the external source Correct '
-                                                 'whichever is stale or update the other listing',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
+                         'implementation_detail': 'Add BreadcrumbList JSON-LD that mirrors the visible breadcrumb trail on '
+                                                  'each page that shows one.',
+                         'mechanism': 'A visible breadcrumb tells people where a page sits in the site; without '
+                                      'BreadcrumbList markup a machine has to guess the hierarchy, and search '
+                                      'results show a bare URL instead of the section path.'},
  'cross-origin-canonical': {'expected_outcome': 'Avoids unintended consolidation while preserving legitimate '
                                                 'syndication.',
                             'implementation_detail': 'Verify ownership and content equivalence; correct the '
@@ -103,20 +86,23 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                             'mechanism': 'An external canonical can nominate another origin as the preferred '
                                          'copy.'},
  'dead-ends': {'expected_outcome': 'Keeps visitors engaged longer',
-               'implementation_detail': 'Add related-content links Add a clear next-step call-to-action',
-               'mechanism': 'Pages provide no next step for the visitor'},
+               'implementation_detail': 'Add related-content links and one clear next-step call to action to each '
+                                        'dead-end page.',
+               'mechanism': 'A page with no internal link onward ends the visit: a visitor who arrived from an '
+                            'AI answer has nowhere to continue, and crawlers find nothing further from it.'},
  'duplicate-titles': {'expected_outcome': 'Helps readers distinguish the sampled pages.',
                      'implementation_detail': 'Give distinct content pages descriptive titles; retain '
                                               'intentional duplicates where justified.',
                      'mechanism': 'Repeated titles can obscure differences between pages.'},
  'email-summary': {'expected_outcome': 'Improves message readability if gaps are confirmed.',
-                   'implementation_detail': 'Review actual outbound messages for useful plain text and '
-                                            'multipart alternatives.',
-                   'mechanism': 'An email capture form does not reveal the readability of outbound '
-                                'messages.'},
+                   'implementation_detail': 'Send campaigns as multipart with a real text/plain part and put the '
+                                            'key message in the first lines.',
+                   'mechanism': 'Inbox AI summaries are built from the readable text of an email; an '
+                                'image-only or boilerplate-heavy newsletter leaves them nothing to summarize, '
+                                'so the offer disappears from the preview.'},
  'fetch-failure': {'expected_outcome': 'Restores reliable access when the failure is reproducible',
-                   'implementation_detail': 'Check the failure from another client Repair confirmed '
-                                            'certificate or server failures',
+                   'implementation_detail': 'Reproduce the failure from another client, then repair a confirmed '
+                                            'certificate or server fault.',
                    'mechanism': 'A fetch failure limits this audit; it does not establish a permanent '
                                 'site-wide outage.'},
  'fetch-latency': {'expected_outcome': 'Can improve retrieval reliability; audit pacing and retries are '
@@ -126,12 +112,6 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                                             'changes.',
                    'mechanism': 'Slow observed HTML retrieval reduces the amount of evidence available '
                                 'within a deadline.'},
- 'footprint-signal': {'expected_outcome': 'Improves the affected sampled pages when the observed condition '
-                                          'is confirmed.',
-                      'implementation_detail': 'Review the affected evidence and apply the page-specific '
-                                               'action steps; verify the change by repeating the audit.',
-                      'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                                   'pages.'},
  'h1': {'expected_outcome': 'Makes the page topic easier to identify.',
         'implementation_detail': 'Add a descriptive page heading when the template lacks an equivalent '
                                  'accessible title.',
@@ -153,10 +133,12 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
  'homepage-orientation': {'expected_outcome': 'Visitors arriving from an AI answer can orient quickly and '
                                               'continue to a relevant action',
                           'implementation_detail': 'State what the organization offers and for whom in the '
-                                                   'first viewport Use a descriptive H1 and scannable H2 '
-                                                   'sections Place one relevant CTA near the opening content',
-                          'mechanism': 'The sampled homepage contains substantial text but no short heading '
-                                       'signal was observed in its first heading entries'},
+                                                   'first viewport, under a descriptive H1 with scannable H2 '
+                                                   'sections, and place one relevant call to action near the '
+                                                   'opening content.',
+                          'mechanism': 'Visitors who arrive from an AI answer decide within seconds whether they '
+                                       'are in the right place; a homepage without a short, descriptive heading '
+                                       'makes them re-orient and many leave.'},
  'http-transport': {'expected_outcome': 'Protects transport confidentiality and integrity; ranking gains are '
                                         'not asserted.',
                     'implementation_detail': 'Serve the public site over verified HTTPS; verify the '
@@ -175,26 +157,16 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                                                 'declarations.',
                        'mechanism': 'An unusable or conflicting canonical declaration weakens the '
                                     'preferred-URL hint.'},
- 'isolated-clusters': {'expected_outcome': 'Makes an entire section reachable instead of one page at a time',
-                       'implementation_detail': 'Identify which cluster(s) contain valuable content Add '
-                                                'navigation or contextual links connecting them to the main '
-                                                'site',
-                       'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                                    'pages.'},
- 'llms-txt-unchecked': {'expected_outcome': 'Enables a real presence/absence verdict',
-                        'implementation_detail': 'Check that /llms.txt responds Re-run the audit',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
  'long-paragraphs': {'expected_outcome': 'Improves readability of the observed long passages.',
                      'implementation_detail': 'Split dense passages by topic and use appropriate lists or '
                                               'tables.',
                      'mechanism': 'Dense paragraphs can hide important answers.'},
  'malformed-jsonld': {'expected_outcome': 'Prevents parsers from dropping important entity and product facts',
-                      'implementation_detail': 'Validate each JSON-LD block as strict JSON Preserve valid '
-                                               '@graph nodes and required properties Re-run a '
-                                               'structured-data validator after deployment',
-                      'mechanism': 'One or more sampled pages contain JSON-LD that could not be parsed, so '
-                                   'structured facts may be discarded by automated readers'},
+                      'implementation_detail': 'Validate each JSON-LD block as strict JSON, keep valid @graph '
+                                               'nodes and required properties, and re-run a structured-data '
+                                               'validator after deployment.',
+                      'mechanism': 'A JSON-LD block that is not valid JSON is discarded whole by parsers, so '
+                                   'every fact it carried (identity, prices, dates) is lost to machines.'},
  'markup-ratio': {'expected_outcome': 'Reduces document overhead if the sampled ratio reflects avoidable '
                                       'markup.',
                   'implementation_detail': 'Inspect inline assets and template boilerplate before trimming '
@@ -240,8 +212,10 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                'mechanism': 'Commercial pages without an observed action path can leave visitors unsure how '
                             'to proceed.'},
  'no-headings': {'expected_outcome': 'Improves text extraction quality',
-                 'implementation_detail': 'Add an h1 per page Structure sections with h2/h3',
-                 'mechanism': 'Pages have no h1-h6 elements'},
+                 'implementation_detail': 'Give each page one descriptive H1 and structure its sections with '
+                                          'H2/H3 headings.',
+                 'mechanism': 'Extractors use headings to split a page into topics and to decide which passage '
+                              'answers a question; a page with none is one undifferentiated block.'},
  'no-internal-navigation': {'expected_outcome': 'Reduces dead ends and helps both visitors and crawlers '
                                                 'discover deeper content',
                             'implementation_detail': 'Expose primary destinations in a semantic nav landmark '
@@ -249,13 +223,13 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                                                      'important landing page has a clear next step',
                             'mechanism': 'Visitors landing on the sampled pages have no observed internal '
                                          'link path to related content'},
- 'no-jsonld': {'expected_outcome': 'Facts become machine-extractable',
-               'implementation_detail': 'Identify page types Add matching schema.org JSON-LD blocks',
-               'mechanism': 'The observed condition can limit retrieval or visitor access on sampled pages.'},
  'no-llms-txt': {'expected_outcome': 'Offers an optional guide to tools that support this convention; not a '
                                      'search eligibility requirement',
-                 'implementation_detail': 'Create /llms.txt List key pages and a short site summary',
-                 'mechanism': 'Site does not publish an llms.txt guidance file'},
+                 'implementation_detail': 'Publish /llms.txt with a one-line site summary and links to the key '
+                                          'pages (see the draft in this finding).',
+                 'mechanism': 'llms.txt is an emerging convention: a short Markdown file at the site root that '
+                              'tells AI tools what the site is and which pages matter. Support is still '
+                              'limited, so it is a cheap, optional signal rather than a requirement.'},
  'noindex': {'expected_outcome': 'Restores indexing eligibility for the specified crawler, without '
                                  'guaranteeing indexing.',
              'implementation_detail': 'Confirm indexing is intended before removing noindex or none from '
@@ -268,11 +242,6 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
  'snippet-suppression': {'expected_outcome': 'Restores text-snippet and image-preview eligibility for supporting consumers, so a clear fact can be quoted.',
                          'implementation_detail': 'Remove max-snippet:0 or raise it to a positive value, and restore max-image-preview from none, only where the suppression is unintended; keep deliberate controls.',
                          'mechanism': 'max-snippet:0 and max-image-preview:none keep a page indexed but remove the snippet or preview an assistant or search result would quote, so a plainly visible fact is far less likely to be surfaced.'},
- 'orphan-pages': {'expected_outcome': 'Improves discoverability and visitor navigation',
-                  'implementation_detail': 'Identify high-value orphan pages Link them from navigation or '
-                                           'related content',
-                  'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                               'pages.'},
  'overlay': {'expected_outcome': 'Reduces interference only if confirmed in a browser.',
              'implementation_detail': 'Inspect actual behavior and provide a dismiss control if the overlay '
                                       'obstructs content.',
@@ -333,19 +302,16 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                     'implementation_detail': 'Point internal links to the final intended URL and collapse '
                                              'unnecessary redirect hops.',
                     'mechanism': 'Multiple redirect hops consume request budget and add latency.'},
- 'render-gap': {'expected_outcome': 'Content becomes machine-readable without JS',
-                'implementation_detail': 'Add SSR or static generation for key pages',
-                'mechanism': 'The observed condition can limit retrieval or visitor access on sampled '
-                             'pages.'},
  'render-gap-unconfirmed': {'expected_outcome': 'Clarifies whether a real rendering fix is needed',
-                            'implementation_detail': 'Open the page in a browser and compare to the raw HTML',
-                            'mechanism': 'Headless rendering also returned little content, or failed, for '
-                                         'these pages -- could be genuinely thin content rather than a JS '
-                                         'dependency'},
+                            'implementation_detail': 'Open the page in a browser and compare what it shows with the raw '
+                                                     'HTML response.',
+                            'mechanism': 'The server HTML of these pages carries very little text and no sign '
+                                         'of client-side rendering, so they may be genuinely thin pages rather '
+                                         'than a JavaScript dependency; only a browser comparison can tell.'},
  'render-subprocess-timeout': {'expected_outcome': 'Restores confirmed (not just suspected) rendering-gap '
                                                    'findings',
-                               'implementation_detail': 'Re-run the audit Check for bot-detection on the '
-                                                        'target site',
+                               'implementation_detail': 'Re-run the audit, and check whether bot protection on the site '
+                                                        'delays or blocks the headless browser.',
                                'mechanism': 'The isolated rendering subprocess exceeded its wall-clock '
                                             'deadline and was terminated; rendering-gap pages fall back to '
                                             'the static-only heuristic'},
@@ -355,11 +321,6 @@ _BASE = {'about-concreteness': {'expected_outcome': 'Identity answers can be com
                                            'only if unintended, preserving private paths.',
                   'mechanism': 'The observed robots policy disallows this audit crawler for the evaluated '
                                'URL.'},
- 'robots-unreachable': {'expected_outcome': 'Enables a real crawl-permission verdict',
-                        'implementation_detail': 'Check robots.txt responds quickly with a 200 or a clean '
-                                                 '404 Re-run the audit once robots.txt is reachable',
-                        'mechanism': 'The observed condition can limit retrieval or visitor access on '
-                                     'sampled pages.'},
  'scannability': {'expected_outcome': 'Makes individual topics easier to locate and summarize.',
                   'implementation_detail': 'Divide long content into meaningful sections with descriptive '
                                            'headings.',
@@ -471,9 +432,8 @@ def _e(mechanism, implementation_detail, expected_outcome):
             'expected_outcome': expected_outcome}
 
 
-# A13: real mechanisms for the checks that previously carried a generic
-# placeholder ("The observed condition can limit retrieval ..."). Each states the
-# causal chain from the observed condition to lost discovery, citation or visits.
+# Access, readability, link-graph and corroboration checks. Each mechanism states
+# the causal chain from the observed condition to lost discovery, citation or visits.
 _BASE.update({
     'no-jsonld': _e('Without schema.org markup a machine has to infer entity type, prices, dates and ownership '
                     'from free text. Typed facts are extracted more reliably and tie each page to one '
@@ -652,6 +612,66 @@ _BASE.update({
                                   'restates the key facts, and one primary next step (compare, buy, book, contact).',
                                   'AI-referred visitors find the answer immediately and continue on-site.'),
 })
+# Rate-limited robots.txt, citation-oriented markup, sitemap update dates, entity
+# links, contact markup and the agent-performed checks AG-05 / AG-06.
+_BASE.update({
+    'robots-rate-limited': _e('robots.txt answered HTTP 429. Under RFC 9309 a crawler treats a 429 robots.txt as '
+                              '"unreachable" and assumes complete disallow, so a rate rule that catches robots.txt '
+                              'can silently remove the whole site from crawling.',
+                              'Exempt /robots.txt, /sitemap*.xml and /llms.txt from rate limiting and bot rules, and '
+                              'serve robots.txt as a fast, cacheable 200.',
+                              'Crawlers get a stable permission verdict on their first request.'),
+    'citation-schema-invalid': _e('FAQPage, HowTo, Review and AggregateRating markup describe exactly the passages '
+                                  'assistants quote (answers, steps, ratings). When required parts are missing or '
+                                  'the markup contradicts the page, parsers discard the node and the fact is lost.',
+                                  'Complete each listed node: questions with accepted answers shown on the page, '
+                                  'steps with text, ratings with a value, a count and the item they rate.',
+                                  'Question, step and rating facts are machine-readable exactly as shown.'),
+    'citation-schema-opportunity': _e('The page visibly answers questions, lists steps or shows ratings, but states none '
+                                      'of it as FAQPage, HowTo or AggregateRating markup. Explicit structure is the '
+                                      'easiest form for an assistant to lift into an answer.',
+                                      'Mark up the visible questions, steps or ratings where the content genuinely is '
+                                      'that; never add markup for content that is not on the page.',
+                                      'Answers, steps and ratings become explicit, quotable facts.'),
+    'sitemap-lastmod-unreliable': _e('Search engines and AI crawlers use sitemap <lastmod> to decide what to re-fetch. '
+                                     'With no lastmod, or with one build date stamped on every URL, they cannot tell '
+                                     'changed pages from unchanged ones and refresh them late.',
+                                     'Emit <lastmod> per URL from the real content-modified time in the CMS, not from '
+                                     'the build or deploy time.',
+                                     'Changed pages are re-crawled sooner, so assistants quote current facts.'),
+    'kg-link-missing': _e('Knowledge graphs (Wikidata, and Wikipedia through it) are the main signal assistants use to '
+                          'tell same-named entities apart. Organization markup without a sameAs link to the brand\'s '
+                          'knowledge-graph entity leaves that connection to guesswork.',
+                          'Add the brand\'s Wikidata item URL (and Wikipedia article, if one exists) to Organization '
+                          'sameAs, and make sure the item lists this site as its official website (P856).',
+                          'The brand is tied to one unambiguous knowledge-graph entity.'),
+    'same-as-invalid': _e('sameAs is how markup declares the brand\'s official profiles. A value that is a share '
+                          'link, a platform home page, the site itself or not a URL declares nothing, and can attach '
+                          'the brand to the wrong entity.',
+                          'Replace each listed value with the full URL of the brand\'s own profile page on that '
+                          'platform, or remove it.',
+                          'Every sameAs value points at a real official profile.'),
+    'contact-markup-missing': _e('The site shows an email address or phone number, but no structured data states it. '
+                                 'Contact questions ("how do I reach X?") are answered from explicit facts; a number '
+                                 'that exists only as page text is often missed or mis-attributed.',
+                                 'Add email, telephone and a contactPoint to the Organization JSON-LD on the homepage, '
+                                 'using the values the site already shows (see the draft).',
+                                 'Contact details are stated once, explicitly, for machines.'),
+    'kg-namesake-ambiguity': _e('Other entities share the brand\'s name in public knowledge graphs or search results, '
+                                'and nothing on the site distinguishes the brand from them, so assistants can merge '
+                                'facts about different organizations.',
+                                'Declare the brand\'s own knowledge-graph entity in sameAs, use the full distinctive '
+                                'name (with category or location) in titles and the About passage, and keep profiles '
+                                'consistent.',
+                                'Assistants attribute facts to the right entity.'),
+    'review-platform-missing': _e('Review and directory platforms are among the independent sources assistants use to '
+                                  'corroborate a brand and to answer "is X any good?". A brand absent from the '
+                                  'platforms its category uses has no independent evidence there.',
+                                  'Claim or create the brand\'s profile on the review or directory platforms its '
+                                  'category uses, keep the name and URL identical to the site, and link them in '
+                                  'Organization sameAs.',
+                                  'Independent platforms corroborate the brand.'),
+})
 # A13: each page-type gap states why THAT type's markup matters.
 _PAGE_TYPE_MECHANISMS = {
     'home': 'The homepage is where machines look for who the site belongs to; Organization/WebSite markup '
@@ -707,6 +727,7 @@ _META = {
     'bot-challenge-sitewide': _m('access', 'bot-wall', owner='infra', scope_sensitive=False),
     'bot-challenge-robots': _m('access', 'robots-inaccessible', owner='infra', scope_sensitive=False),
     'bot-challenge-rate': _m('access', 'bot-wall', owner='infra', scope_sensitive=False),
+    'robots-rate-limited': _m('access', 'robots-inaccessible', owner='infra', scope_sensitive=False),
     'search-crawler-blocked': _m('access', 'robots', owner='seo', scope_sensitive=False),
     'ai-crawler-blocked': _m('access', 'robots', owner='seo', scope_sensitive=False),
     'user-fetch-blocked': _m('access', 'robots', owner='seo', scope_sensitive=False),
@@ -735,6 +756,10 @@ _META = {
     'schema-invalid-value': _m('extractability', 'structured-data-validity', owner='developer'),
     'schema-missing-recommended': _m('extractability', 'structured-data-validity', tier='hygiene', owner='developer'),
     'identity-not-declared': _m('extractability', 'structured-data-presence', owner='seo', scope_sensitive=False),
+    'citation-schema-invalid': _m('extractability', 'structured-data-validity', owner='developer'),
+    'citation-schema-opportunity': _m('extractability', owner='content'),
+    'same-as-invalid': _m('extractability', 'structured-data-validity', owner='seo', scope_sensitive=False),
+    'contact-markup-missing': _m('extractability', owner='seo', scope_sensitive=False),
     'no-headings': _m('extractability', 'heading-structure', owner='content', absence_claim=True),
     'h1': _m('extractability', 'heading-structure', owner='content', category='engagement'),
     'heading-hierarchy': _m('extractability', 'heading-structure', tier='hygiene', owner='content'),
@@ -769,6 +794,10 @@ _META = {
     'stale-update-claim': _m('trust', 'freshness', owner='content'),
     'stale-copyright': _m('trust', 'freshness', owner='developer', scope_sensitive=False),
     'missing-article-dates': _m('trust', 'freshness', owner='developer', absence_claim=True),
+    'sitemap-lastmod-unreliable': _m('trust', 'sitemap-dates', owner='developer', scope_sensitive=False),
+    'kg-link-missing': _m('trust', 'entity-identity', owner='seo', scope_sensitive=False),
+    'kg-namesake-ambiguity': _m('trust', 'entity-identity', owner='seo', scope_sensitive=False),
+    'review-platform-missing': _m('trust', 'off-site', owner='seo', scope_sensitive=False),
     'contradicted-claim': _m('trust', 'fact-consistency', owner='content'),
     'independent-contradiction': _m('trust', 'fact-consistency', owner='content', scope_sensitive=False),
     'no-independent-mention': _m('trust', 'off-site', owner='seo', scope_sensitive=False),

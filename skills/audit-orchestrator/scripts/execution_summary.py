@@ -38,12 +38,21 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
         fetched = coverage.get("pages_fetched_attempted", 0)
         status = artifacts.robots_data.get("status")
         why = ("robots.txt is served behind a bot challenge" if status == "challenged"
+               else "robots.txt answered HTTP 429 (rate limited)" if status == "rate_limited"
                else f"robots.txt could not be reliably retrieved or parsed (status: '{status}')")
         out.append(
             f"{why}; crawl permission is unknown, so the audit fetched {fetched} page(s)"
-            + (" (homepage only, to identify the cause)" if fetched == 1 else "")
+            + (" (homepage only, to identify the cause)" if fetched == 1 and status in ("challenged", "rate_limited") else "")
             + " and most on-site checks are insufficient_evidence rather than confirmed."
         )
+    if "start_url_is_login_page" in (getattr(artifacts, "warnings", None) or ()):
+        out.append("The start URL is a login page, which the audit does not analyse; audit the public homepage "
+                   "or a public landing page instead.")
+    out_of_scope = coverage.get("pages_out_of_scope", 0)
+    if out_of_scope:
+        out.append(f"{out_of_scope} fetched page(s) were login pages (a password field, little text, no entity "
+                   "markup and a login path or heading); they were kept out of the analysed sample and are listed in "
+                   "coverage.out_of_scope_pages.")
     challenged = coverage.get("pages_challenged", 0)
     if challenged:
         out.append(f"{challenged} fetched page(s) returned a bot-protection challenge instead of content; they are "
@@ -109,7 +118,8 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
     the off-site findings that depend on knowing who the brand is (scoring.py).
     """
     analysed = coverage.get("pages_analyzed", 0) or 0
-    fetched = coverage.get("pages_fetched_attempted", 0) or 0
+    # Login pages kept out of scope are a deliberate exclusion, not an access failure.
+    fetched = max(0, (coverage.get("pages_fetched_attempted", 0) or 0) - (coverage.get("pages_out_of_scope", 0) or 0))
     templates = coverage.get("templates_sampled", analysed) or 0
     if analysed <= 0:
         sample_quality = 0.0
@@ -121,14 +131,48 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
         "degraded": 0.7, "partial_deadline_reached": 0.4,
     }.get(execution_status, 0.5)
     score = min(sample_quality, access_quality, execution_penalty)
+    parts = {"sample_quality": sample_quality, "access_quality": access_quality, "execution_penalty": execution_penalty}
+    limiting = min(parts, key=lambda k: (parts[k], list(parts).index(k)))
+    identity = coverage.get("identity_confidence", 0.0) or 0.0
+    reasons = {
+        "sample_quality": (f"{analysed} content page(s) across {templates} distinct page template(s) were analysed; "
+                           "20 pages across 5 templates counts as a full sample." if analysed
+                           else "No content page could be analysed."),
+        "access_quality": (f"{analysed} of {fetched} fetched page(s) returned real content"
+                           + ((f"; {coverage['pages_challenged']} was a bot challenge or rate limit"
+                               if coverage["pages_challenged"] == 1 else
+                               f"; {coverage['pages_challenged']} were bot challenges or rate limits")
+                              if coverage.get("pages_challenged") else "") + "." if fetched
+                           else "No page was fetched."),
+        "execution_penalty": {"completed": "The audit run completed normally.",
+                              "completed_with_timeouts": "At least one analysis step timed out.",
+                              "degraded": "Acquisition or an analysis step could not complete.",
+                              "partial_deadline_reached": "The time limit was reached before every step finished.",
+                              }.get(execution_status, "The audit run did not complete normally."),
+    }
+    level = confidence_level(score)
+    explanation = (f"Confidence is {level} ({score:.2f}). "
+                   + ("Every part holds up." if score >= 0.75 else
+                      f"It is limited by {limiting.replace('_', ' ')}: {reasons[limiting]}")
+                   + f" Brand identity confidence is {identity:.2f}; it limits only the off-site findings, "
+                     "not this score.")
     return {
         "score": round(score, 2),
+        "level": level,
+        "limiting_factor": limiting,
         "method": "min(sample_quality, access_quality, execution_penalty); sample_quality = "
                   "min(1, pages/20) x min(1, templates/5). Identity confidence limits only off-site findings.",
         "components": {
             "sample_quality": round(sample_quality, 2),
             "access_quality": round(access_quality, 2),
             "execution_penalty": round(execution_penalty, 2),
-            "identity_confidence": round(coverage.get("identity_confidence", 0.0) or 0.0, 2),
+            "identity_confidence": round(identity, 2),
         },
+        "reasons": reasons,
+        "explanation": explanation,
     }
+
+
+def confidence_level(score):
+    """high (>= 0.75), medium (>= 0.4) or low: a word a non-expert can act on."""
+    return "high" if score >= 0.75 else "medium" if score >= 0.4 else "low"

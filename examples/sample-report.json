@@ -1,6 +1,6 @@
 {
-  "site": "https://shop.example/",
-  "audited_at": "2026-10-12T08:27:36.358949+00:00",
+  "site": "http://shop.example/",
+  "audited_at": "2026-10-12T10:45:33.733092+00:00",
   "summary": {
     "total_findings": 14,
     "critical": 0,
@@ -8,7 +8,7 @@
     "medium": 5,
     "low": 6,
     "proactive_improvements": 4,
-    "insufficient_evidence_items": 1,
+    "insufficient_evidence_items": 0,
     "total_recommendations": 1,
     "hygiene_items": 5
   },
@@ -21,17 +21,17 @@
     "robots_permission": "evaluated",
     "transport_diagnostics": [
       {
-        "url": "https://shop.example/llms.txt",
+        "url": "http://shop.example/llms.txt",
         "category": "http_error",
         "http_status": 404
       }
     ],
     "transport_environment": {
-      "python_version": "3.12.3",
-      "openssl_version": "OpenSSL 3.0.13 30 Jan 2024",
+      "python_version": "3.14.7",
+      "openssl_version": "OpenSSL 3.6.4 25 Aug 2026",
       "connection_route": "direct_validated_ip",
       "extra_ca_bundle_configured": false,
-      "openssl_ca_override_configured": true,
+      "openssl_ca_override_configured": false,
       "proxy_environment_present": false,
       "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
       "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
@@ -44,6 +44,8 @@
     "pages_never_attempted": 0,
     "pages_skipped": 0,
     "pages_challenged": 0,
+    "pages_out_of_scope": 0,
+    "out_of_scope_pages": [],
     "templates_sampled": 8,
     "pages_per_template": {
       "/about": 1,
@@ -68,8 +70,8 @@
     "agent_corroboration_stage": "not_supplied",
     "external_fetches": 0,
     "identity_confidence": 0.92,
-    "memory_budget_used_mb": 0.975,
-    "runtime_seconds": 0.191,
+    "memory_budget_used_mb": 0.479,
+    "runtime_seconds": 0.049,
     "deadline_reached": false,
     "capabilities": {
       "check_tiers": {
@@ -99,24 +101,24 @@
     "instrumentation": {
       "stage_timings_s": {
         "acquisition": {
-          "start": 579.906741631,
-          "end": 580.042655832,
-          "duration": 0.136
+          "start": 360469.408014375,
+          "end": 360469.443036166,
+          "duration": 0.035
         },
         "independent_batch": {
-          "start": 580.04313573,
-          "end": 580.069944474,
-          "duration": 0.027
+          "start": 360469.443189166,
+          "end": 360469.449568541,
+          "duration": 0.006
         },
         "identify_important_facts": {
-          "start": 580.069959957,
-          "end": 580.070000337,
+          "start": 360469.449571,
+          "end": 360469.449584708,
           "duration": 0.0
         },
         "dependent_batch": {
-          "start": 580.070017931,
-          "end": 580.084516208,
-          "duration": 0.014
+          "start": 360469.449591041,
+          "end": 360469.452074,
+          "duration": 0.002
         }
       },
       "requests_attempted": 13,
@@ -134,8 +136,8 @@
       "external_fetches_attempted": 0,
       "external_fetches_completed": 0,
       "worker_timeout_events": [],
-      "memory_peak_mb": 0.975,
-      "process_rss_mb": 29.504
+      "memory_peak_mb": 0.479,
+      "process_rss_mb": 35.297
     }
   },
   "warnings": [
@@ -154,69 +156,69 @@
       "confidence": 0.95,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
-      "root_cause": "Sampled content was retrieved over HTTP on 8 sampled page(s); e.g. Retrieved URL: https://shop.example/about",
+      "root_cause": "Sampled content was retrieved over HTTP on 8 sampled page(s); e.g. Retrieved URL: http://shop.example/about",
       "evidence": [
         {
           "type": "snapshot_observation",
-          "description": "2 page(s): Retrieved URL: https://shop.example/about",
+          "description": "2 page(s): Retrieved URL: http://shop.example/about",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/redirect"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/",
+          "description": "Retrieved URL: http://shop.example/",
           "urls": [
-            "https://shop.example/"
+            "http://shop.example/"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/cluster-a",
+          "description": "Retrieved URL: http://shop.example/cluster-a",
           "urls": [
-            "https://shop.example/cluster-a"
+            "http://shop.example/cluster-a"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/cluster-b",
+          "description": "Retrieved URL: http://shop.example/cluster-b",
           "urls": [
-            "https://shop.example/cluster-b"
+            "http://shop.example/cluster-b"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/js-heavy",
+          "description": "Retrieved URL: http://shop.example/js-heavy",
           "urls": [
-            "https://shop.example/js-heavy"
+            "http://shop.example/js-heavy"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/malformed",
+          "description": "Retrieved URL: http://shop.example/malformed",
           "urls": [
-            "https://shop.example/malformed"
+            "http://shop.example/malformed"
           ]
         },
         {
           "type": "snapshot_observation",
-          "description": "Retrieved URL: https://shop.example/product",
+          "description": "Retrieved URL: http://shop.example/product",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         }
       ],
-      "evidence_text": "2 page(s): Retrieved URL: https://shop.example/about; Retrieved URL: https://shop.example/; Retrieved URL: https://shop.example/cluster-a; Retrieved URL: https://shop.example/cluster-b; Retrieved URL: https://shop.example/js-heavy; Retrieved URL: https://shop.example/malformed; Retrieved URL: https://shop.example/product",
+      "evidence_text": "2 page(s): Retrieved URL: http://shop.example/about; Retrieved URL: http://shop.example/; Retrieved URL: http://shop.example/cluster-a; Retrieved URL: http://shop.example/cluster-b; Retrieved URL: http://shop.example/js-heavy; Retrieved URL: http://shop.example/malformed; Retrieved URL: http://shop.example/product",
       "suggested_action": {
         "summary": "Serve the public site over verified HTTPS; verify the canonical HTTPS URL and redirect policy before deployment.",
         "steps": [
@@ -269,7 +271,7 @@
       "confidence": 0.85,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/product"
+        "http://shop.example/product"
       ],
       "root_cause": "Live pages state offer, price-validity or event end dates that have already passed",
       "evidence": [
@@ -277,14 +279,14 @@
           "type": "date",
           "description": "visible '2020-06-15' (.99. Offer last updated 2019-03-01. Promotion valid through . Stock refreshed 20) is in the past",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         },
         {
           "type": "date",
           "description": "page states it was updated 2021-11-20 (59 months ago)",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         }
       ],
@@ -357,7 +359,7 @@
       "confidence": 0.8,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/product"
+        "http://shop.example/product"
       ],
       "root_cause": "1 page(s) classified as 'product' carry no Product/Offer JSON-LD, so explicit machine-readable context is missing",
       "evidence": [
@@ -365,7 +367,7 @@
           "type": "structured_data",
           "description": "1 'product' page(s) missing Product/Offer markup",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         }
       ],
@@ -381,7 +383,7 @@
         "expected_benefit": "Product facts become machine-extractable and citable",
         "verification": "Re-crawl and confirm the expected @type is present",
         "proposed_snippets": {
-          "https://shop.example/product": "{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Product\",\n  \"name\": \"Widget\",\n  \"offers\": {\n    \"@type\": \"Offer\",\n    \"price\": \"<price as shown on page>\",\n    \"priceCurrency\": \"<ISO 4217 code>\",\n    \"availability\": \"https://schema.org/InStock\",\n    \"url\": \"https://shop.example/product\"\n  }\n}"
+          "http://shop.example/product": "{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Product\",\n  \"name\": \"Widget\",\n  \"offers\": {\n    \"@type\": \"Offer\",\n    \"price\": \"<price as shown on page>\",\n    \"priceCurrency\": \"<ISO 4217 code>\",\n    \"availability\": \"https://schema.org/InStock\",\n    \"url\": \"http://shop.example/product\"\n  }\n}"
         },
         "implementation_detail": "Review the product classification, then add truthful Product or Offer markup only where applicable and validate it.",
         "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
@@ -426,14 +428,14 @@
       "confidence": 0.95,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "No viewport declaration was observed; actual layout behavior requires visual verification.",
       "evidence": [
@@ -441,14 +443,14 @@
           "type": "html_observation",
           "description": "8 page(s): No viewport declaration was observed; actual layout behavior requires visual verification.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -506,7 +508,7 @@
       "confidence": 0.9,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/"
+        "http://shop.example/"
       ],
       "root_cause": "Typed JSON-LD nodes lack the properties consumers need to use them: Organization: missing url or @id on 1 page(s)",
       "evidence": [
@@ -514,14 +516,14 @@
           "type": "structured_data",
           "description": "Organization: missing url or @id on 1 page(s)",
           "urls": [
-            "https://shop.example/"
+            "http://shop.example/"
           ]
         },
         {
           "type": "structured_data",
           "description": "Organization: no logo on 1 page(s)",
           "urls": [
-            "https://shop.example/"
+            "http://shop.example/"
           ]
         }
       ],
@@ -593,7 +595,7 @@
       "confidence": 0.9,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/malformed"
+        "http://shop.example/malformed"
       ],
       "root_cause": "One or more sampled pages contain JSON-LD that could not be parsed, so structured facts may be discarded by automated readers",
       "evidence": [
@@ -601,7 +603,7 @@
           "type": "structured_data",
           "description": "1 sampled page(s) contain malformed JSON-LD",
           "urls": [
-            "https://shop.example/malformed"
+            "http://shop.example/malformed"
           ]
         }
       ],
@@ -617,7 +619,7 @@
         "effort": "low",
         "expected_benefit": "Prevents parsers from dropping important entity and product facts",
         "verification": "All sampled JSON-LD blocks parse successfully",
-        "implementation_detail": "Validate each JSON-LD block as strict JSON Preserve valid @graph nodes and required properties Re-run a structured-data validator after deployment",
+        "implementation_detail": "Validate each JSON-LD block as strict JSON, keep valid @graph nodes and required properties, and re-run a structured-data validator after deployment.",
         "expected_outcome": "Prevents parsers from dropping important entity and product facts",
         "owner_role": "developer"
       },
@@ -631,8 +633,8 @@
         ]
       },
       "check_id": "malformed-jsonld",
-      "mechanism": "One or more sampled pages contain JSON-LD that could not be parsed, so structured facts may be discarded by automated readers",
-      "implementation_detail": "Validate each JSON-LD block as strict JSON Preserve valid @graph nodes and required properties Re-run a structured-data validator after deployment",
+      "mechanism": "A JSON-LD block that is not valid JSON is discarded whole by parsers, so every fact it carried (identity, prices, dates) is lost to machines.",
+      "implementation_detail": "Validate each JSON-LD block as strict JSON, keep valid @graph nodes and required properties, and re-run a structured-data validator after deployment.",
       "expected_outcome": "Prevents parsers from dropping important entity and product facts",
       "check_ids": [
         "malformed-jsonld"
@@ -660,8 +662,8 @@
       "confidence": 0.7,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b"
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b"
       ],
       "root_cause": "1 cluster(s) totalling 2 page(s) are internally linked to each other but have no path from the main navigation/homepage",
       "evidence": [
@@ -669,8 +671,8 @@
           "type": "site_graph",
           "description": "Isolated cluster of 2 page(s)",
           "urls": [
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b"
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b"
           ]
         }
       ],
@@ -728,7 +730,7 @@
       "confidence": 0.6,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/js-heavy"
+        "http://shop.example/js-heavy"
       ],
       "root_cause": "The server-sent HTML lacks content that the page assembles in the browser; clients that do not execute JavaScript (most AI fetchers) receive an incomplete page",
       "evidence": [
@@ -736,7 +738,7 @@
           "type": "render_gap",
           "description": "empty JavaScript mount node / noscript asks for JavaScript",
           "urls": [
-            "https://shop.example/js-heavy"
+            "http://shop.example/js-heavy"
           ]
         }
       ],
@@ -796,14 +798,14 @@
       "confidence": 0.95,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Pages omit an explicit document language on 8 sampled page(s); e.g. The html lang attribute is absent or empty.",
       "evidence": [
@@ -811,14 +813,14 @@
           "type": "snapshot_observation",
           "description": "8 page(s): The html lang attribute is absent or empty.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -875,11 +877,11 @@
       "confidence": 0.7,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/about",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/about",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "No form, button or internal next-step link was observed on these commercial pages.",
       "evidence": [
@@ -887,18 +889,18 @@
           "type": "html_observation",
           "description": "No form, button or internal next-step link was observed on these commercial pages.",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         },
         {
           "type": "site_graph",
           "description": "5 dead-end pages found",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/product",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/product",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -969,7 +971,7 @@
       "confidence": 0.6,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/llms.txt"
+        "http://shop.example/llms.txt"
       ],
       "root_cause": "Site does not publish an llms.txt guidance file",
       "evidence": [
@@ -977,7 +979,7 @@
           "type": "llms_txt",
           "description": "/llms.txt returned 404",
           "urls": [
-            "https://shop.example/llms.txt"
+            "http://shop.example/llms.txt"
           ]
         }
       ],
@@ -992,9 +994,22 @@
         "effort": "low",
         "expected_benefit": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
         "verification": "Confirm /llms.txt is reachable and valid",
-        "implementation_detail": "Create /llms.txt List key pages and a short site summary",
+        "implementation_detail": "Publish /llms.txt with a one-line site summary and links to the key pages (see the draft in this finding).",
         "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
-        "owner_role": "seo"
+        "owner_role": "seo",
+        "snippet": {
+          "format": "markdown",
+          "placement": "Save as /llms.txt at the site root, served as text/plain",
+          "code": "# Example Brand\n\n> REPLACE_WITH_ONE_SENTENCE_DESCRIPTION\n\n## Key pages\n\n- [Example Brand](http://shop.example/)\n- [About](http://shop.example/about)\n- [Product](http://shop.example/product)\n- [Cluster A](http://shop.example/cluster-a)\n- [Cluster B](http://shop.example/cluster-b)\n- [App](http://shop.example/js-heavy)\n- [Bad JSON-LD](http://shop.example/malformed)\n",
+          "filled_from": {
+            "name": "Organization JSON-LD name",
+            "key pages": "crawled pages, with their titles and meta descriptions"
+          },
+          "placeholders": [
+            "REPLACE_WITH_ONE_SENTENCE_DESCRIPTION"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        }
       },
       "provenance": {
         "contributing_skills": [
@@ -1006,8 +1021,8 @@
         ]
       },
       "check_id": "no-llms-txt",
-      "mechanism": "Site does not publish an llms.txt guidance file",
-      "implementation_detail": "Create /llms.txt List key pages and a short site summary",
+      "mechanism": "llms.txt is an emerging convention: a short Markdown file at the site root that tells AI tools what the site is and which pages matter. Support is still limited, so it is a cheap, optional signal rather than a requirement.",
+      "implementation_detail": "Publish /llms.txt with a one-line site summary and links to the key pages (see the draft in this finding).",
       "expected_outcome": "Offers an optional guide to tools that support this convention; not a search eligibility requirement",
       "check_ids": [
         "no-llms-txt"
@@ -1030,78 +1045,66 @@
       "id": "F-012",
       "category": "ai_discoverability",
       "finding_type": "proactive_improvement",
-      "title": "Some pages have very little server-rendered text",
+      "title": "Organization markup does not link the brand to a knowledge-graph entity",
       "severity": "low",
-      "confidence": 0.3,
-      "status": "insufficient_evidence",
+      "confidence": 0.8,
+      "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/"
       ],
-      "root_cause": "These pages return little visible text but show no JavaScript-shell signal; they may be genuinely short, so no rendering defect is asserted without a browser comparison",
+      "root_cause": "No Wikidata or Wikipedia link is declared in Organization sameAs, so nothing ties the brand to one knowledge-graph entity.",
       "evidence": [
         {
-          "type": "render_gap_unconfirmed",
-          "description": "Thin server HTML without SPA signals",
+          "type": "organization_markup",
+          "description": "Organization markup on 1 page(s) declares sameAs: https://twitter.com/example; none names a Wikidata item or Wikipedia article",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/"
           ]
         }
       ],
-      "evidence_text": "Thin server HTML without SPA signals",
+      "evidence_text": "Organization markup on 1 page(s) declares sameAs: https://twitter.com/example; none names a Wikidata item or Wikipedia article",
       "suggested_action": {
-        "summary": "Check these pages in a browser against their raw HTML",
+        "summary": "Link the brand to its Wikidata item in Organization sameAs",
         "steps": [
-          "Compare the page in a browser with curl output",
-          "Re-run with ENABLE_RENDERING=1 to confirm automatically"
+          "Find the brand's Wikidata item, or create one if the organization meets Wikidata's notability policy (serious, public references)",
+          "Add the item URL, and the Wikipedia article if one exists, to Organization sameAs",
+          "Make sure the item lists this site as its official website (P856)"
         ],
         "priority": "low",
-        "effort": "low",
-        "expected_benefit": "Clarifies whether a real rendering fix is needed",
-        "verification": "Manual inspection",
-        "implementation_detail": "Open the page in a browser and compare to the raw HTML",
-        "expected_outcome": "Clarifies whether a real rendering fix is needed",
-        "owner_role": "developer"
+        "effort": "medium",
+        "expected_benefit": "Assistants can attribute facts to the right entity",
+        "verification": "Organization sameAs contains https://www.wikidata.org/wiki/Q... for the brand",
+        "implementation_detail": "Add the brand's Wikidata item URL (and Wikipedia article, if one exists) to Organization sameAs, and make sure the item lists this site as its official website (P856).",
+        "expected_outcome": "The brand is tied to one unambiguous knowledge-graph entity.",
+        "owner_role": "seo"
       },
       "provenance": {
         "contributing_skills": [
           {
-            "skill": "crawl-render-audit",
-            "script": "analyze_rendering.py",
-            "rule_id": "render-gap-unconfirmed",
-            "tier": "rendering_gap_heuristic"
+            "skill": "freshness-corroboration",
+            "script": "check_entity_links.py",
+            "rule_id": "kg-link-missing"
           }
         ]
       },
-      "check_id": "render-gap-unconfirmed",
-      "mechanism": "Headless rendering also returned little content, or failed, for these pages -- could be genuinely thin content rather than a JS dependency",
-      "implementation_detail": "Open the page in a browser and compare to the raw HTML",
-      "expected_outcome": "Clarifies whether a real rendering fix is needed",
+      "check_id": "kg-link-missing",
+      "mechanism": "Knowledge graphs (Wikidata, and Wikipedia through it) are the main signal assistants use to tell same-named entities apart. Organization markup without a sameAs link to the brand's knowledge-graph entity leaves that connection to guesswork.",
+      "implementation_detail": "Add the brand's Wikidata item URL (and Wikipedia article, if one exists) to Organization sameAs, and make sure the item lists this site as its official website (P856).",
+      "expected_outcome": "The brand is tied to one unambiguous knowledge-graph entity.",
       "check_ids": [
-        "render-gap-unconfirmed"
+        "kg-link-missing"
       ],
-      "priority_score": 0.3,
+      "priority_score": 0.4,
       "severity_rationale": {
-        "gate": "readability",
+        "gate": "trust",
         "detector_severity": "low",
-        "detector_confidence": 0.3,
+        "detector_confidence": 0.8,
         "scope": "site-wide",
-        "prevalence": "7/8 sampled content pages",
+        "prevalence": "1/8 sampled content pages",
         "templates_sampled": 8,
         "adjustment": "none",
         "sample_strength": null,
-        "priority_formula": "impact 1 x reach 1.0 x confidence 0.3 / effort 1"
+        "priority_formula": "impact 1 x reach 1.0 x confidence 0.8 / effort 2"
       },
       "tier": "core"
     },
@@ -1114,7 +1117,7 @@
       "confidence": 0.56,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/js-heavy"
+        "http://shop.example/js-heavy"
       ],
       "root_cause": "Pages have no h1-h6 elements",
       "evidence": [
@@ -1122,7 +1125,7 @@
           "type": "headings",
           "description": "1 pages have no headings",
           "urls": [
-            "https://shop.example/js-heavy"
+            "http://shop.example/js-heavy"
           ]
         }
       ],
@@ -1137,7 +1140,7 @@
         "effort": "low",
         "expected_benefit": "Improves text extraction quality",
         "verification": "Inspect DOM for heading tags",
-        "implementation_detail": "Add an h1 per page Structure sections with h2/h3",
+        "implementation_detail": "Give each page one descriptive H1 and structure its sections with H2/H3 headings.",
         "expected_outcome": "Improves text extraction quality",
         "owner_role": "content"
       },
@@ -1151,8 +1154,8 @@
         ]
       },
       "check_id": "no-headings",
-      "mechanism": "Pages have no h1-h6 elements",
-      "implementation_detail": "Add an h1 per page Structure sections with h2/h3",
+      "mechanism": "Extractors use headings to split a page into topics and to decide which passage answers a question; a page with none is one undifferentiated block.",
+      "implementation_detail": "Give each page one descriptive H1 and structure its sections with H2/H3 headings.",
       "expected_outcome": "Improves text extraction quality",
       "check_ids": [
         "no-headings"
@@ -1180,7 +1183,7 @@
       "confidence": 0.8,
       "status": "confirmed",
       "affected_pages": [
-        "https://shop.example/about"
+        "http://shop.example/about"
       ],
       "root_cause": "1 page(s) classified as 'about' carry no Organization/AboutPage JSON-LD, so explicit machine-readable context is missing",
       "evidence": [
@@ -1188,7 +1191,7 @@
           "type": "structured_data",
           "description": "1 'about' page(s) missing Organization/AboutPage markup",
           "urls": [
-            "https://shop.example/about"
+            "http://shop.example/about"
           ]
         }
       ],
@@ -1204,7 +1207,7 @@
         "expected_benefit": "About facts become machine-extractable and citable",
         "verification": "Re-crawl and confirm the expected @type is present",
         "proposed_snippets": {
-          "https://shop.example/about": "{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"AboutPage\",\n  \"url\": \"https://shop.example/about\",\n  \"mainEntity\": {\n    \"@type\": \"Organization\",\n    \"name\": \"About\",\n    \"telephone\": \"<phone>\",\n    \"address\": \"<postal address>\"\n  }\n}"
+          "http://shop.example/about": "{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"AboutPage\",\n  \"url\": \"http://shop.example/about\",\n  \"mainEntity\": {\n    \"@type\": \"Organization\",\n    \"name\": \"About\",\n    \"telephone\": \"<phone>\",\n    \"address\": \"<postal address>\"\n  }\n}"
         },
         "implementation_detail": "Review the about classification, then add truthful AboutPage or Organization markup only where applicable and validate it.",
         "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
@@ -1252,7 +1255,9 @@
       "priority": "high",
       "effort": "medium",
       "owner_role": "infra",
-      "priority_score": 1.9
+      "priority_score": 1.9,
+      "quick_win": false,
+      "start_here": true
     },
     {
       "rank": 2,
@@ -1264,7 +1269,9 @@
       "priority": "high",
       "effort": "low",
       "owner_role": "content",
-      "priority_score": 1.02
+      "priority_score": 1.02,
+      "quick_win": true,
+      "start_here": false
     },
     {
       "rank": 3,
@@ -1276,7 +1283,9 @@
       "priority": "high",
       "effort": "medium",
       "owner_role": "developer",
-      "priority_score": 0.48
+      "priority_score": 0.48,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 4,
@@ -1288,7 +1297,9 @@
       "priority": "medium",
       "effort": "low",
       "owner_role": "developer",
-      "priority_score": 1.9
+      "priority_score": 1.9,
+      "quick_win": true,
+      "start_here": false
     },
     {
       "rank": 5,
@@ -1300,7 +1311,9 @@
       "priority": "medium",
       "effort": "low",
       "owner_role": "developer",
-      "priority_score": 1.8
+      "priority_score": 1.8,
+      "quick_win": true,
+      "start_here": false
     },
     {
       "rank": 6,
@@ -1312,7 +1325,9 @@
       "priority": "medium",
       "effort": "low",
       "owner_role": "developer",
-      "priority_score": 0.54
+      "priority_score": 0.54,
+      "quick_win": true,
+      "start_here": false
     },
     {
       "rank": 7,
@@ -1324,7 +1339,9 @@
       "priority": "medium",
       "effort": "medium",
       "owner_role": "content",
-      "priority_score": 0.42
+      "priority_score": 0.42,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 8,
@@ -1336,7 +1353,9 @@
       "priority": "medium",
       "effort": "high",
       "owner_role": "developer",
-      "priority_score": 0.12
+      "priority_score": 0.12,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 9,
@@ -1348,7 +1367,9 @@
       "priority": "low",
       "effort": "low",
       "owner_role": "developer",
-      "priority_score": 0.95
+      "priority_score": 0.95,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 10,
@@ -1360,7 +1381,9 @@
       "priority": "low",
       "effort": "low",
       "owner_role": "content",
-      "priority_score": 0.7
+      "priority_score": 0.7,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 11,
@@ -1372,19 +1395,23 @@
       "priority": "low",
       "effort": "low",
       "owner_role": "seo",
-      "priority_score": 0.6
+      "priority_score": 0.6,
+      "quick_win": false,
+      "start_here": false
     },
     {
       "rank": 12,
       "finding_ids": [
-        "F-013"
+        "F-012"
       ],
-      "summary": "Add semantic heading structure",
+      "summary": "Link the brand to its Wikidata item in Organization sameAs",
       "severity": "low",
       "priority": "low",
-      "effort": "low",
-      "owner_role": "content",
-      "priority_score": 0.168
+      "effort": "medium",
+      "owner_role": "seo",
+      "priority_score": 0.4,
+      "quick_win": false,
+      "start_here": false
     }
   ],
   "recommendations": [
@@ -1434,14 +1461,14 @@
       "confidence": 0.6,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Review incomplete Open Graph preview metadata on 8 sampled page(s); e.g. Missing nonempty fields: og:title, og:description, og:image, og:url",
       "evidence": [
@@ -1449,28 +1476,28 @@
           "type": "snapshot_observation",
           "description": "8 page(s): Missing nonempty fields: og:title, og:description, og:image, og:url",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "8 page(s): No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -1487,7 +1514,20 @@
         "verification": "Repeat the affected observation and verify the intended behavior.",
         "implementation_detail": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
         "expected_outcome": "Provides preview candidates; image availability and platform rendering still need verification.",
-        "owner_role": "seo"
+        "owner_role": "seo",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- http://shop.example/ -->\n<meta property=\"og:title\" content=\"Example Brand\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"http://shop.example/\">\n\n<!-- http://shop.example/about -->\n<meta property=\"og:title\" content=\"About\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"http://shop.example/about\">\n\n<!-- http://shop.example/cluster-a -->\n<meta property=\"og:title\" content=\"Cluster A\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"http://shop.example/cluster-a\">",
+          "filled_from": {
+            "values": "each page's title, meta description, final URL and share image"
+          },
+          "placeholders": [
+            "REPLACE_WITH_PAGE_DESCRIPTION",
+            "REPLACE_WITH_SHARE_IMAGE_URL"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        }
       },
       "provenance": {
         "contributing_skills": [
@@ -1540,14 +1580,14 @@
       "confidence": 0.6,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Review unusually short or long titles on 8 sampled page(s); e.g. Title has 5 characters: About. Display width was not measured.",
       "evidence": [
@@ -1555,50 +1595,50 @@
           "type": "snapshot_observation",
           "description": "2 page(s): Title has 5 characters: About. Display width was not measured.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/redirect"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 11 characters: Bad JSON-LD. Display width was not measured.",
           "urls": [
-            "https://shop.example/malformed"
+            "http://shop.example/malformed"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 13 characters: Example Brand. Display width was not measured.",
           "urls": [
-            "https://shop.example/"
+            "http://shop.example/"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 3 characters: App. Display width was not measured.",
           "urls": [
-            "https://shop.example/js-heavy"
+            "http://shop.example/js-heavy"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 7 characters: Product. Display width was not measured.",
           "urls": [
-            "https://shop.example/product"
+            "http://shop.example/product"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 9 characters: Cluster A. Display width was not measured.",
           "urls": [
-            "https://shop.example/cluster-a"
+            "http://shop.example/cluster-a"
           ]
         },
         {
           "type": "snapshot_observation",
           "description": "Title has 9 characters: Cluster B. Display width was not measured.",
           "urls": [
-            "https://shop.example/cluster-b"
+            "http://shop.example/cluster-b"
           ]
         }
       ],
@@ -1655,14 +1695,14 @@
       "confidence": 0.48,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Review missing page descriptions on 8 sampled page(s); e.g. No nonempty meta description was observed; a search engine can still extract a summary.",
       "evidence": [
@@ -1670,14 +1710,14 @@
           "type": "snapshot_observation",
           "description": "8 page(s): No nonempty meta description was observed; a search engine can still extract a summary.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -1734,14 +1774,14 @@
       "confidence": 0.48,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/",
-        "https://shop.example/about",
-        "https://shop.example/cluster-a",
-        "https://shop.example/cluster-b",
-        "https://shop.example/js-heavy",
-        "https://shop.example/malformed",
-        "https://shop.example/product",
-        "https://shop.example/redirect"
+        "http://shop.example/",
+        "http://shop.example/about",
+        "http://shop.example/cluster-a",
+        "http://shop.example/cluster-b",
+        "http://shop.example/js-heavy",
+        "http://shop.example/malformed",
+        "http://shop.example/product",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Review preferred URL declarations on 8 sampled page(s); e.g. No rel=canonical declaration observed. Duplicate content was not established.",
       "evidence": [
@@ -1749,14 +1789,14 @@
           "type": "snapshot_observation",
           "description": "8 page(s): No rel=canonical declaration observed. Duplicate content was not established.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/",
-            "https://shop.example/cluster-a",
-            "https://shop.example/cluster-b",
-            "https://shop.example/product",
-            "https://shop.example/js-heavy",
-            "https://shop.example/malformed",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/",
+            "http://shop.example/cluster-a",
+            "http://shop.example/cluster-b",
+            "http://shop.example/product",
+            "http://shop.example/js-heavy",
+            "http://shop.example/malformed",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -1772,7 +1812,17 @@
         "verification": "Repeat the affected observation and verify the intended behavior.",
         "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
         "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
-        "owner_role": "seo"
+        "owner_role": "seo",
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- http://shop.example/ -->\n<link rel=\"canonical\" href=\"http://shop.example/\">\n\n<!-- http://shop.example/about -->\n<link rel=\"canonical\" href=\"http://shop.example/about\">\n\n<!-- http://shop.example/cluster-a -->\n<link rel=\"canonical\" href=\"http://shop.example/cluster-a\">",
+          "filled_from": {
+            "href": "each page's final URL, without fragments or tracking parameters"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        }
       },
       "provenance": {
         "contributing_skills": [
@@ -1813,8 +1863,8 @@
       "confidence": 0.7,
       "status": "suspected",
       "affected_pages": [
-        "https://shop.example/about",
-        "https://shop.example/redirect"
+        "http://shop.example/about",
+        "http://shop.example/redirect"
       ],
       "root_cause": "Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
       "evidence": [
@@ -1822,8 +1872,8 @@
           "type": "html_observation",
           "description": "2 page(s): Multiple sampled URLs share the same title; verify canonical duplicates before editing.",
           "urls": [
-            "https://shop.example/about",
-            "https://shop.example/redirect"
+            "http://shop.example/about",
+            "http://shop.example/redirect"
           ]
         }
       ],
@@ -1877,28 +1927,28 @@
     "content_page_count": 8,
     "templates_sampled": 8,
     "page_types": {
-      "https://shop.example/about": "about",
-      "https://shop.example/": "home",
-      "https://shop.example/cluster-a": "other",
-      "https://shop.example/cluster-b": "other",
-      "https://shop.example/product": "product",
-      "https://shop.example/js-heavy": "other",
-      "https://shop.example/malformed": "other",
-      "https://shop.example/redirect": "other"
+      "http://shop.example/about": "about",
+      "http://shop.example/": "home",
+      "http://shop.example/cluster-a": "other",
+      "http://shop.example/cluster-b": "other",
+      "http://shop.example/product": "product",
+      "http://shop.example/js-heavy": "other",
+      "http://shop.example/malformed": "other",
+      "http://shop.example/redirect": "other"
     },
-    "home_url": "https://shop.example/",
+    "home_url": "http://shop.example/",
     "key_urls": [
-      "https://shop.example/",
-      "https://shop.example/about",
-      "https://shop.example/product"
+      "http://shop.example/",
+      "http://shop.example/about",
+      "http://shop.example/product"
     ],
     "identity_confidence": 0.92
   },
   "agent_stage": {
     "status": "not_supplied",
     "brief": {
-      "site": "https://shop.example/",
-      "domain": "https://shop.example",
+      "site": "http://shop.example/",
+      "domain": "http://shop.example",
       "brand_name": "Example Brand",
       "aliases": [
         "Example Brand"
@@ -1924,77 +1974,100 @@
       },
       "ag01": {
         "about_source": "about_page",
-        "passage_url": "https://shop.example/about",
+        "passage_url": "http://shop.example/about",
         "about_link_seen": null,
         "assessable": true,
         "opening_passage": "About",
         "raw_visible_excerpt": "About Contact us at +1 555-987-6543."
       },
-      "about_url": "https://shop.example/about",
+      "about_url": "http://shop.example/about",
       "about_text": "About",
       "key_claims": [
         {
           "value": "Example Brand",
           "type": "structured",
-          "source": "https://shop.example/"
+          "source": "http://shop.example/"
         },
         {
           "value": "+1 555-123-4567",
           "type": "structured",
-          "source": "https://shop.example/"
+          "source": "http://shop.example/"
         },
         {
           "value": "('https://twitter.com/example',)",
           "type": "structured",
-          "source": "https://shop.example/"
+          "source": "http://shop.example/"
         },
         {
           "value": "+1 555-987-6543",
           "type": "contact",
-          "source": "https://shop.example/about"
+          "source": "http://shop.example/about"
         },
         {
           "value": "2015-01-01",
           "type": "contact",
-          "source": "https://shop.example/"
+          "source": "http://shop.example/"
         },
         {
           "value": "2019-03-01",
           "type": "contact",
-          "source": "https://shop.example/product"
+          "source": "http://shop.example/product"
         },
         {
           "value": "2020-06-15",
           "type": "contact",
-          "source": "https://shop.example/product"
+          "source": "http://shop.example/product"
         },
         {
           "value": "2021-11-20",
           "type": "contact",
-          "source": "https://shop.example/product"
+          "source": "http://shop.example/product"
         },
         {
           "value": "+1 555-987-6543",
           "type": "contact",
-          "source": "https://shop.example/redirect"
+          "source": "http://shop.example/redirect"
         },
         {
           "value": "$49.99",
           "type": "price",
-          "source": "https://shop.example/product"
+          "source": "http://shop.example/product"
         }
       ],
       "suggested_queries": [
         "\"Example Brand\" Welcome",
         "\"Example Brand\" site:reddit.com OR site:quora.com",
         "\"Example Brand\" reviews",
-        "\"Example Brand\" shop.example:46407"
+        "\"Example Brand\" shop.example:51028"
       ],
-      "search_budget": {
-        "max_searches": 4,
-        "max_seconds": 90
+      "ag04": {
+        "images": []
       },
-      "output_contract": "Write a JSON array of findings (AG-01/AG-02/AG-03) as described in skills/entity-corroboration-agent/SKILL.md, or [] if nothing fires."
+      "ag05": {
+        "declared_wikidata": [],
+        "declared_wikipedia": [],
+        "queries": [
+          "\"Example Brand\" -site:shop.example",
+          "\"Example Brand\" site:wikidata.org OR site:wikipedia.org"
+        ]
+      },
+      "ag06": {
+        "business_kind": "general",
+        "platforms": [
+          "Trustpilot",
+          "Crunchbase",
+          "an industry directory"
+        ],
+        "queries": [
+          "\"Example Brand\" Trustpilot",
+          "\"Example Brand\" Crunchbase"
+        ]
+      },
+      "search_budget": {
+        "max_searches": 8,
+        "max_seconds": 150
+      },
+      "output_contract": "Write a JSON array of findings (AG-01 to AG-06) as described in skills/entity-corroboration-agent/SKILL.md, or [] if nothing fires."
     },
     "next_step": "If a web-search tool is available, follow skills/entity-corroboration-agent/SKILL.md using this brief, then run skills/audit-orchestrator/scripts/finalize_report.py."
   },
@@ -2005,13 +2078,21 @@
   ],
   "confidence": {
     "score": 0.4,
+    "level": "medium",
+    "limiting_factor": "sample_quality",
     "method": "min(sample_quality, access_quality, execution_penalty); sample_quality = min(1, pages/20) x min(1, templates/5). Identity confidence limits only off-site findings.",
     "components": {
       "sample_quality": 0.4,
       "access_quality": 1.0,
       "execution_penalty": 1.0,
       "identity_confidence": 0.92
-    }
+    },
+    "reasons": {
+      "sample_quality": "8 content page(s) across 8 distinct page template(s) were analysed; 20 pages across 5 templates counts as a full sample.",
+      "access_quality": "8 of 8 fetched page(s) returned real content.",
+      "execution_penalty": "The audit run completed normally."
+    },
+    "explanation": "Confidence is medium (0.40). It is limited by sample quality: 8 content page(s) across 8 distinct page template(s) were analysed; 20 pages across 5 templates counts as a full sample. Brand identity confidence is 0.92; it limits only the off-site findings, not this score."
   },
   "coverage_limited": {
     "sample_only": false,
@@ -2028,7 +2109,9 @@
       "priority": "high",
       "severity": "high",
       "effort": "medium",
-      "owner_role": "infra"
+      "owner_role": "infra",
+      "quick_win": false,
+      "start_here": true
     },
     {
       "finding_id": "F-002",
@@ -2036,7 +2119,9 @@
       "priority": "high",
       "severity": "high",
       "effort": "low",
-      "owner_role": "content"
+      "owner_role": "content",
+      "quick_win": true,
+      "start_here": false
     },
     {
       "finding_id": "F-003",
@@ -2044,7 +2129,9 @@
       "priority": "high",
       "severity": "high",
       "effort": "medium",
-      "owner_role": "developer"
+      "owner_role": "developer",
+      "quick_win": false,
+      "start_here": false
     },
     {
       "finding_id": "F-004",
@@ -2052,7 +2139,9 @@
       "priority": "medium",
       "severity": "medium",
       "effort": "low",
-      "owner_role": "developer"
+      "owner_role": "developer",
+      "quick_win": true,
+      "start_here": false
     },
     {
       "finding_id": "F-005",
@@ -2060,7 +2149,110 @@
       "priority": "medium",
       "severity": "medium",
       "effort": "low",
-      "owner_role": "developer"
+      "owner_role": "developer",
+      "quick_win": true,
+      "start_here": false
+    }
+  ],
+  "quick_wins": [
+    "F-002",
+    "F-004",
+    "F-005",
+    "F-006"
+  ],
+  "whats_working": [
+    {
+      "id": "W-001",
+      "check": "robots-txt",
+      "title": "robots.txt allows crawling",
+      "check_ids": [
+        "bot-challenge-robots",
+        "robots-block",
+        "robots-rate-limited",
+        "robots-unreachable"
+      ],
+      "evidence": "robots.txt was read and lets crawlers fetch the start URL.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-002",
+      "check": "crawler-access",
+      "title": "Search and AI crawlers may fetch the site",
+      "check_ids": [
+        "ai-crawler-blocked",
+        "ai-crawler-unchecked",
+        "search-crawler-blocked",
+        "training-crawler-blocked",
+        "user-fetch-blocked"
+      ],
+      "evidence": "robots.txt lets all 18 search, AI search, user-fetch and training crawlers checked fetch the homepage and the key pages sampled.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-003",
+      "check": "bot-access",
+      "title": "Automated clients receive the real content",
+      "check_ids": [
+        "bot-challenge-rate",
+        "bot-challenge-robots",
+        "bot-challenge-sitewide",
+        "robots-rate-limited"
+      ],
+      "evidence": "None of the 8 pages fetched answered with a bot challenge or rate limit.",
+      "pages_checked": 8
+    },
+    {
+      "id": "W-004",
+      "check": "sitemap",
+      "title": "An XML sitemap is available",
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "evidence": "An XML sitemap was read; it lists 4 URLs.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-005",
+      "check": "http-status",
+      "title": "Fetched pages load without HTTP errors",
+      "check_ids": [
+        "broken-pages"
+      ],
+      "evidence": "None of the 8 pages fetched answered with an HTTP error.",
+      "pages_checked": 8
+    },
+    {
+      "id": "W-006",
+      "check": "titles",
+      "title": "Every page has a title",
+      "check_ids": [
+        "missing-title"
+      ],
+      "evidence": "All 8 pages checked have a document title.",
+      "pages_checked": 8
+    },
+    {
+      "id": "W-007",
+      "check": "indexable",
+      "title": "Pages are open to indexing and snippets",
+      "check_ids": [
+        "noindex",
+        "nosnippet",
+        "snippet-suppression"
+      ],
+      "evidence": "None of the 8 pages checked carries noindex, nosnippet or max-snippet:0 (meta robots or X-Robots-Tag).",
+      "pages_checked": 8
+    },
+    {
+      "id": "W-008",
+      "check": "identity",
+      "title": "The brand identity is declared",
+      "check_ids": [
+        "identity-not-declared",
+        "page-type-schema-gap:home"
+      ],
+      "evidence": "Organization markup declares the brand as 'Example Brand' with no conflicting name.",
+      "pages_checked": null
     }
   ]
 }

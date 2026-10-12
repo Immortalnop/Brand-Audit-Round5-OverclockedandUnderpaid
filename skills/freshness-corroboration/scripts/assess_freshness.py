@@ -72,6 +72,12 @@ def assess_freshness(facts, artifacts, deadline, today=None):
     today = today or datetime.now(timezone.utc).date()
     pages = content_pages(artifacts, require_features=False)
     lastmods = dict(artifacts.sitemap_data.get('lastmod', {}) or {})
+    from update_signals import lastmod_quality
+    if lastmod_quality(artifacts.sitemap_data or {})['problem'] == 'uniform':
+        # A build-stamped lastmod records the deploy, not the page: comparing it
+        # with dateModified would report the same root cause on every page.
+        # sitemap-lastmod-unreliable reports it once instead.
+        lastmods = {}
     expired, contradictions, stale_claims, missing_dates = [], [], [], []
     copyright = []
     dated_signals = 0

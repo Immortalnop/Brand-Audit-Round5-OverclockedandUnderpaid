@@ -1,7 +1,7 @@
 ---
 name: entity-corroboration-agent
 description: >-
-  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources across the wider web corroborate (AG-02) or contradict (AG-03) what the site claims about itself. Unlike every other skill in this marketplace it runs no deterministic script: the calling agent performs it with its own reading and web_search tools, using the agent_brief.json written by the entrypoint, and hands structured findings back for finalize_report.py to merge. Use when diagnosing entity confusion, hallucinated brand attributes, or a lack of multi-source consensus.
+  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), whether independent sources corroborate (AG-02) or contradict (AG-03) the site, reads facts locked inside images with the agent's own vision (AG-04), checks for same-named entities and a missing knowledge-graph link (AG-05) and for missing review or directory profiles (AG-06). The calling agent performs it with its own reading, vision and web_search tools, using the agent_brief.json written by the entrypoint, and hands structured findings back for finalize_report.py to merge. Use when diagnosing entity confusion, hallucinated brand attributes, facts hidden in images, or a lack of multi-source consensus.
 license: MIT
 allowed-tools: Read Write WebSearch WebFetch
 ---
@@ -10,11 +10,14 @@ allowed-tools: Read Write WebSearch WebFetch
 
 ## When to use
 
-Two things the handout asks for cannot be settled by a deterministic script:
-whether a self-description is concrete enough to quote, and whether the wider web
-agrees with it. Both are judgment calls over natural language. This skill is where
-the calling agent contributes that judgment, in the same finding shape as every
-script, so the entrypoint composes it like any other source.
+Some things the handout asks for cannot be settled by a deterministic script:
+whether a self-description is concrete enough to quote, whether the wider web
+agrees with it, what an image of a price list says, and whether same-named
+entities exist (Wikidata, Wikipedia and review platforms refuse scripted search).
+These are judgment calls over language and pixels, or lookups a robots-respecting
+script cannot make. This skill is where the calling agent contributes them, in
+the same finding shape as every script, so the entrypoint composes it like any
+other source.
 
 Skip it entirely if no reading or search capability is available. A skipped stage
 is recorded as not_supplied and costs nothing; an invented stage would cost
@@ -35,7 +38,9 @@ report. The agent supplies only what it observed.
 ## Inputs
 
 - `audit_out/agent_brief.json`. Use `brand_name`, `category_hint`,
-  `suggested_queries` and the `ag01` block; do not fetch the audited site again.
+  `suggested_queries` and the `ag01`, `ag04`, `ag05` and `ag06` blocks; do not
+  fetch the audited site's pages again (the images listed in `ag04.images` are
+  the one exception: open them to read them).
   Everything AG-01 needs is in `ag01`:
   - `opening_passage`: the page's own opening (H1, meta description, first body
     paragraphs) with navigation boilerplate removed -- this is the text to judge;
@@ -84,14 +89,25 @@ and Quora for brand visibility. Then classify into exactly one of three outcomes
 | No independent mention found at all | AG-02 | low | confirmed |
 | An independent source contradicts the site (different category, ownership, location, or a same-named different entity dominating results) | AG-03 | high | confirmed |
 
-Step 3, graceful fallback. If no search tool exists, it errors, or it is
+Step 3, images, namesakes and platforms (AG-04 to AG-06); see
+`references/checks.md` for when each fires.
+
+- AG-04: if you can read images, open each URL in `ag04.images` and fire only
+  when it shows concrete facts (prices, hours, items, specifications) that the
+  page text does not state. Put the page URL in `affected_pages`.
+- AG-05: run `ag05.queries`. Fire when same-named organizations appear and
+  `ag05.declared_wikidata` is empty or names a different entity.
+- AG-06: run `ag06.queries`. Fire only when the searches ran and found no
+  profile on the listed platforms. `business_kind: public` never fires.
+
+Step 4, graceful fallback. If no search tool exists, it errors, or it is
 rate-limited: do not abort, and do not report absence of corroboration. Write `[]`
 (or a single entry with status insufficient_evidence). The distinction matters:
 "nobody discusses this brand" is a finding about the brand; "I could not check" is
 a finding about the audit. Collapsing the second into the first is the single
 most common way an audit manufactures a false positive.
 
-Step 4, handoff. Write a JSON array of finding objects to
+Step 5, handoff. Write a JSON array of finding objects to
 `audit_out/agent_findings.json` and run `finalize_report.py` as the orchestrator
 procedure says. Do not edit report.json yourself; finalize rebuilds each finding
 through the shared factory, re-applies Invariant I-1, merges it with script
@@ -102,8 +118,9 @@ findings by root cause, and prioritizes everything together.
 `audit_out/agent_findings.json` (or any path passed to `finalize_report.py
 --agent-findings`; the `AGENT_FINDINGS_PATH` environment variable is also
 honoured): a JSON array of findings (or an object with
-a findings array). Useful keys per finding: check (AG-01, AG-02 or AG-03), title,
-severity, status, evidence, and suggested_action with summary and steps. mechanism,
+a findings array). Useful keys per finding: check (AG-01 to AG-06), title,
+severity, status, evidence, affected_pages (optional, page URLs the finding is
+about), and suggested_action with summary and steps. mechanism,
 implementation_detail and expected_outcome are filled automatically from
 common/check_catalog.py, so supply only what you observed.
 

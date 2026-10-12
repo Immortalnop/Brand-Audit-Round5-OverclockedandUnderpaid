@@ -1,7 +1,7 @@
 ---
 name: engagement-audit
 description: >-
-  Builds a site graph from the crawled content pages and audits on-site engagement for visitors who arrive (often deep, from an AI answer) -- orphan pages, isolated clusters, dead ends, missing next steps, weak orientation, generic anchors, breadcrumb/markup consistency, mobile viewport/zoom, overlays, and email-capture pages whose substance is in images. Called by audit-orchestrator; not intended to be invoked standalone.
+  Builds a site graph from the crawled content pages and audits on-site engagement for visitors who arrive (often deep, from an AI answer) -- orphan pages, isolated clusters, dead ends, missing next steps, missing or generic headings, generic anchors, breadcrumb/markup consistency, mobile viewport/zoom, overlays, and newsletter signups (only real newsletter or mailing-list forms, never contact, trial or login forms) whose outbound email should stay readable to inbox AI summaries. Called by audit-orchestrator; not intended to be invoked standalone.
 license: MIT
 allowed-tools: Bash(python3:*) Read
 ---

@@ -38,6 +38,27 @@ def _facts_in_text(page):
     return bool(price_numbers(text)) or len(text.split()) > 250
 
 
+def fact_image_candidates(pages):
+    """[(page, image, why)] for images that look like fact carriers (price list,
+    menu, timetable) on pages with little supporting text. Shared with the agent
+    brief, whose AG-04 step reads these images with the agent's own vision."""
+    hits = []
+    for p in pages:
+        imgs = (p.features or {}).get('images_meta', ())
+        words = len((p.visible_text or '').split())
+        intent = intent_of(p.url) or ''
+        named = [i for i in imgs if _FACT_RE.search(urlsplit(i.get('src') or '').path.rsplit('/', 1)[-1])
+                 or _FACT_RE.search(i.get('alt') or '')]
+        large = [i for i in imgs if (i.get('width') or 0) >= 600]
+        if named and words < 400 and not price_numbers(p.visible_text or ''):
+            hits.append((p, named[0], 'image named/alt-texted as a fact carrier'))
+        elif intent in _PRICE_INTENTS and large and words < 150 and not price_numbers(p.visible_text or ''):
+            # A product photo next to a price stated in text hides nothing; only a
+            # large image on a price-type page with no price in its text does.
+            hits.append((p, large[0], f'{intent} page with {words} words of text and a large image'))
+    return hits
+
+
 def analyze_nontext_facts(artifacts, deadline):
     pages = {p.url: p for p in content_pages(artifacts)}
     assets = list(artifacts.acquisition_metadata.get('asset_links', ()))
@@ -78,18 +99,7 @@ def analyze_nontext_facts(artifacts, deadline):
                 'verification': 'The raw HTML of the page contains the facts'},
             provenance={'skill': 'crawl-render-audit', 'script': 'analyze_nontext_facts.py', 'rule_id': 'facts-in-pdf'}))
 
-    img_hits = []
-    for p in pages.values():
-        imgs = (p.features or {}).get('images_meta', ())
-        words = len((p.visible_text or '').split())
-        intent = intent_of(p.url) or ''
-        named = [i for i in imgs if _FACT_RE.search(urlsplit(i.get('src') or '').path.rsplit('/', 1)[-1])
-                 or _FACT_RE.search(i.get('alt') or '')]
-        large = [i for i in imgs if (i.get('width') or 0) >= 600]
-        if named and words < 400 and not price_numbers(p.visible_text or ''):
-            img_hits.append((p, named[0], 'image named/alt-texted as a fact carrier'))
-        elif intent in _PRICE_INTENTS and large and words < 150:
-            img_hits.append((p, large[0], f'{intent} page with {words} words of text and a large image'))
+    img_hits = fact_image_candidates(pages.values())
     if img_hits:
         findings.append(make_finding(
             category='ai_discoverability', finding_type='defect', severity='medium', status='suspected',

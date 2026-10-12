@@ -31,6 +31,8 @@ EFFORT_COST = {'low': 1, 'medium': 2, 'high': 3}
 REACH = {'site-wide': 1.0, 'template': 0.6, 'page': 0.3}
 KEY_PAGE_TYPES = {'home', 'product', 'contact', 'about', 'service', 'software'}
 OFF_SITE_CATEGORIES = {'off_site_presence', 'corroboration'}
+# Absence claims from this many content pages or fewer are capped at medium.
+SMALL_SAMPLE_PAGES = 3
 
 
 def _step(severity, delta):
@@ -112,6 +114,12 @@ def apply_scoring(finding, ctx):
     if meta['absence_claim']:
         strength = sample_strength(ctx.content_page_count, ctx.templates_sampled)
         confidence = round(confidence * strength, 3)
+        if ctx.content_page_count <= SMALL_SAMPLE_PAGES and SEVERITY_ORDER.index(severity) > SEVERITY_ORDER.index('medium'):
+            # "0 of 1 pages has X" is a fact about one page, not about the site:
+            # an absence claim from a tiny sample never ranks above medium.
+            severity = 'medium'
+            adjustment = (f'absence observed on only {ctx.content_page_count} content page(s): capped at medium'
+                          if adjustment == 'none' else adjustment + f'; capped at medium ({ctx.content_page_count} page sample)')
     if finding.get('category') in OFF_SITE_CATEGORIES and ctx.identity_confidence is not None:
         # A6: identity confidence gates only the off-site findings that depend on it.
         confidence = round(min(confidence, max(0.3, ctx.identity_confidence)), 3)

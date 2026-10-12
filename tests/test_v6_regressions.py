@@ -146,13 +146,30 @@ def test_numeric_match_cannot_join_unrelated_numbers():
     assert outcome=='not_found'
 
 
+def _frontmatter(text):
+    """Top-level 'key: value' pairs of a SKILL.md frontmatter block, with indented
+    continuation lines folded in. Standard library only, so the check runs on any
+    machine (PyYAML is not a dependency of this marketplace)."""
+    out, key = {}, None
+    for line in text.split('---', 2)[1].splitlines():
+        if not line.strip():
+            continue
+        if line[0] in ' \t' and key:
+            out[key] = (out[key] + ' ' + line.strip()).strip()
+            continue
+        key, _, value = line.partition(':')
+        key = key.strip()
+        out[key] = value.strip().strip('"').strip("'")
+    return out
+
+
 def test_marketplace_frontmatter():
-    import yaml
     manifest=json.loads((ROOT/'marketplace.json').read_text())
     assert len(manifest['skills'])==5
     assert sum(bool(s.get('entrypoint')) for s in manifest['skills'])==1
     for skill in manifest['skills']:
-        path=ROOT/skill['path'];front=yaml.safe_load((path/'SKILL.md').read_text().split('---',2)[1])
+        path=ROOT/skill['path'];front=_frontmatter((path/'SKILL.md').read_text())
+        assert len(front['description'])<=1024
         assert front['name']==path.name and isinstance(front['description'],str)
         assert isinstance(front.get('allowed-tools'),str)
 

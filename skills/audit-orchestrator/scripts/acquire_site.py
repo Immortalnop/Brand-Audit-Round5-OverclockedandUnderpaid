@@ -14,6 +14,7 @@ from robots_policy import RobotsPolicy
 from html_features import Document
 from structured_data import iter_nodes,types_of,normalize_type
 from access_guard import classify_access
+from auth_pages import login_page_signals
 from url_keys import strip_tracking,visit_key,template_key,intent_of
 from constants import AI_AGENTS,FACT_KEYWORDS
 import heapq
@@ -26,6 +27,9 @@ def _normalized_origin(url):
     p=urlsplit(url);return f'{p.scheme}://{p.netloc}'
 
 def normalize_url(url,base=None):
+    # Browsers strip leading and trailing whitespace from an href (WHATWG URL
+    # parsing), so href="/culture " is the page /culture, not a broken URL.
+    url=(url or '').strip()
     p=urlsplit(urljoin(base,url) if base else url)
     if p.scheme not in ('http','https') or not p.hostname:return None
     # Preserve query parameters: they may identify real content. Strip fragments and
@@ -37,6 +41,9 @@ def _classify_page_type(url,origin,jsonld_blocks,path):
     if (path or '/')=='/':return 'home'
     for names,kind in [({'SoftwareApplication','MobileApplication','WebApplication'},'software'),({'Service'},'service'),({'Product','Offer','IndividualProduct'},'product'),({'Article','BlogPosting','NewsArticle'},'article'),({'ContactPage'},'contact'),({'AboutPage'},'about')]:
         if types & names:return kind
+    # An editorial section index (/blog/, /news, /press) lists articles; it is not
+    # one, so it is not held to Article markup. Markup above still wins.
+    if re.fullmatch(r'/(?:blog|news|press|articles|insights|stories|updates)/?',path or '',re.I):return 'listing'
     for pattern,kind in [('services?','service'),('product|products|item|items|shop|store|sku','product'),('blog|news|article|articles|press|insights|stories','article'),('contact|contact-us|get-in-touch','contact'),('about|about-us|company|team|who-we-are','about'),('privacy|terms|legal|cookie|tos','legal'),('category|categories|collection|collections|catalog','category')]:
         if re.search(r'/(?:'+pattern+r')(?:/|-|$)',path,re.I):return kind
     return 'other'
@@ -73,6 +80,11 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     features['access']=access
     if access['kind']=='challenge':warnings.append('bot_challenge')
     elif access['kind']=='rate_limited':warnings.append('rate_limited')
+    elif resp is not None and resp.ok:
+        # A login page is public but is not content: it is kept out of the
+        # analysed sample and listed in coverage (common/auth_pages.py).
+        signals=login_page_signals(url,base,' '.join(''.join(doc.title_parts).split()),doc.headings,doc.heading_levels,features,blocks)
+        if signals:warnings.append('login_page');features['login_signals']=signals
     features['visible_text_complete']=features['full_visible_chars']<=limits.VISIBLE_TEXT_MAX_CHARS
     features['html_bytes']=len(resp.content) if resp and html else 0
     features['network_duration_ms']=getattr(resp,'network_duration_ms',None) if resp else None
@@ -134,6 +146,11 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             # so no crawl -- but one homepage request is made below to tell "only the
             # robots file is challenged" apart from "the whole site is challenged".
             robots_status='challenged';robots_text=None
+        elif robots_access['kind']=='rate_limited':
+            # RFC 9309: a 429 robots.txt is "unreachable", so compliant crawlers
+            # assume complete disallow. Reported as an access problem; one homepage
+            # request below shows whether the content itself is also refused.
+            robots_status='rate_limited';robots_text=None
         elif resp.status_code in (404,410):robots_status='absent';robots_text=''
         elif 400<=resp.status_code<500 and resp.status_code!=429:
             # RFC 9309 2.3.1.3: an "unavailable" robots.txt (4xx) means no restrictions.
@@ -157,6 +174,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     # Probe failures never justify fetching blocked pages, including under blanket disallow.
     if not conservative:
         maps=list(dict.fromkeys(rp.sitemaps or [urljoin(origin,'/sitemap.xml')]))[:4];seen_maps=set();locs=[];statuses=[];lastmods={}
+        url_entries=0;lastmod_entries=0
         while maps and len(seen_maps)<4:
             sm=urljoin(origin,maps.pop(0))
             if sm in seen_maps:continue
@@ -181,10 +199,13 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
                             name=child.tag.rsplit('}',1)[-1]
                             if name=='loc' and child.text:loc=child.text.strip()
                             elif name=='lastmod' and child.text:lm=child.text.strip()[:40]
+                        if loc:url_entries+=1
+                        if loc and lm:lastmod_entries+=1
                         if loc and lm and len(lastmods)<200:lastmods[loc]=lm
                 statuses.append('ok')
             except ET.ParseError:statuses.append('malformed')
-        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200],'lastmod':lastmods}
+        sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':list(dict.fromkeys(locs))[:200],'lastmod':lastmods,
+                 'url_entries':url_entries,'lastmod_entries':lastmod_entries}
         r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
         if st=='tls_certificate_error':probe_failures.append({'url':urljoin(origin,'/llms.txt'),'reason':st})
         if st=='ok' and classify_access(r.status_code,r.headers,r.text,len(r.text))['kind']=='challenge':
@@ -232,7 +253,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     if not targeted:
         for u in order:push(u,1,2)
     consecutive_challenges=0;challenge_stop=False
-    homepage_only=robots_status=='challenged'
+    homepage_only=robots_status in ('challenged','rate_limited')
     while heap and monotonic()<tr.deadline and len(pages)<limits.MAX_PAGES_CRAWLED:
         _,_,_,_,url,_,depth,source_rank,intent=heapq.heappop(heap)
         key=visit_key(url)
@@ -302,7 +323,9 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     key_urls=[site_url]+[p.url for p in pages if intent_of(p.url)][:12]+[urljoin(origin,'/llms.txt')]+sitemap_urls[:1]
     ai_paths=_ai_crawler_paths(rp,list(dict.fromkeys(key_urls)),conservative)
     challenged=[p for p in pages if {'bot_challenge','rate_limited'}&set(p.warnings)]
-    ok=[p for p in pages if p.status_code and 200<=p.status_code<300 and p not in challenged];analyzed=[p for p in ok if p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts')]
+    login=[p for p in pages if 'login_page' in p.warnings]
+    if any(p.url==site_url for p in login):warnings.append('start_url_is_login_page')
+    ok=[p for p in pages if p.status_code and 200<=p.status_code<300 and p not in challenged];analyzed=[p for p in ok if p not in login and (p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts'))]
     timed=[p for p in pages if 'fetch_timeout' in p.warnings]
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(pages),'urls_fetched_ok':len(ok),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in pages),
          'urls_blocked':len(blocked),'urls_timed_out':len(timed),'urls_failed_other':sum(p.status_code is None and p not in timed for p in pages),
@@ -310,7 +333,9 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
          'urls_challenged':len(challenged),'templates_sampled':len({template_key(p.url) for p in analyzed}),
          'pages_per_template':dict(Counter(template_key(p.url) for p in analyzed).most_common(10)),
          'key_intents_found':sorted({intent_of(p.url) for p in analyzed if intent_of(p.url)}),
-         'asset_links_found':len(asset_links),'challenge_stop':challenge_stop}
+         'asset_links_found':len(asset_links),'challenge_stop':challenge_stop,
+         'urls_out_of_scope':len(login),
+         'out_of_scope_pages':[{'url':p.url,'reason':'login_page','signals':list((p.features or {}).get('login_signals',()))} for p in login][:20]}
     i.end_stage('acquisition')
     return AuditArtifacts(site_url,origin,tuple(pages),freeze_value({'allowed_general':robots_status in ('ok','absent','unavailable_4xx'),'status':robots_status,'conservative_fail_closed':conservative,'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_paths':ai_paths,'fetch_outcome':status,'attempt_outcomes':robots_attempts,
         'access':robots_access,'http_status':resp.status_code if resp else None}),

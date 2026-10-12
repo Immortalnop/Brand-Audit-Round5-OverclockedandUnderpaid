@@ -268,9 +268,22 @@ def test_2_3_email_summary_readable_fires_on_image_carried_substance():
     from analyze_experience import analyze_experience
     imgs="<img src='a.png'><img src='b.png'><img src='c.png'>"
     html=("<html lang=\"en\"><head><title>T</title></head><body>"
-          "<form><input type='email'></form>"+imgs+"<p>Sign up.</p></body></html>")
+          "<form><input type='email'><button>Subscribe to our newsletter</button></form>"+imgs+"<p>Sign up.</p></body></html>")
     result=analyze_experience(snapshot([page(html)]),make_deadline(LIMITS))
-    assert 'email-summary-readable' in ids(result)
+    assert {'email-summary','email-summary-readable'} <= ids(result)
+
+
+@pytest.mark.parametrize('form',[
+    "<form action='/contact'><input type='email' name='email'><textarea></textarea><button>Send message</button></form>",
+    "<form action='/trial'><input type='email'><button>Start your free trial</button></form>",
+    "<form action='/login'><input type='email'><input type='password'><button>Subscribe</button></form>",
+])
+def test_email_summary_needs_a_newsletter_signup(form):
+    """Contact, trial and login forms with an email field are not newsletter signups."""
+    from analyze_experience import analyze_experience
+    html="<html lang=\"en\"><head><title>T</title></head><body>"+form+"<p>Hello.</p></body></html>"
+    fired=ids(analyze_experience(snapshot([page(html)]),make_deadline(LIMITS)))
+    assert not {'email-summary','email-summary-readable'} & fired
 
 
 def test_2_4_baseline_recommendations_carry_rich_action_and_evidence_status():

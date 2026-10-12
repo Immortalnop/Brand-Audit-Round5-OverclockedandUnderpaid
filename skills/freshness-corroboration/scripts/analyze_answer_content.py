@@ -30,13 +30,17 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
                                    skill='freshness-corroboration',script='analyze_answer_content.py'))
     lexical=[p for p in pages if english(p) and p.features.get('visible_text_complete',False)]
     mismatch=[];repeated=[];details={}
+    # The brand's own name recurs on its pages by design (a masthead, a product
+    # name); it is not keyword stuffing, so its words are left out of the count.
+    brand_terms=set(terms(str((entity_identity.get('data') or {}).get('canonical_name') or '')))
     for p in lexical:
         body_words=re.findall(r"[a-z]+(?:'[a-z]+)?",p.visible_text.lower())
         title_terms=set(terms(p.title or ''));body_terms=Counter(terms(p.visible_text))
         if len(body_words)>=200 and len(title_terms)>=3 and len(title_terms & body_terms.keys())<=1:
             mismatch.append(p);details[p.url]='Unmatched literal title terms: '+', '.join(sorted(title_terms-body_terms.keys()))+'. Synonyms and semantic equivalence were not evaluated.'
-        if len(body_words)>=300 and body_terms:
-            term,count=body_terms.most_common(1)[0]
+        counted=Counter({t:c for t,c in body_terms.items() if t not in brand_terms})
+        if len(body_words)>=300 and counted:
+            term,count=counted.most_common(1)[0]
             if count/len(body_words)>.06:
                 repeated.append(p)
                 details[p.url+'#repeat']=f"Term '{term}' occurs {count} times among {len(body_words)} words. Repetition alone is not proof of spam."
@@ -51,7 +55,9 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
     identity_pages=[p for p in lexical if p.page_type in ('home','about') and len(p.visible_text)>300]
     if isinstance(name,str) and len(name.strip())>=3 and identity.get('confidence',0)>=.85 and identity_pages:
         name_pattern=re.compile(r'(?<!\w)'+re.escape(name)+r'(?!\w)',re.I)
-        verb=re.compile(r'\b(is|are|helps|provides|offers|builds|makes|delivers|creates|specializes)\b',re.I)
+        verb=re.compile(r'\b(is|are|was|helps|provides|offers|builds|makes|delivers|creates|speciali[sz]es|sells|runs|'
+                        r'fixes|repairs|teaches|publishes|designs|develops|manufactures|produces|operates|serves|'
+                        r'supplies|hosts|connects|powers|lets|enables|brings|bakes|roasts|trains|installs|ships)\b',re.I)
         def defines(p):
             candidates=re.split(r'(?<=[.!?])\s+',p.visible_text)+[p.meta_description or '']
             return any(20<=len(s)<=250 and name_pattern.search(s) and verb.search(s) for s in candidates)

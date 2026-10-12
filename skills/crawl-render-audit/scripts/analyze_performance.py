@@ -37,8 +37,11 @@ def analyze_performance(artifacts, deadline):
              lambda p:f"Measured connection and response duration: {p.features['network_duration_ms']} ms, excluding pacing and earlier retries. This is not TTFB or a browser performance score.")
     # Never report a missing sitemap when permission or connectivity was unknown.
     if pages and artifacts.sitemap_data.get('status') in ('absent','malformed'):
-        emit('sitemap-unavailable','Review the sampled sitemap endpoint',[pages[0]],
-             lambda p:'Sitemap probe status: '+artifacts.sitemap_data['status']+'. No additional sitemap discovery was attempted by this check.')
+        status=artifacts.sitemap_data['status']
+        emit('sitemap-unavailable','No XML sitemap was found' if status=='absent' else 'The XML sitemap could not be parsed',[pages[0]],
+             lambda p:('/sitemap.xml (or the sitemap named in robots.txt) returned 404' if status=='absent'
+                       else 'The sitemap response was not a valid urlset or sitemapindex XML document')
+                      +'. No additional sitemap discovery was attempted by this check.')
     return skill_result('crawl-render-audit',findings=out,metrics={'performance_pages_analyzed':len(pages),
         'network_timing_pages':len(timed),'browser_performance_measured':False},
         coverage={'pages_analyzed':len(pages),'pages_skipped':len(artifacts.pages)-len(pages)})

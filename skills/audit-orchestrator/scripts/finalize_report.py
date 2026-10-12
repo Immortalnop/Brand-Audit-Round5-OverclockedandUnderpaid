@@ -26,7 +26,8 @@ _ROOT = ensure_paths()
 
 from scoring import ScoringContext  # noqa: E402
 from merge_findings import _group_merge  # noqa: E402
-from generate_recommendations import build_action_plan  # noqa: E402
+from generate_recommendations import build_action_plan, top_actions, quick_wins  # noqa: E402
+from whats_working import reported_check_ids  # noqa: E402
 from validate_report import validate_report  # noqa: E402
 from ingest_agent_findings import load_agent_findings  # noqa: E402
 
@@ -47,9 +48,12 @@ def finalize(report, agent_findings_path):
     core, hygiene = finalize_findings(merged, ctx)
     report["findings"], report["hygiene_findings"] = core, hygiene
     report["action_plan"] = build_action_plan(core)
-    report["top_actions"] = [{"finding_id": a["finding_ids"][0], "summary": a["summary"], "priority": a["priority"],
-                              "severity": a["severity"], "effort": a["effort"], "owner_role": a["owner_role"]}
-                             for a in report["action_plan"][:5]]
+    report["top_actions"] = top_actions(report["action_plan"])
+    report["quick_wins"] = quick_wins(report["action_plan"])
+    # An agent finding can contradict a check listed as passing (e.g. AG-04 reads
+    # a fact inside an image): such entries leave "what's working".
+    flagged = reported_check_ids(core + hygiene + list(report.get("recommendations", [])))
+    report["whats_working"] = [w for w in report.get("whats_working", []) if not flagged & set(w.get("check_ids", ()))]
     stage_info = dict(report.get("agent_stage") or {})
     stage_info["status"] = stage
     stage_info["findings_ingested"] = result["metrics"].get("findings_ingested", 0)

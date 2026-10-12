@@ -1,5 +1,5 @@
 """Shared, network-free helpers for snapshot check modules."""
-from collections import defaultdict
+from collections import Counter, defaultdict
 from check_catalog import get_entry, meta_for
 from models import make_finding
 
@@ -7,7 +7,7 @@ from models import make_finding
 # defects. bot_challenge / rate_limited (A1) are firewall interstitials; the others
 # are incomplete or non-HTML responses.
 EXCLUDED_WARNINGS = frozenset({'non_html_content', 'response_truncated_at_byte_budget',
-                               'html_parse_incomplete', 'bot_challenge', 'rate_limited'})
+                               'html_parse_incomplete', 'bot_challenge', 'rate_limited', 'login_page'})
 
 
 def is_challenged(page):
@@ -66,3 +66,48 @@ def observation(check_id, title, pages, details, *, skill='crawl-render-audit',
                           'expected_benefit':entry['expected_outcome'],
                           'verification':'Repeat the affected observation and verify the intended behavior.'},
         provenance={'skill':skill, 'script':script, 'rule_id':check_id})
+
+
+# The site's own contact details (contact-markup-missing and its snippet). A
+# third-party address quoted in user content (a README, a forum post) never counts.
+_CONTACT_PAGE_TYPES = ("home", "contact", "about")
+_ROLE_MAILBOXES = frozenset({"hello", "hi", "info", "contact", "support", "help", "sales", "enquiries", "inquiries",
+                             "office", "team", "press", "media", "customerservice", "service", "care", "admin",
+                             "bookings", "reservations", "orders", "jobs", "careers"})
+
+
+def site_host(url):
+    from urllib.parse import urlsplit
+    host = (urlsplit(url).hostname or "").lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def own_email(address, site_host):
+    domain = address.rsplit("@", 1)[-1].lower()
+    local = address.split("@", 1)[0].lower()
+    if local.replace("-", "").replace("_", "") in ("noreply", "donotreply"):
+        return False
+    return bool(site_host) and (domain == site_host or domain.endswith("." + site_host)
+                                or site_host.endswith("." + domain))
+
+
+def is_role_mailbox(address):
+    return address.split("@", 1)[0].lower() in _ROLE_MAILBOXES
+
+
+def organization_contact(pages, site_host):
+    """(emails, phones) the site itself shows, most frequent first."""
+    emails, phones, phone_pages = Counter(), Counter(), {}
+    for p in pages:
+        f = p.features or {}
+        for e in f.get("contact_emails") or ():
+            if own_email(e, site_host):
+                emails[e] += 1
+        for n in f.get("contact_phones") or ():
+            phones[n] += 1
+            phone_pages.setdefault(n, set()).add(p.page_type)
+    kept_phones = [n for n, c in phones.most_common() if c >= 2 or phone_pages[n] & set(_CONTACT_PAGE_TYPES)]
+    # A role mailbox (hello@, support@ ...) is the organization's address; a
+    # person's address shown on a page is not, so role mailboxes come first.
+    ranked = sorted(emails.items(), key=lambda kv: (kv[0].split("@", 1)[0] not in _ROLE_MAILBOXES, -kv[1], kv[0]))
+    return [e for e, _ in ranked], kept_phones

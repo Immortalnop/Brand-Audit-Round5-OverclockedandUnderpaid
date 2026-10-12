@@ -120,8 +120,18 @@ def _beyond_items(artifacts, findings):
     return items
 
 
+def is_quick_win(finding):
+    """Worth doing and cheap: medium severity or above, low effort, and evidence
+    strong enough (confidence >= 0.6) that the fix is not a gamble."""
+    a = finding.get("suggested_action") or {}
+    return (finding.get("severity") in ("critical", "high", "medium") and a.get("effort") == "low"
+            and (finding.get("confidence") or 0) >= 0.6 and finding.get("status") != "insufficient_evidence")
+
+
 def build_action_plan(findings, limit=12):
-    """Ordered to-do list referencing findings by id (no duplicated content)."""
+    """Ordered to-do list referencing findings by id (no duplicated content).
+    Each row says whether it is a quick win (impact x effort); the first row is
+    marked start_here so a non-expert knows where to begin."""
     # Same order as the findings array (severity first, then priority_score).
     from prioritize_findings import prioritize_findings
     ranked = prioritize_findings(list(findings))
@@ -130,8 +140,22 @@ def build_action_plan(findings, limit=12):
         a = f.get("suggested_action") or {}
         plan.append({"rank": rank, "finding_ids": [f["id"]], "summary": a.get("summary", f["title"]),
                      "severity": f["severity"], "priority": a.get("priority"), "effort": a.get("effort"),
-                     "owner_role": a.get("owner_role"), "priority_score": f.get("priority_score", 0)})
+                     "owner_role": a.get("owner_role"), "priority_score": f.get("priority_score", 0),
+                     "quick_win": is_quick_win(f), "start_here": rank == 1})
     return plan
+
+
+def top_actions(plan, limit=5):
+    """The first rows of the action plan in the compact top_actions shape."""
+    return [{"finding_id": a["finding_ids"][0], "summary": a["summary"], "priority": a["priority"],
+             "severity": a["severity"], "effort": a["effort"], "owner_role": a["owner_role"],
+             "quick_win": a.get("quick_win", False), "start_here": a.get("start_here", False)}
+            for a in plan[:limit]]
+
+
+def quick_wins(plan):
+    """Finding ids of every quick win in the action plan, in plan order."""
+    return [a["finding_ids"][0] for a in plan if a.get("quick_win")]
 
 
 def generate_recommendations(skill_results: list, merged_findings: list, artifacts=None) -> list:

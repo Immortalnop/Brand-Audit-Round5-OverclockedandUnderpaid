@@ -104,7 +104,9 @@ if __name__=='__main__':
     threading.Timer(.8,lambda:os.kill(os.getpid(),signal.SIGINT)).start()
     run_audit.main(['https://example.com'])
 ''' % str(ROOT/'skills/audit-orchestrator/scripts'))
-    result=subprocess.run([sys.executable,str(script)],capture_output=True,text=True,timeout=5)
+    # The fixture interrupts itself after 0.8 s; the generous timeout only guards
+    # against a hang when the full suite loads the machine.
+    result=subprocess.run([sys.executable,str(script)],capture_output=True,text=True,timeout=30)
     assert result.returncode==130,result.stderr
     assert 'Traceback' not in result.stderr
     assert '[audit] started' in result.stderr

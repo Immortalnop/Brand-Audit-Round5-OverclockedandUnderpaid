@@ -23,7 +23,10 @@ def analyze_experience(artifacts,deadline):
     add('missing-alt','Images lack alt attributes',[p for p in pages if p.features['missing_alt']>=3], 'At least three images per affected page lack alt attributes; empty decorative alt attributes were not counted.', ['Describe informative images and keep decorative alt text empty','Repeat essential image-only facts in nearby text'])
     add('overlay','Review potential overlay interference',[p for p in pages if p.features['overlay_pattern']], 'Visible markup contains overlay-related class names; timing and visual obstruction were not measured.', ['Inspect whether the overlay obstructs arrival content','If obstructive, delay promotion and provide a dismiss control'])
     add('hash-routing','Navigation uses client-only route fragments',[p for p in pages if sum(h.startswith(('#/','#!')) for h,t in p.features['anchors'])>=2], 'Route fragments are not sent in HTTP requests. Browser deep links may still work; raw-HTML retrieval may lose destination-specific content.', ['Verify direct arrival and raw HTML for each destination','Prefer server-resolvable paths where route-specific content needs indexing'])
-    add('email-summary','Review outbound email text for summarizers',[p for p in pages if p.features['email_capture'] and p.features['forms']], 'An email form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
+    # Only a newsletter / mailing-list signup implies outbound marketing email. A
+    # contact form, a trial signup or a login form with an email field does not.
+    signup=[p for p in pages if p.features.get('newsletter_signup')]
+    add('email-summary','Newsletter signup found: make outbound emails readable to inbox AI summaries',signup, 'A newsletter or mailing-list signup form was observed, so the brand sends marketing email; the emails themselves were not inspected.', ['Send every campaign as multipart with a real text/plain part, not an image-only HTML body','Put the key offer or fact in the first two lines; keep decorative content after it'])
     commercial=[p for p in pages if p.page_type in ('product','category')]
     add('next-step','Review the next step on commercial landing pages',[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links], 'No form, button or internal next-step link was observed on these commercial pages.', ['Add a relevant purchase, inquiry or comparison route if missing'])
     # Generic anchor text. Descriptive anchors tell both visitors and machines what a target
@@ -46,9 +49,17 @@ def analyze_experience(artifacts,deadline):
     # orientation heuristic already in analyze_engagement but scoped to substantial
     # inner pages: substantial body text with no descriptive H1 gives an arriving
     # visitor no immediate sense of what the page is about.
-    orient=[p for p in pages if p.page_type not in ('home',) and len(p.visible_text.split())>300 and (not p.features['h1_count'] or not any(4<=len(h.split())<=14 for h in p.headings[:2]))]
+    # A short H1 can be perfectly clear ("API reference", "Pricing"); what leaves
+    # a visitor unoriented is no H1, an empty one, a generic one ("Home",
+    # "Welcome") or a paragraph-length one.
+    _GENERIC_H1={'home','homepage','welcome','hello','untitled','index','page','main','menu','overview','content','start'}
+    def _weak_h1(p):
+        h1=next((h for h,l in zip(p.headings,p.features.get('heading_levels') or ()) if l==1),None)
+        text=' '.join((h1 or '').split())
+        return not p.features['h1_count'] or not text or text.lower().strip('.!') in _GENERIC_H1 or len(text.split())>20
+    orient=[p for p in pages if p.page_type not in ('home',) and len(p.visible_text.split())>300 and _weak_h1(p)]
     add('page-orientation','Content pages lack a clear orientation heading above the fold',orient,
-        'Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.',
+        'Substantial pages were sampled whose primary heading is missing, generic or paragraph-length, so an arriving visitor has no immediate orientation.',
         ['Lead each content page with a descriptive H1 that names the topic','Follow with scannable H2 sections so the page structure is clear at a glance'])
     # Internal discoverability gap: substantial pages that expose few or no
     # internal links leave a visitor (and a crawler) no path onward from that page.
@@ -63,9 +74,16 @@ def analyze_experience(artifacts,deadline):
     # the surrounding page carries the substance only in images (no matching visible
     # text), a summarizer has little to work with. Conservative: fires only when an
     # email flow is present AND the page is image-heavy relative to its visible text.
-    esf=[p for p in pages if p.features['email_capture'] and p.features['images']>=3 and len(p.visible_text.split())<120]
-    add('email-summary-readable','Email-capture pages carry substance in images, not readable text',esf,
-        'An email-capture flow was observed on pages whose visible text is sparse relative to their images; AI inbox summaries are built from readable text, so image-carried substance can be dropped.',
+    # The page's own message must be in images: almost no text, and most images
+    # without a text alternative. A product gallery with alt text and a price in
+    # text is not image-carried substance.
+    def _image_carried(p):
+        meta=p.features.get('images_meta') or ()
+        no_alt=sum(1 for i in meta if not (i.get('alt') or '').strip())
+        return p.features['images']>=3 and len(p.visible_text.split())<60 and meta and no_alt*2>=len(meta)
+    esf=[p for p in signup if _image_carried(p)]
+    add('email-summary-readable','Newsletter signup pages carry substance in images, not readable text',esf,
+        'A newsletter signup was observed on pages whose visible text is sparse relative to their images; AI inbox summaries are built from readable text, so image-carried substance can be dropped.',
         ['Provide the key message as real text near the top, not only inside images','In outbound emails put the important lines first and keep decorative content secondary'])
     # Absence of FAQ/search/video/interactive widgets is deliberately NOT a generic defect.
     return skill_result('engagement-audit',findings=out,metrics={'experience_pages_analyzed':len(pages)})

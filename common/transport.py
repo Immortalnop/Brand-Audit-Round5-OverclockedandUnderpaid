@@ -10,16 +10,45 @@ from url_safety import classify_url,same_origin
 from tls_context import create_context
 
 USER_AGENT='BrandAIReadinessAuditBot/2.0 (read-only audit)'
+import codecs,re
+_META_CHARSET=re.compile(rb'<meta[^>]+charset\s*=\s*["\']?\s*([A-Za-z0-9._:-]{1,40})',re.I)
+_BOMS=((codecs.BOM_UTF8,'utf-8-sig'),(codecs.BOM_UTF16_LE,'utf-16'),(codecs.BOM_UTF16_BE,'utf-16'))
+
+
+def _web_charset(label):
+    """A charset label as browsers use it: unknown labels are ignored, and
+    ISO-8859-1/ASCII mean windows-1252 (WHATWG Encoding)."""
+    if not label:return None
+    try:name=codecs.lookup(label.strip().strip('"\'').lower()).name
+    except LookupError:return None
+    return 'cp1252' if name in ('latin_1','iso8859-1','ascii') else name
+
+
+def decode_body(content,content_type=''):
+    """Text of a response body, decoded the way a browser does: byte order mark,
+    then the HTTP charset, then <meta charset> / http-equiv in the first 2 KB,
+    then UTF-8. A body sent as UTF-8 that is mostly invalid UTF-8 is read as
+    windows-1252, so a mislabelled legacy page does not turn into replacement
+    characters."""
+    for bom,name in _BOMS:
+        if content.startswith(bom):return content.decode(name,errors='replace')
+    m=re.search(r'charset=["\']?([^;"\' ]+)',content_type or '',re.I)
+    charset=_web_charset(m[1]) if m else None
+    if charset is None:
+        mm=_META_CHARSET.search(content[:2048])
+        charset=_web_charset(mm[1].decode('ascii','ignore')) if mm else None
+    charset=charset or 'utf-8'
+    text=content.decode(charset,errors='replace')
+    if charset=='utf-8' and text.count('�')>max(3,len(text)//200):
+        text=content.decode('cp1252',errors='replace')
+    return text
+
+
 class Response:
     def __init__(self,status,headers,content,url,truncated=False,hops=0):
         self.status_code=status;self.headers=headers;self.content=content;self.final_url=url
         self.truncated=truncated;self.redirect_hops=hops;self.history=[]
-        charset='utf-8'
-        import re
-        m=re.search(r'charset=["\']?([^;"\' ]+)',headers.get('Content-Type',''),re.I)
-        if m:charset=m[1]
-        try:self.text=content.decode(charset,errors='replace')
-        except LookupError:self.text=content.decode('utf-8',errors='replace')
+        self.text=decode_body(content,headers.get('Content-Type',''))
     @property
     def ok(self):return 200<=self.status_code<300
 

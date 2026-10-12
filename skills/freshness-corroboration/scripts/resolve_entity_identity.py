@@ -20,7 +20,7 @@ harmless formatting variance and under-explains genuine multi-brand confusion:
 import re
 from collections import defaultdict
 from collections.abc import Mapping
-from structured_data import iter_nodes, types_of
+from structured_data import iter_nodes, types_of, CORE_ORGANIZATION_TYPES, ORGANIZATION_TYPES
 from urllib.parse import urlsplit
 from models import intermediate_artifact
 from identity_signals import candidates as identity_candidates, agreement
@@ -64,8 +64,17 @@ def resolve_entity_identity(artifacts, deadline):
         # Mapping (not dict): real PageArtifacts store jsonld_blocks frozen as
         # MappingProxyType; dict-only fixtures still match too.
         block for page in artifacts.pages for block in iter_nodes(page.jsonld_blocks)
-        if isinstance(block, Mapping) and types_of(block) & {"Organization", "Corporation", "LocalBusiness", "OnlineStore", "NGO", "EducationalOrganization", "GovernmentOrganization"}
+        if isinstance(block, Mapping) and types_of(block) & CORE_ORGANIZATION_TYPES
     ]
+    if not org_blocks:
+        # A site marked up only with an Organization subtype (Plumber, Restaurant,
+        # CollegeOrUniversity ...) declares itself on the home page. Subtypes on
+        # other pages may be listings, so they are not read as the site's identity.
+        home_key = artifacts.site_url.rstrip('/')
+        org_blocks = [block for page in artifacts.pages
+                      if page.page_type == 'home' or (page.final_url or page.url).rstrip('/') == home_key
+                      for block in iter_nodes(page.jsonld_blocks)
+                      if isinstance(block, Mapping) and types_of(block) & ORGANIZATION_TYPES]
 
     from check_helpers import content_pages
     pages = content_pages(artifacts, require_features=False)

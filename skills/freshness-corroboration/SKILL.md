@@ -1,22 +1,25 @@
 ---
 name: freshness-corroboration
 description: >-
-  Extracts factual claims from a crawled website, ranks the most important ones, resolves one brand identity (Organization JSON-LD, then WebSite name/og:site_name, title segment, footer copyright holder, domain), checks whether dated facts are current and consistent (expired offers, contradictory dates, stale update claims, stale copyright, undated articles) and whether claims are corroborated -- calibrated so insufficient external evidence is never reported as a confirmed defect. Called by audit-orchestrator; not intended to be invoked standalone.
+  Extracts factual claims from a crawled website, ranks the most important ones, resolves one brand identity (Organization JSON-LD incl. subtypes such as Plumber on the home page, then WebSite name/og:site_name, title segment, footer copyright holder, domain), checks whether dated facts are current and consistent (expired offers, contradictory dates, stale update claims, stale copyright, undated articles, sitemap lastmod missing or build-stamped), whether declared profile links disambiguate the brand (knowledge-graph link, invalid sameAs) and whether claims are corroborated -- calibrated so insufficient external evidence is never reported as a confirmed defect. Called by audit-orchestrator; not intended to be invoked standalone.
 license: MIT
 allowed-tools: Bash(python3:*) Read
 ---
 # Freshness & Corroboration
 
 ## When to use
-Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`, and
-`build_site_graph`-adjacent data steps run in the independent batch;
+Called by audit-orchestrator. `extract_claims`, `resolve_entity_identity`,
+`update_signals` (sitemap lastmod), `check_entity_links` (sameAs and knowledge-graph
+links) and `build_site_graph`-adjacent data steps run in the independent batch;
 `identify_important_facts` runs once, sequentially, between the two batches;
 `assess_freshness`, `corroborate_claims`, and `assess_external_footprint` run in
 the dependent batch.
 
 ## Dependencies
-`extract_claims`, `identify_important_facts`, `resolve_entity_identity`, and
-`assess_freshness` are pure-Python, no network. Dates are parsed and classified by
+`extract_claims`, `identify_important_facts`, `resolve_entity_identity`,
+`update_signals`, `check_entity_links` and `assess_freshness` are pure-Python, no
+network. Whether a declared Wikidata item really is the brand, and whether
+namesakes exist, is the agent stage's job (AG-05). Dates are parsed and classified by
 their surrounding words in `common/dates.py`; first-party naming signals live in
 `common/identity_signals.py`. `corroborate_claims` and
 `assess_external_footprint` call the pluggable `common/search_provider.py`

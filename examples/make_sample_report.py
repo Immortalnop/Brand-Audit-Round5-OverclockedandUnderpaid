@@ -1,6 +1,7 @@
 """Regenerate examples/sample-report.json and sample-report.md from the local test
 fixture (no third-party site, no network). The fixture host is rewritten to
-https://shop.example so the sample reads like a real report.
+http://shop.example so the sample reads like a real report; the scheme stays
+http because the fixture really is served over HTTP (the report says so).
 
     python3 examples/make_sample_report.py
 """
@@ -25,7 +26,7 @@ def main():
     finally:
         stop()
     text = json.dumps(report, indent=2, default=str)
-    text = re.sub(r"http://127\.0\.0\.1:\d+", "https://shop.example", text).replace("127.0.0.1", "shop.example")
+    text = re.sub(r"http://127\.0\.0\.1:\d+", "http://shop.example", text).replace("127.0.0.1", "shop.example")
     report = validate_report(json.loads(text), strict_catalog=True)
     out = os.path.join(ROOT, "examples")
     with open(os.path.join(out, "sample-report.json"), "w", encoding="utf-8") as fh:

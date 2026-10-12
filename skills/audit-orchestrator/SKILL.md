@@ -1,7 +1,7 @@
 ---
 name: audit-orchestrator
 description: >-
-  Entrypoint skill for the Brand AI-Readiness Audit marketplace. Given a website URL, acquires the site once (robots/RFC 9309, bot-wall detection, template-diverse sampling), runs crawl-render-audit, freshness-corroboration and engagement-audit on that snapshot, hands an agent brief to entity-corroboration-agent for cross-web checks, then merges findings by root cause, scores severity/confidence/priority in one place, validates the report and emits findings, an ordered action plan and beyond-defect recommendations as JSON plus a readable report.md. Use whenever a website's AI discoverability and on-site engagement need auditing.
+  Entrypoint skill for the Brand AI-Readiness Audit marketplace. Given a website URL, acquires the site once (robots/RFC 9309, bot-wall detection, login pages kept out of scope, template-diverse sampling), runs crawl-render-audit, freshness-corroboration and engagement-audit on that snapshot, hands an agent brief to entity-corroboration-agent for cross-web and vision checks, then merges findings by root cause, scores severity/confidence/priority in one place, attaches ready-to-paste fixes, lists the checks that passed, validates the report and emits findings, an ordered action plan with quick wins and beyond-defect recommendations as JSON plus a readable report.md. Use whenever a website's AI discoverability and on-site engagement need auditing.
 license: MIT
 allowed-tools: Bash(python3:*) Read Write WebSearch WebFetch
 ---
@@ -30,33 +30,40 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    `audit_out/report.md` (stdout is the same JSON report).
 2. **Agent stage -- cross-web corroboration.** If you have a web-search tool,
    follow `skills/entity-corroboration-agent/SKILL.md` using
-   `audit_out/agent_brief.json` (at most 4 searches, about 90 s). Write the
+   `audit_out/agent_brief.json` (checks AG-01 to AG-06; at most 8 searches, about
+   150 s; AG-04 needs image input). Write the
    result to `audit_out/agent_findings.json` -- an empty array `[]` if nothing
    fires. If you have no search tool, write `[]` and skip the searches.
 3. **Pass 2 -- finalize.** Run
    `python3 skills/audit-orchestrator/scripts/finalize_report.py --report audit_out/report.json --agent-findings audit_out/agent_findings.json`.
    It merges the agent findings, re-scores, re-orders and re-validates, and
    rewrites `report.json` and `report.md`. No re-crawl.
-4. **Report back.** Show the user the "Top actions" table and the summary from
-   `audit_out/report.md`, then point to `report.json` for the full evidence.
+4. **Report back.** Show the user the confidence line, the "Start here" item,
+   the "Top actions" table and the summary from `audit_out/report.md`, then point
+   to `report.json` for the full evidence.
    Never edit findings by hand; never claim a check ran if the report says it
    was not supplied.
 
 Scripts, in order (all in `scripts/`): `run_audit.py` (CLI + pipeline),
 `acquire_site.py` (single bounded acquisition), `merge_findings.py`
 (dedup + root-cause merge), `prioritize_findings.py` (ordering),
-`generate_recommendations.py` (action plan + beyond-defect items),
-`validate_report.py`, `execution_summary.py`, `finalize_report.py`,
-`render_report.py`, `diagnose_transport.py`. Shared scoring lives in
-`common/scoring.py`; every check's wording and metadata in `common/check_catalog.py`.
+`generate_recommendations.py` (action plan, quick wins, beyond-defect items),
+`whats_working.py` (checks that ran and passed), `validate_report.py`,
+`execution_summary.py` (status, limitations, explained confidence),
+`finalize_report.py`, `render_report.py`, `diagnose_transport.py`. Shared scoring
+lives in `common/scoring.py`; every check's wording and metadata in
+`common/check_catalog.py`; ready-to-paste fixes in `common/fix_snippets.py`.
 
 ## Safety guarantees (enforced in code, not just documented)
 - **SSRF protection**: every URL fetched -- target, robots.txt, sitemap, llms.txt,
   discovered links, redirects -- is checked by `common/url_safety.py` first.
 - **robots.txt per RFC 9309**: 200 is obeyed; 4xx (not 429) means no
-  restrictions; 429/5xx/timeout means disallow-all (no pages fetched); a robots
-  file behind a bot challenge means permission unknown -- only the homepage is
-  fetched, once, to identify the cause.
+  restrictions; 5xx/timeout means disallow-all (no pages fetched); a robots file
+  that answers 429 or sits behind a bot challenge means permission unknown --
+  only the homepage is fetched, once, to identify the cause.
+- **Login pages out of scope**: a page with a visible password field, little
+  text, no entity markup and a login path or heading is never analysed as
+  content; it is listed in `coverage.out_of_scope_pages`.
 - **Courtesy**: crawl-delay honoured; a template that starts returning
   challenges is not sampled further; 3 consecutive challenges stop the crawl.
 - **Read-only**: only GET requests; optional rendering runs under a GET-only,
@@ -67,10 +74,13 @@ Scripts, in order (all in `scripts/`): `run_audit.py` (CLI + pipeline),
 ## Output
 `report.json` (schema: `references/report-schema.md`): `site`, `audited_at`,
 `summary` (counts by severity), `findings` (each with evidence, severity,
-`severity_rationale`, `suggested_action` incl. priority, effort and owner role),
-`action_plan`, `top_actions`, `recommendations` (beyond-defect items only),
-`hygiene_findings` (SEO hygiene appendix), `coverage`, `agent_stage`,
-`execution_status`, `limitations`, `confidence` (method shown).
+`severity_rationale`, `suggested_action` incl. priority, effort, owner role and,
+for markup fixes, a ready-to-paste `snippet` or `proposed_snippets`),
+`action_plan` (with `quick_win` and `start_here`), `top_actions`, `quick_wins`,
+`recommendations` (beyond-defect items only), `hygiene_findings` (SEO hygiene
+appendix), `whats_working` (passed checks with evidence), `coverage`,
+`agent_stage`, `execution_status`, `limitations`, `confidence` (score, level,
+limiting factor, reasons and a plain-English explanation).
 `report.md` renders the same content for a non-expert reader.
 Recommend-only -- no skill ever modifies a live site.
 

@@ -52,7 +52,14 @@ from analyze_nontext_facts import analyze_nontext_facts
 from scoring import ScoringContext, apply_scoring
 from check_catalog import meta_for
 from check_helpers import content_pages
-from generate_recommendations import build_action_plan
+from structured_data import iter_nodes, types_of
+from generate_recommendations import build_action_plan, top_actions, quick_wins
+from whats_working import whats_working
+from fix_snippets import attach_fix_snippets
+from analyze_citation_schema import analyze_citation_schema
+from analyze_contact_markup import analyze_contact_markup
+from update_signals import check_sitemap_lastmod
+from check_entity_links import check_entity_links
 from analyze_crawlability import analyze_crawlability
 from analyze_directives import analyze_directives
 from analyze_metadata import analyze_metadata
@@ -139,6 +146,10 @@ def run_independent_batch(artifacts, deadline, limits, capabilities, instrumenta
         "machine_readability": lambda: analyze_machine_readability(artifacts, deadline),
         "ai_crawler_access": lambda: check_ai_crawler_access(artifacts, deadline),
         "llms_txt": lambda: check_llms_txt(artifacts, deadline),
+        "citation_schema": lambda: analyze_citation_schema(artifacts, deadline),
+        "contact_markup": lambda: analyze_contact_markup(artifacts, deadline),
+        "sitemap_lastmod": lambda: check_sitemap_lastmod(artifacts, deadline),
+        "entity_links": lambda: check_entity_links(artifacts, deadline),
         "claims": lambda: extract_claims(artifacts, deadline),
         "entity_identity": lambda: resolve_entity_identity(artifacts, deadline),
         "site_graph": lambda: build_site_graph(artifacts, deadline),
@@ -262,7 +273,6 @@ def build_agent_brief(artifacts, identity, facts):
         source, passage_page = "homepage_about_not_acquired", home
     else:
         source, passage_page = "none", None
-    from structured_data import iter_nodes, types_of
     types = sorted({t for p in pages for n in iter_nodes(p.jsonld_blocks) for t in types_of(n)})[:15]
     category_hint = {"jsonld_types": types,
                      "home_meta_description": (home.meta_description if home else None),
@@ -292,10 +302,64 @@ def build_agent_brief(artifacts, identity, facts):
         "suggested_queries": ([f'"{brand}" {category_word}'.strip(), f'"{brand}" site:reddit.com OR site:quora.com',
                                f'"{brand}" reviews', f'"{brand}" {artifacts.normalized_origin.split("//")[-1]}']
                               if brand else []),
-        "search_budget": {"max_searches": 4, "max_seconds": 90},
-        "output_contract": "Write a JSON array of findings (AG-01/AG-02/AG-03) as described in "
+        "ag04": {"images": _fact_images(pages)},
+        "ag05": _namesake_brief(artifacts, brand, category_word),
+        "ag06": _platform_brief(artifacts, pages, brand),
+        "search_budget": {"max_searches": 8, "max_seconds": 150},
+        "output_contract": "Write a JSON array of findings (AG-01 to AG-06) as described in "
                            "skills/entity-corroboration-agent/SKILL.md, or [] if nothing fires.",
     }
+
+
+def _fact_images(pages):
+    """AG-04: images that look like fact carriers on text-poor pages, with absolute
+    URLs, for the agent to read with its own vision (scripts never read pixels)."""
+    from analyze_nontext_facts import fact_image_candidates
+    out = []
+    for page, img, why in fact_image_candidates(pages)[:6]:
+        src = img.get("src") or ""
+        if not src or src.startswith("data:"):
+            continue
+        out.append({"page": page.url, "image": urljoin(page.final_url or page.url, src), "alt": img.get("alt"),
+                    "why": why})
+    return out
+
+
+def _namesake_brief(artifacts, brand, category_word):
+    """AG-05: the declared knowledge-graph links and the queries that find namesakes."""
+    from check_entity_links import organization_markup, kg_links
+    _, same_as = organization_markup(artifacts)
+    wikidata, wikipedia, _ = kg_links(same_as)
+    return {"declared_wikidata": [u for u, _ in wikidata], "declared_wikipedia": [u for u, _, _ in wikipedia],
+            "queries": ([f'"{brand}" -site:{urlparse(artifacts.normalized_origin).hostname}',
+                         f'"{brand}" site:wikidata.org OR site:wikipedia.org'] if brand else [])}
+
+
+_PLATFORMS = {
+    "local": ["Google Business Profile", "Yelp", "Tripadvisor", "an industry directory"],
+    "software": ["G2", "Capterra", "TrustRadius", "Product Hunt"],
+    "public": [],
+    "general": ["Trustpilot", "Crunchbase", "an industry directory"],
+}
+
+
+def _platform_brief(artifacts, pages, brand):
+    """AG-06: which review or directory platforms suit this kind of business.
+    Public bodies (schools, government) are not reviewed on consumer platforms."""
+    from structured_data import LOCAL_BUSINESS_TYPES
+    types = {t for p in pages for n in iter_nodes(p.jsonld_blocks) for t in types_of(n)}
+    host = urlparse(artifacts.normalized_origin).hostname or ""
+    if types & LOCAL_BUSINESS_TYPES:
+        kind = "local"
+    elif types & {"SoftwareApplication", "WebApplication", "MobileApplication"} or any(p.page_type == "software" for p in pages):
+        kind = "software"
+    elif types & {"GovernmentOrganization", "EducationalOrganization", "CollegeOrUniversity", "School"} \
+            or re.search(r"\.(gov|mil|edu|ac)(\.[a-z]{2})?$", host):
+        kind = "public"
+    else:
+        kind = "general"
+    return {"business_kind": kind, "platforms": _PLATFORMS[kind],
+            "queries": [f'"{brand}" {p}' for p in _PLATFORMS[kind] if not p.startswith("an ")][:3] if brand else []}
 
 
 def finalize_findings(findings, ctx):
@@ -353,6 +417,8 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         independent["metadata"], independent["performance"], dependent["answer_content"],
         independent["crawlability"], independent["directives"], independent["rendering"], independent["machine_readability"],
         independent["ai_crawler_access"], independent["llms_txt"],
+        independent["citation_schema"], independent["contact_markup"],
+        independent["sitemap_lastmod"], independent["entity_links"],
         dependent["freshness"], dependent["corroboration"], dependent["footprint"], dependent["engagement"],
         dependent["agent_corroboration"],
     ]
@@ -361,6 +427,7 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     ctx = ScoringContext.from_artifacts(artifacts, identity_confidence=identity_conf)
     merged = merge_findings(skill_results)
     prioritized, hygiene = finalize_findings(merged, ctx)
+    attach_fix_snippets(prioritized + hygiene, artifacts, independent["entity_identity"])
     recommendations = generate_recommendations(skill_results, prioritized + hygiene, artifacts=artifacts)
     action_plan = build_action_plan(prioritized)
 
@@ -386,6 +453,8 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
         "pages_never_attempted": acq_coverage.get("urls_never_attempted", 0),
         "pages_skipped": telemetry["pages_skipped"],
         "pages_challenged": acq_coverage.get("urls_challenged", 0),
+        "pages_out_of_scope": acq_coverage.get("urls_out_of_scope", 0),
+        "out_of_scope_pages": acq_coverage.get("out_of_scope_pages", []),
         "templates_sampled": acq_coverage.get("templates_sampled", 0),
         "pages_per_template": acq_coverage.get("pages_per_template", {}),
         "key_intents_found": acq_coverage.get("key_intents_found", []),
@@ -438,10 +507,15 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     report["coverage_limited"] = {"sample_only": coverage["pages_never_attempted"] > 0,
                                   "pages_not_analyzed": max(0, coverage["pages_discovered"] - coverage["pages_analyzed"]),
                                   "unassessed_capabilities": [k for k, v in capabilities.items() if not v]}
-    report["top_actions"] = [{"finding_id": a["finding_ids"][0], "summary": a["summary"], "priority": a["priority"],
-                              "severity": a["severity"], "effort": a["effort"], "owner_role": a["owner_role"]}
-                             for a in action_plan[:5]]
-    return _jsonable(validate_report(report, strict_catalog=True))
+    report["top_actions"] = top_actions(action_plan)
+    report["quick_wins"] = quick_wins(action_plan)
+    report = validate_report(report, strict_catalog=True)
+    # Passed checks are computed against the validated report, so the section can
+    # never contradict a finding, hygiene item or recommendation that shipped.
+    results_by_name = {**independent, **dependent}
+    report["whats_working"] = whats_working(artifacts, results_by_name,
+                                            report["findings"] + report.get("hygiene_findings", []) + report["recommendations"])
+    return _jsonable(report)
 
 
 def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False, seed_urls=None) -> dict:
@@ -465,14 +539,17 @@ def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False,
     # A timeout is an execution limitation, never a fabricated site defect.
     return validate_report({
         "site": site_url, "audited_at": datetime.now(timezone.utc).isoformat(), "summary": {},
-        "findings": [], "hygiene_findings": [], "action_plan": [], "top_actions": [],
+        "findings": [], "hygiene_findings": [], "action_plan": [], "top_actions": [], "quick_wins": [], "whats_working": [],
         "recommendations": generate_recommendations([], []),
         "agent_stage": {"status": "not_supplied", "brief": None},
         "coverage": {"pages_discovered": 0, "pages_analyzed": 0, "deadline_reached": result.timed_out,
                      "measurements_unavailable": True, "cancelled": result.cancelled},
         "execution_status": "partial_deadline_reached" if result.timed_out else "degraded",
         "limitations": ["The audit worker did not return a complete report. No site-level conclusions can be drawn.", result.error or "Worker failed"],
-        "confidence": {"score": 0.0, "method": "no completed audit evidence"},
+        "confidence": {"score": 0.0, "level": "low", "limiting_factor": "execution_penalty",
+                       "method": "no completed audit evidence",
+                       "explanation": "Confidence is low (0.00): the audit did not finish, so no site-level conclusion "
+                                      "can be drawn from this report."},
         "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
 
 
