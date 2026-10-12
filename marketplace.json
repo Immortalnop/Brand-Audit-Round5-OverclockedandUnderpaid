@@ -1,0 +1,27 @@
+{
+  "name": "brand-ai-readiness-audit",
+  "version": "9.0.0",
+  "skills": [
+    {
+      "id": "audit-orchestrator",
+      "path": "skills/audit-orchestrator",
+      "entrypoint": true
+    },
+    {
+      "id": "crawl-render-audit",
+      "path": "skills/crawl-render-audit"
+    },
+    {
+      "id": "freshness-corroboration",
+      "path": "skills/freshness-corroboration"
+    },
+    {
+      "id": "engagement-audit",
+      "path": "skills/engagement-audit"
+    },
+    {
+      "id": "entity-corroboration-agent",
+      "path": "skills/entity-corroboration-agent"
+    }
+  ]
+}
