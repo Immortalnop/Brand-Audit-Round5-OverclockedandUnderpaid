@@ -1,7 +1,7 @@
 """Indexing controls and technical signals, scoped to successfully sampled HTML.
 
 Agent-specific meta robots tags are honoured for the classic search agents and
-for the AI agents in common/constants.AI_AGENTS (A12), e.g.
+for the AI agents in common/constants.AI_AGENTS, e.g.
 <meta name="oai-searchbot" content="noindex">.
 """
 import re

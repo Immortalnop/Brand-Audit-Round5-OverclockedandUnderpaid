@@ -127,14 +127,14 @@ def test_confidence_shows_its_method_and_components():
     result = overall_confidence({"pages_discovered": 10, "pages_fetched_attempted": 20, "pages_analyzed": 20,
                                   "templates_sampled": 5, "identity_confidence": 0.4}, "completed")
     assert "method" in result and "components" in result
-    # A6: identity confidence is reported but does not cap report confidence --
+    # Identity confidence is reported but does not cap report confidence --
     # it only limits the off-site findings that depend on it (scoring.py).
     assert result["score"] == 1.0
     assert result["components"]["identity_confidence"] == 0.4
 
 
 def test_large_site_is_not_penalised_for_being_large():
-    # A6/A4: 20 pages across 5 templates is an adequate sample however many URLs exist.
+    # 20 pages across 5 templates is an adequate sample however many URLs exist.
     result = overall_confidence({"pages_discovered": 10000, "pages_fetched_attempted": 20, "pages_analyzed": 20,
                                   "templates_sampled": 5}, "completed")
     assert result["score"] == 1.0

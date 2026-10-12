@@ -1,5 +1,5 @@
 """analyze_access.py -- does an automated client receive the site's content, or a
-bot-protection interstitial? (A2)
+bot-protection interstitial?
 
 Reads only the acquisition snapshot: per-page access verdicts from
 common/access_guard.py, the robots.txt access verdict and challenged probe files.

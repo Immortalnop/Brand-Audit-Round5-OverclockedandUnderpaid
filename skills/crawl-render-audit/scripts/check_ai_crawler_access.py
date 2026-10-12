@@ -1,6 +1,6 @@
 """check_ai_crawler_access.py -- which search and AI agents may fetch the key pages?
 
-A12: every agent in common/constants.AI_AGENTS is evaluated against robots.txt for
+Every agent in common/constants.AI_AGENTS is evaluated against robots.txt for
 the key URLs the crawl actually sampled (homepage, one URL per key intent such as
 /pricing or /blog, the sitemap and /llms.txt), not just '/'. A block is weighted by
 the agent's role:

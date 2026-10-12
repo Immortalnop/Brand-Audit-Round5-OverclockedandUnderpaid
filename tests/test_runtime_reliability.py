@@ -30,7 +30,7 @@ def test_partial_pipe_frame_cannot_defeat_timeout(monkeypatch):
 
 def test_spawn_is_used_and_large_result_is_preserved():
     assert isolation._get_context().get_start_method()=='spawn'
-    from test_v6_regressions import _large_result
+    from test_acquisition_and_isolation import _large_result
     result=isolation.run_isolated(_large_result,timeout_s=5)
     assert result.ok and len(result.value)==2000000
 

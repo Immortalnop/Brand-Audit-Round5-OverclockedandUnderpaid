@@ -1,4 +1,4 @@
-"""generate_recommendations.py -- suggestions that go beyond the detected defects (A15).
+"""generate_recommendations.py -- suggestions that go beyond the detected defects.
 
 The report has three action surfaces, each with one job:
 

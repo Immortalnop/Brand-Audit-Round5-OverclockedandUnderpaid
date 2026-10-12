@@ -1,4 +1,4 @@
-"""assess_freshness.py -- are the dates a site publishes current and consistent? (A9)
+"""assess_freshness.py -- are the dates a site publishes current and consistent?
 
 A missing date is never treated as proof of staleness, and an old date is never a
 finding by itself: "founded 1998" or a 2006 entry in a reference list is supposed to
@@ -24,7 +24,7 @@ machine-readable field or from the words around it (common/dates.py):
 """
 from datetime import datetime, timezone, timedelta
 from models import skill_result, make_finding, insufficient_evidence_result
-from check_helpers import content_pages
+from check_helpers import content_pages, meta_value
 from structured_data import iter_nodes, types_of
 from dates import extract_visible_dates, copyright_years, parse_machine_date
 from url_keys import intent_of
@@ -36,10 +36,6 @@ _VOLATILE_INTENTS = {'pricing', 'plans', 'price', 'products', 'product', 'shop',
                      'faq', 'faqs', 'help', 'support', 'fees', 'admission', 'admissions', 'menu', 'services',
                      'service', 'courses', 'course', 'programs', 'program', 'locations', 'location'}
 _VOLATILE_TYPES = {'product', 'service', 'home', 'contact', 'software'}
-
-
-def _meta(page, key):
-    return next((v for v in ((page.features or {}).get('meta', {}) or {}).get(key, ()) if v and v.strip()), '')
 
 
 def _jsonld_dates(page):
@@ -96,7 +92,7 @@ def assess_freshness(facts, artifacts, deadline, today=None):
         # date-contradiction
         dm = max(jd['dateModified']) if jd['dateModified'] else None
         dp = min(jd['datePublished']) if jd['datePublished'] else None
-        mm = parse_machine_date(_meta(p, 'article:modified_time') or _meta(p, 'og:updated_time'))
+        mm = parse_machine_date(meta_value(p, 'article:modified_time') or meta_value(p, 'og:updated_time'))
         vu = max((d['date'] for d in visible if d['context'] == 'update_claim' and d['precision'] == 'day'), default=None)
         sl = parse_machine_date(lastmods.get(p.url) or lastmods.get(p.final_url or '') or '')
         if dm and dp and dm < dp:
@@ -121,7 +117,7 @@ def assess_freshness(facts, artifacts, deadline, today=None):
             copyright.append((p.url, max(years)))
         # missing-article-dates
         if p.page_type == 'article' and len((p.visible_text or '').split()) > 150:
-            has_machine = bool(jd['datePublished'] or jd['dateModified'] or _meta(p, 'article:published_time')
+            has_machine = bool(jd['datePublished'] or jd['dateModified'] or meta_value(p, 'article:published_time')
                                or (p.features or {}).get('time_values'))
             if not has_machine:
                 missing_dates.append(p.url)

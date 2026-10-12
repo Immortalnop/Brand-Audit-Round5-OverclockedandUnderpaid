@@ -103,9 +103,9 @@ def test_slow_endpoint_times_out_and_is_recorded_as_failed_request():
         instrumentation = Instrumentation()
         artifacts = acquire_site(base_url + "/slow", deadline, limits, instrumentation, allow_private_targets=True)
         assert instrumentation.requests_failed >= 1
-        # A genuine socket timeout is now recorded distinctly from other failure
-        # modes (Round-3 handout: "report budget exhaustion separately [from]
-        # fetch failure", generalized to every failure being named honestly).
+        # A genuine socket timeout is recorded distinctly from other failure
+        # modes: budget exhaustion, a fetch failure and a timeout are different
+        # facts about the run, and each is named honestly.
         assert instrumentation.requests_timed_out >= 1
         page = artifacts.pages[0]
         assert page.status_code is None

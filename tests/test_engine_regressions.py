@@ -1,6 +1,6 @@
-"""Round-5 regression tests: one or more positive AND negative cases for every
-change listed in CHANGES_A.md (A1-A26). Offline: everything runs against the local
-fixture server or synthetic page artifacts."""
+"""Engine regression tests: a positive and a negative case for each correctness
+fix in the scoring, merging, acquisition and reporting path. Offline, against the
+local fixture server or synthetic page artifacts."""
 import ast
 import json
 import os
@@ -51,20 +51,20 @@ def snapshot(pages, robots=None, meta=None, sitemap=None):
                           freeze_value(meta or {'coverage': {}}), ())
 
 
-# ---------------------------------------------------------------- A1
-def test_a1_challenge_pages_are_classified():
+# ----------------------------------------------------------------
+def test_challenge_pages_are_classified():
     assert classify_access(403, {'cf-mitigated': 'challenge'}, CF_BODY, 40)['kind'] == 'challenge'
     assert classify_access(200, {}, PYPI_BODY, 90)['vendor'] == 'generic'
     assert classify_access(429, {'Retry-After': '30'}, '', 0)['kind'] == 'rate_limited'
 
 
-def test_a1_article_mentioning_cloudflare_is_not_a_challenge():
+def test_article_mentioning_cloudflare_is_not_a_challenge():
     body = '<html><title>Our CDN</title><body>' + ('We moved to Cloudflare and challenges.cloudflare.com '
                                                    'docs helped. ' * 60) + '</body></html>'
     assert classify_access(200, {'server': 'cloudflare'}, body, 5000)['kind'] == 'ok'
 
 
-def test_a1_challenge_pages_excluded_from_content_checks():
+def test_challenge_pages_excluded_from_content_checks():
     from analyze_experience import analyze_experience
     from build_site_graph import build_site_graph
     pages = [page(PYPI_BODY, f'https://shop.example/p/{i}/') for i in range(5)]
@@ -76,8 +76,8 @@ def test_a1_challenge_pages_excluded_from_content_checks():
     assert graph['dead_ends'] == [] and graph['nodes'] == {}
 
 
-# ---------------------------------------------------------------- A2
-def test_a2_robots_4xx_means_allowed_per_rfc9309():
+# ----------------------------------------------------------------
+def test_robots_4xx_means_allowed_per_rfc9309():
     url, stop = start_server(routes={'/robots.txt': (403, 'Forbidden', {'Content-Type': 'text/plain'})})
     try:
         a = acquire_site(url + '/', make_deadline(LIMITS), LIMITS, allow_private_targets=True)
@@ -87,7 +87,7 @@ def test_a2_robots_4xx_means_allowed_per_rfc9309():
     assert len(a.pages) > 1
 
 
-def test_a2_challenged_robots_fetches_homepage_only_and_reports_wall():
+def test_challenged_robots_fetches_homepage_only_and_reports_wall():
     from analyze_access import analyze_access
     routes = {'/robots.txt': (403, CF_BODY, {'Content-Type': 'text/html', 'cf-mitigated': 'challenge'}),
               '/': (403, CF_BODY, {'Content-Type': 'text/html', 'cf-mitigated': 'challenge'})}
@@ -102,7 +102,7 @@ def test_a2_challenged_robots_fetches_homepage_only_and_reports_wall():
     assert {'bot-challenge-robots', 'bot-challenge-sitewide'} <= ids
 
 
-def test_a2_robots_5xx_fails_closed():
+def test_robots_5xx_fails_closed():
     url, stop = start_server(robots_mode='error')
     try:
         a = acquire_site(url + '/', make_deadline(LIMITS), LIMITS, allow_private_targets=True)
@@ -111,7 +111,7 @@ def test_a2_robots_5xx_fails_closed():
     assert a.robots_data['conservative_fail_closed'] and a.pages == ()
 
 
-def test_a2_rate_challenge_after_some_pages():
+def test_rate_challenge_after_some_pages():
     from analyze_access import analyze_access
     pages = [page('<html><h1>Hi</h1>' + 'text ' * 200, f'https://shop.example/a{i}') for i in range(3)]
     pages += [page(PYPI_BODY, 'https://shop.example/b')]
@@ -119,14 +119,14 @@ def test_a2_rate_challenge_after_some_pages():
     assert ids == {'bot-challenge-rate'}
 
 
-def test_a2_no_wall_no_finding():
+def test_no_wall_no_finding():
     from analyze_access import analyze_access
     pages = [page('<html><h1>Hi</h1>' + 'text ' * 200)]
     assert analyze_access(snapshot(pages), make_deadline(LIMITS))['findings'] == []
 
 
-# ---------------------------------------------------------------- A3
-def test_a3_finalize_merges_agent_findings_idempotently(tmp_path):
+# ----------------------------------------------------------------
+def test_finalize_merges_agent_findings_idempotently(tmp_path):
     import run_audit
     from finalize_report import finalize
     url, stop = start_server(clean=True)
@@ -151,7 +151,7 @@ def test_a3_finalize_merges_agent_findings_idempotently(tmp_path):
     assert finalize(report, str(tmp_path / 'missing.json'))['agent_stage']['status'] == 'not_supplied'
 
 
-# ---------------------------------------------------------------- A4 / A5
+# ----------------------------------------------------------------
 def _f(check, severity, pages, confidence=0.9, status='confirmed', effort='low'):
     f = make_finding(category='ai_discoverability', finding_type='defect', severity=severity, status=status,
                      confidence=confidence, title=check, root_cause=check,
@@ -162,7 +162,7 @@ def _f(check, severity, pages, confidence=0.9, status='confirmed', effort='low')
     return f
 
 
-def test_a4_large_site_does_not_lower_severity_and_absence_uses_sample_strength():
+def test_large_site_does_not_lower_severity_and_absence_uses_sample_strength():
     ctx = ScoringContext(40, 8, {}, 'https://shop.example/')
     f = apply_scoring(_f('no-jsonld', 'high', [f'https://shop.example/{i}' for i in range(40)], 0.85), ctx)
     assert f['severity'] == 'high' and f['confidence'] == 0.85
@@ -170,7 +170,7 @@ def test_a4_large_site_does_not_lower_severity_and_absence_uses_sample_strength(
     assert thin['confidence'] < 0.5 and thin['severity_rationale']['sample_strength'] == sample_strength(2, 1)
 
 
-def test_a4_single_non_key_page_steps_down_but_access_checks_do_not():
+def test_single_non_key_page_steps_down_but_access_checks_do_not():
     ctx = ScoringContext(20, 5, {'https://shop.example/x': 'other'}, 'https://shop.example/')
     f = apply_scoring(_f('missing-title', 'medium', ['https://shop.example/x']), ctx)
     assert f['severity'] == 'low'
@@ -178,7 +178,7 @@ def test_a4_single_non_key_page_steps_down_but_access_checks_do_not():
     assert g['severity'] == 'critical'
 
 
-def test_a4_scoring_is_idempotent_and_a5_priority_follows_severity():
+def test_scoring_is_idempotent_and_priority_follows_severity():
     ctx = ScoringContext(20, 5, {'https://shop.example/x': 'other'}, 'https://shop.example/')
     f = apply_scoring(_f('missing-title', 'medium', ['https://shop.example/x']), ctx)
     once = (f['severity'], f['confidence'], f['priority_score'])
@@ -187,8 +187,8 @@ def test_a4_scoring_is_idempotent_and_a5_priority_follows_severity():
     assert priority_consistent(f) and f['suggested_action']['priority'] == f['severity']
 
 
-# ---------------------------------------------------------------- A7
-def test_a7_identity_falls_back_to_first_party_naming():
+# ----------------------------------------------------------------
+def test_identity_falls_back_to_first_party_naming():
     from resolve_entity_identity import resolve_entity_identity
     pages = [page(f'<html><head><title>{t} | Acme Tools</title></head><body><h1>{t}</h1>'
                   '<footer>© 2025 Acme Tools Pvt Ltd</footer></body></html>', f'https://shop.example/{t}')
@@ -198,8 +198,8 @@ def test_a7_identity_falls_back_to_first_party_naming():
     assert 0.7 <= data['confidence'] < 0.85 and data['declared'] is False
 
 
-# ---------------------------------------------------------------- A8
-def test_a8_template_keys_and_visit_keys():
+# ----------------------------------------------------------------
+def test_template_keys_and_visit_keys():
     assert template_key('https://x/project/requests/2.31.0/') == template_key('https://x/project/requests/0.1/')
     assert template_key('https://x/blog/post-a') == template_key('https://x/blog/post-b')
     assert template_key('https://x/blog') != template_key('https://x/pricing')
@@ -207,7 +207,7 @@ def test_a8_template_keys_and_visit_keys():
     assert strip_tracking('https://x/a?id=3&utm_medium=m') == 'https://x/a?id=3'
 
 
-def test_a8_sample_is_template_diverse():
+def test_sample_is_template_diverse():
     items = ''.join(f'<a href="/item/{i}">Item {i}</a>' for i in range(60))
     home = ('<html><head><title>Shop</title></head><body><nav><a href="/about">About</a>'
             '<a href="/pricing">Pricing</a><a href="/faq">FAQ</a></nav>' + items + '</body></html>')
@@ -226,8 +226,8 @@ def test_a8_sample_is_template_diverse():
     assert sum(p.startswith('/item/') for p in paths) <= LIMITS.MAX_PER_TEMPLATE
 
 
-# ---------------------------------------------------------------- A9
-def test_a9_dates_classified_by_nearest_context():
+# ----------------------------------------------------------------
+def test_dates_classified_by_nearest_context():
     ds = extract_visible_dates('Offer last updated 2019-03-01. Promotion valid through 2020-06-15. Founded March 1998.')
     ctx = {d['raw']: d['context'] for d in ds}
     assert ctx['2019-03-01'] == 'update_claim' and ctx['2020-06-15'] == 'expiry' and ctx['March 1998'] == 'historical'
@@ -235,7 +235,7 @@ def test_a9_dates_classified_by_nearest_context():
     assert not extract_visible_dates('Meeting on 04/05/2024')  # ambiguous DD/MM vs MM/DD is skipped
 
 
-def test_a9_old_reference_dates_are_not_findings():
+def test_old_reference_dates_are_not_findings():
     from assess_freshness import assess_freshness
     p = page('<html><h1>Classifiers</h1><p>Added 2006-09-30. ' + 'Development Status :: 5 ' * 50 + '</p></html>',
              'https://shop.example/classifiers/')
@@ -243,7 +243,7 @@ def test_a9_old_reference_dates_are_not_findings():
     assert res['findings'] == []
 
 
-def test_a9_contradictions_expiry_and_copyright():
+def test_contradictions_expiry_and_copyright():
     from assess_freshness import assess_freshness
     today = date.today()
     old = (today - timedelta(days=900)).isoformat()
@@ -256,8 +256,8 @@ def test_a9_contradictions_expiry_and_copyright():
     assert {'date-contradiction', 'expired-offer', 'stale-update-claim', 'stale-copyright'} <= ids
 
 
-# ---------------------------------------------------------------- A10
-def test_a10_pdf_only_prices_detected_and_text_prices_not():
+# ----------------------------------------------------------------
+def test_pdf_only_prices_detected_and_text_prices_not():
     from analyze_nontext_facts import analyze_nontext_facts
     meta = {'coverage': {}, 'asset_links': [{'url': 'https://shop.example/price-list.pdf', 'anchor': 'Price list',
                                               'linked_from': 'https://shop.example/pricing', 'fact_keyword': True}],
@@ -270,15 +270,15 @@ def test_a10_pdf_only_prices_detected_and_text_prices_not():
     assert analyze_nontext_facts(snapshot([full], meta=meta), make_deadline(LIMITS))['findings'] == []
 
 
-def test_a10_menu_image_detected():
+def test_menu_image_detected():
     from analyze_nontext_facts import analyze_nontext_facts
     p = page('<html><h1>Menu</h1><img src="/img/menu-2026.jpg" width="1200"></html>', 'https://shop.example/menu')
     ids = {f['check_id'] for f in analyze_nontext_facts(snapshot([p]), make_deadline(LIMITS))['findings']}
     assert ids == {'facts-in-images'}
 
 
-# ---------------------------------------------------------------- A11
-def test_a11_structured_data_completeness_values_and_consistency():
+# ----------------------------------------------------------------
+def test_structured_data_completeness_values_and_consistency():
     from validate_structured_data import validate_structured_data
     p = page('<html><script type="application/ld+json">{"@type":"Product","name":"Mug","offers":{"@type":"Offer",'
              '"price":"499","priceCurrency":"Rupees"}}</script><h1>Mug</h1><p>Now only Rs. 599.</p></html>',
@@ -293,7 +293,7 @@ def test_a11_structured_data_completeness_values_and_consistency():
     assert price_numbers('Only ₹1,299.00 today') == {'1299'}
 
 
-def test_a11_no_jsonld_lists_types_and_drafts_snippets():
+def test_no_jsonld_lists_types_and_drafts_snippets():
     from analyze_machine_readability import analyze_machine_readability
     pages = [page('<html><title>Shop</title><h1>Shop</h1></html>', 'https://shop.example/'),
              page('<html><title>Mug</title><h1>Mug</h1></html>', 'https://shop.example/products/mug')]
@@ -304,8 +304,8 @@ def test_a11_no_jsonld_lists_types_and_drafts_snippets():
     assert any('"Organization"' in s for s in snippets.values()) and any('"Product"' in s for s in snippets.values())
 
 
-# ---------------------------------------------------------------- A12
-def test_a12_crawler_blocks_weighted_by_role():
+# ----------------------------------------------------------------
+def test_crawler_blocks_weighted_by_role():
     from check_ai_crawler_access import check_ai_crawler_access
     robots = {'status': 'ok', 'ai_crawler_directives': {'GPTBot': 'disallow', 'Bingbot': 'allow'},
               'ai_crawler_paths': {'GPTBot': ['https://shop.example/'], 'ChatGPT-User': ['https://shop.example/blog/'],
@@ -315,8 +315,8 @@ def test_a12_crawler_blocks_weighted_by_role():
     assert sev == {'search-crawler-blocked': 'critical', 'user-fetch-blocked': 'high', 'training-crawler-blocked': 'low'}
 
 
-# ---------------------------------------------------------------- A13
-def test_a13_catalog_has_real_mechanisms_and_metadata():
+# ----------------------------------------------------------------
+def test_catalog_has_real_mechanisms_and_metadata():
     mechanisms = [v['mechanism'] for v in CATALOG.values()]
     assert not [k for k, v in CATALOG.items() if v['mechanism'].startswith('The observed condition')]
     assert len(set(mechanisms)) == len(mechanisms)
@@ -326,7 +326,7 @@ def test_a13_catalog_has_real_mechanisms_and_metadata():
         assert m['tier'] in ('core', 'hygiene')
 
 
-def test_a13_steps_render_as_readable_sentence():
+def test_steps_render_as_readable_sentence():
     f = make_finding(category='engagement', finding_type='defect', severity='low', status='confirmed', confidence=.5,
                      title='t', root_cause='r', evidence=[], provenance={'rule_id': 'not-catalogued'},
                      suggested_action={'summary': 's', 'steps': ['Identify page types', 'Add markup'],
@@ -334,8 +334,8 @@ def test_a13_steps_render_as_readable_sentence():
     assert f['suggested_action']['implementation_detail'] == '1) Identify page types; 2) Add markup.'
 
 
-# ---------------------------------------------------------------- A14 / A16
-def test_a14_root_cause_group_merge_across_categories():
+# ----------------------------------------------------------------
+def test_root_cause_group_merge_across_categories():
     urls = ['https://shop.example/a', 'https://shop.example/b']
     a = _f('no-headings', 'low', urls)
     b = _f('h1', 'low', urls)
@@ -347,7 +347,7 @@ def test_a14_root_cause_group_merge_across_categories():
     assert len(merged) == 2 and combined and set(combined[0]['check_ids']) == {'no-headings', 'h1'}
 
 
-def test_a16_repeated_evidence_is_grouped():
+def test_repeated_evidence_is_grouped():
     from analyze_metadata import analyze_metadata
     pages = [page('<html lang="en"><title>Same title here ok</title><h1>x</h1></html>', f'https://shop.example/{i}')
              for i in range(6)]
@@ -356,8 +356,8 @@ def test_a16_repeated_evidence_is_grouped():
     assert len(f['evidence']) == 1 and f['evidence'][0]['description'].startswith('6 page(s)')
 
 
-# ---------------------------------------------------------------- A17 / A15 / A25
-def test_a15_a17_a25_report_structure():
+# ----------------------------------------------------------------
+def test_report_structure():
     import run_audit
     from render_report import render_markdown
     url, stop = start_server(sitemap_mode='broken_nav')
@@ -376,8 +376,8 @@ def test_a15_a17_a25_report_structure():
     assert '## Top actions' in md and '**Why it matters.**' in md
 
 
-# ---------------------------------------------------------------- A18
-def test_a18_hydration_payload_gap_detected_without_browser():
+# ----------------------------------------------------------------
+def test_hydration_payload_gap_detected_without_browser():
     from analyze_rendering import analyze_rendering
     strings = [f'Product number {i} ships free across the whole country today' for i in range(8)]
     html = ('<html><title>Shop</title><body><div id="__next"></div><script id="__NEXT_DATA__" type="application/json">'
@@ -387,15 +387,15 @@ def test_a18_hydration_payload_gap_detected_without_browser():
     assert f['status'] == 'suspected' and f['confidence'] == 0.8 and 'exist only in the JS payload' in f['evidence_text']
 
 
-def test_a18_thin_page_without_spa_signal_is_not_a_defect():
+def test_thin_page_without_spa_signal_is_not_a_defect():
     from analyze_rendering import analyze_rendering
     res = analyze_rendering(snapshot([page('<html><title>Hi</title><h1>Contact</h1><p>Call us.</p></html>',
                                            'https://shop.example/x')]), make_deadline(LIMITS), LIMITS, {})
     assert not [f for f in res['findings'] if f['finding_type'] == 'defect']
 
 
-# ---------------------------------------------------------------- A19 / A23 / A24
-def test_a19_analysis_scripts_make_no_direct_network_calls():
+# ----------------------------------------------------------------
+def test_analysis_scripts_make_no_direct_network_calls():
     allowed = {'acquire_site.py', 'analyze_rendering.py', 'run_audit.py'}
     for src in (ROOT / 'skills').glob('*/scripts/*.py'):
         if src.name in allowed:
@@ -407,14 +407,21 @@ def test_a19_analysis_scripts_make_no_direct_network_calls():
                 assert not any(n.startswith(('urllib.request', 'http.client', 'socket')) for n in names), src
 
 
-def test_a23_no_dev_history_references():
+def test_no_dev_history_references():
+    """Shipped code explains itself. References to how it was built (handout
+    rounds, internal change-list item numbers, work packages, old version names)
+    mean nothing to a reader of the marketplace, so they stay out of it."""
     import re
-    pat = re.compile(r'Round-3 (review|handout)|\bdonor\b|\bv6\b|Step 2\.\d')
-    for src in list((ROOT / 'common').glob('*.py')) + list((ROOT / 'skills').glob('*/scripts/*.py')):
-        assert not pat.search(src.read_text()), src
+    pat = re.compile(r'Round[- ]\d|\bdonor\b|\bv[0-9]\b|Step \d\.\d|\bWP\d|\(A\d{1,2}[),/]|\bA\d{1,2}:')
+    sources = (list((ROOT / 'common').glob('*.py')) + list((ROOT / 'skills').glob('*/scripts/*.py'))
+               + list((ROOT / 'skills').glob('*/SKILL.md')) + list((ROOT / 'skills').glob('*/references/*.md'))
+               + [ROOT / 'README.md'])
+    for src in sources:
+        found = pat.search(src.read_text())
+        assert not found, f'{src}: {found.group(0)!r}'
 
 
-def test_a24_bootstrap_finds_marketplace_and_fails_clearly_outside(tmp_path):
+def test_bootstrap_finds_marketplace_and_fails_clearly_outside(tmp_path):
     from _bootstrap import marketplace_root
     assert Path(marketplace_root()) == ROOT
     lone = tmp_path / 'lone'
@@ -425,18 +432,18 @@ def test_a24_bootstrap_finds_marketplace_and_fails_clearly_outside(tmp_path):
     assert proc.returncode == 2 and 'install the whole marketplace' in proc.stderr.lower()
 
 
-def test_a21_site_argument_is_required():
+def test_site_argument_is_required():
     proc = subprocess.run([sys.executable, str(ROOT / 'skills/audit-orchestrator/scripts/run_audit.py')],
                           capture_output=True, text=True, timeout=20)
     assert proc.returncode == 2 and 'site' in proc.stderr
 
 
-def test_a26_manifest_version_and_single_entrypoint():
+def test_manifest_version_and_single_entrypoint():
     m = json.loads((ROOT / 'marketplace.json').read_text())
     assert m['version'].startswith('9.') and sum(1 for s in m['skills'] if s.get('entrypoint')) == 1
 
 
-def test_a4_a5_ordering_severity_first_and_site_level_reach():
+def test_ordering_severity_first_and_site_level_reach():
     from prioritize_findings import prioritize_findings
     ctx = ScoringContext(10, 5, {}, 'https://shop.example/')
     low = apply_scoring(_f('h1', 'low', [f'https://shop.example/{i}' for i in range(5)]), ctx)
@@ -445,7 +452,7 @@ def test_a4_a5_ordering_severity_first_and_site_level_reach():
     assert prioritize_findings([low, med])[0] is med
 
 
-# ---------------------------------------------------------------- A3 follow-up: AG-01 passage
+# ---------------------------------------------------------------- AG-01 passage
 _NAV = '<nav><a href="/">Home</a> <a href="/shop">Shop</a> <a href="/login">Log in</a> Skip to main content</nav>'
 
 

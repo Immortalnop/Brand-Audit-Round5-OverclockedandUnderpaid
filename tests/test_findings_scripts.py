@@ -125,8 +125,8 @@ def test_assess_freshness_no_dates_is_insufficient_evidence():
 def test_assess_freshness_malformed_input_raises_and_is_caught_upstream():
     # Malformed input: no snapshot at all. The script is allowed to raise;
     # run_audit's worker wrapper (_await_result) is what must contain the blast radius.
-    # (Since Round 5 freshness reads dates from the pages themselves, so the
-    # malformed input is the snapshot rather than a fact missing keys.)
+    # (Freshness reads dates from the pages themselves, so the malformed input
+    # is the snapshot rather than a fact missing keys.)
     facts = intermediate_artifact("important_facts", data={"facts": [{"type": "date"}]})
     deadline = make_deadline(_LIMITS)
     with pytest.raises(AttributeError):

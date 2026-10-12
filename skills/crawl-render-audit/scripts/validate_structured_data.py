@@ -1,5 +1,5 @@
 """validate_structured_data.py -- is the JSON-LD that exists complete, well-formed
-and consistent with the visible page? (A11)
+and consistent with the visible page?
 
 analyze_machine_readability.py answers "is the right @type present?". This script
 answers the next three questions for every typed node on every content page:

@@ -19,10 +19,6 @@ from models import intermediate_artifact
 from dates import extract_visible_dates
 from check_helpers import is_challenged
 
-_DATE_RE = re.compile(
-    r"\b(19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2}\b"
-    r"|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+(19|20)\d{2}\b"
-)
 _PRICE_RE = re.compile(r"(?:[$\u20ac\u00a3\u20b9]|\bRs\.?|\bINR|\bUSD)\s?\d[\d,]*(\.\d{2})?")
 _PHONE_RE = re.compile(r"\+?\d[\d\-\s\(\)]{7,}\d")
 
@@ -53,9 +49,9 @@ def extract_claims(artifacts, deadline):
     claims = []
     for page in artifacts.pages:
         if is_challenged(page):
-            continue  # a bot-challenge interstitial carries no site facts (A1)
+            continue  # a bot-challenge interstitial carries no site facts
         text = page.visible_text
-        # A9: a date's category comes from the words around it ("last updated",
+        # A date's category comes from the words around it ("last updated",
         # "valid until", "founded" ...), not from the page type; page type is only a
         # fallback for dates with no telling context.
         fallback = _DATE_CATEGORY_BY_PAGE_TYPE.get(page.page_type, "unclassified")

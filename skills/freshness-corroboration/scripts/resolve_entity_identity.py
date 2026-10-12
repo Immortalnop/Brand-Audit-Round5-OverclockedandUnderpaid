@@ -80,7 +80,7 @@ def resolve_entity_identity(artifacts, deadline):
     pages = content_pages(artifacts, require_features=False)
     fallback = identity_candidates(pages, artifacts.normalized_origin)
     if not org_blocks:
-        # A7: no Organization JSON-LD. Fall back through WebSite name / og:site_name,
+        # No Organization JSON-LD. Fall back through WebSite name / og:site_name,
         # the common title segment, the footer copyright holder and finally the
         # domain label. Confidence is the weight of the best level found, plus 0.05
         # per other source that agrees, but capped below 0.85 -- an inferred

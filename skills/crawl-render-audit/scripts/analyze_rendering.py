@@ -73,7 +73,7 @@ def _norm(s):
 
 
 def static_render_signals(page):
-    """A18: browser-free evidence that a page's content depends on JavaScript.
+    """Browser-free evidence that a page's content depends on JavaScript.
 
     - shell: an SPA mount node (#root, #__next, #app ...) with no text inside it,
       or a <noscript> asking for JavaScript;
@@ -194,7 +194,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
 
     heuristic_gap_pages = _heuristic_gap_pages(artifacts.pages)
     # Static signals for thin pages plus any page whose hydration payload carries
-    # content missing from its HTML (A18).
+    # content missing from its HTML.
     candidates = {}
     for p in artifacts.pages:
         if p.status_code != 200 or is_challenged(p) or "non_html_content" in p.warnings or "login_page" in p.warnings:

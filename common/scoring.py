@@ -1,5 +1,5 @@
 """scoring.py -- one place that turns detector output into severity, confidence and
-priority (A4, A5).
+priority.
 
 Design rules
 ------------
@@ -121,7 +121,7 @@ def apply_scoring(finding, ctx):
             adjustment = (f'absence observed on only {ctx.content_page_count} content page(s): capped at medium'
                           if adjustment == 'none' else adjustment + f'; capped at medium ({ctx.content_page_count} page sample)')
     if finding.get('category') in OFF_SITE_CATEGORIES and ctx.identity_confidence is not None:
-        # A6: identity confidence gates only the off-site findings that depend on it.
+        # Identity confidence gates only the off-site findings that depend on it.
         confidence = round(min(confidence, max(0.3, ctx.identity_confidence)), 3)
     if finding['status'] == 'insufficient_evidence':
         severity = 'low'

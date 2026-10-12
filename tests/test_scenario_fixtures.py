@@ -1,5 +1,5 @@
 """Scenario fixtures against the local fixture server (tests/fixtures_server.py),
-added per Round-3 review: a multi-brand (conflicting-identity) site, a page with
+a multi-brand (conflicting-identity) site, a page with
 stale commercial facts, a broken-navigation (sitemap-only isolated cluster) site,
 and external-search-unavailable combos evaluated against a real, fixture-crawled
 identity rather than a synthetic one."""
@@ -77,8 +77,8 @@ def test_multi_brand_site_suppresses_footprint_even_with_provider_configured(mon
 
 
 # ---------------------------------------------------------------------------
-# Stale commercial facts on a /product page. Since Round 5 (A9) a date's meaning
-# comes from the words around it: "valid through 2020-06-15" is an expired offer
+# Stale commercial facts on a /product page. A date's meaning comes from the
+# words around it: "valid through 2020-06-15" is an expired offer
 # (high), "last updated 2019-03-01" on a product page is a stale update claim.
 # ---------------------------------------------------------------------------
 

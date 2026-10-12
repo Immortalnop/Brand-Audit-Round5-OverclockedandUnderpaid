@@ -22,7 +22,7 @@ search feature.
 import re
 from collections.abc import Mapping
 
-from check_helpers import eligible_pages
+from check_helpers import content_pages
 from models import make_finding, skill_result
 from structured_data import normalize_type
 
@@ -246,7 +246,7 @@ def analyze_citation_schema(artifacts, deadline):
     if deadline.expired():
         return skill_result("crawl-render-audit", status="insufficient_evidence",
                             warnings=["Citation schema checks skipped: deadline reached."])
-    pages = eligible_pages(artifacts)
+    pages = content_pages(artifacts)
     invalid, opportunities, present = [], [], {}
     for page in pages:
         found, problems = _page_markup(page)

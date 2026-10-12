@@ -1,6 +1,7 @@
-"""test_additions_round5.py -- the checks, report sections and precision fixes added
-on top of the Round 5 engine (features merged from the add_md branch, and the
-fixes found by comparing the two engines on live sites).
+"""The later checks, report sections and precision fixes: form classification,
+login pages, small-sample severity, rate-limited robots, citation and contact
+markup, sitemap dates, entity links, fix snippets, the rendered report,
+determinism and the agent stage.
 
 Every test runs offline: unit tests on synthetic pages, plus a few end-to-end
 audits of the local fixture sites in tests/archetype_sites.py.
@@ -348,6 +349,14 @@ def test_explain_reports_measured_behaviour():
     assert "acquisition" in text and "% of measured stage time" in text
     # Every line is prefixed, so it can never be mistaken for the JSON on stdout.
     assert all(line.startswith("[explain]") for line in text.splitlines())
+
+
+def test_explain_states_the_budget_actually_in_force():
+    """--timeout lowers the cap, so the block must not quote the default one."""
+    from dataclasses import replace
+    from run_audit import explain_run
+    text = explain_run({"coverage": {"runtime_seconds": 3}, "confidence": {}}, replace(LIMITS, TOTAL_AUDIT_TIMEOUT_S=45))
+    assert "3 s (budget 45 s)" in text and "270" not in text
 
 
 def test_explain_survives_a_report_with_no_telemetry():

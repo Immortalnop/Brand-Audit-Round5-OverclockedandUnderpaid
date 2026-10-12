@@ -1,4 +1,6 @@
-"""Step 2 regression coverage: one snapshot, catalog contract and calibrated ports."""
+"""The catalog contract (every emitted rule ID is catalogued, and every catalogued
+ID is emitted) and the snapshot checks that read one acquisition: metadata,
+performance, answer content, structured data and engagement."""
 import ast
 import json
 import sys

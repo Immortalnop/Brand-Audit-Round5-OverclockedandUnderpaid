@@ -12,7 +12,7 @@ this script only reads it, never assigns it.
 import json
 from collections.abc import Mapping
 from models import skill_result, make_finding, coverage_ratio
-from check_helpers import content_pages
+from check_helpers import content_pages, meta_value
 from identity_signals import best_name
 from structured_data import ORGANIZATION_TYPES
 
@@ -39,18 +39,14 @@ def _page_jsonld_types(page):
     return set().union(*(types_of(n) for n in iter_nodes(page.jsonld_blocks)))
 
 
-def _meta(page, key):
-    return next((v for v in ((page.features or {}).get('meta', {}) or {}).get(key, ()) if v and v.strip()), '')
-
-
 def proposed_snippet(page, page_type, brand):
     """A ready-to-review JSON-LD draft built only from facts already on the page
     (title, description, canonical, og:image, brand name). Recommend-only: it is
     text in the report, never applied to the site."""
     url = page.canonical_url or page.final_url or page.url
     title = (page.title or '').strip()
-    desc = (page.meta_description or _meta(page, 'og:description') or '').strip()
-    image = _meta(page, 'og:image')
+    desc = (page.meta_description or meta_value(page, 'og:description') or '').strip()
+    image = meta_value(page, 'og:image')
     if page_type == 'home':
         node = {"@context": "https://schema.org", "@graph": [
             {"@type": "Organization", "@id": url.rstrip('/') + "/#organization", "name": brand or title,

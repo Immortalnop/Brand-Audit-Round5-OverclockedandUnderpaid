@@ -27,12 +27,12 @@ class Limits:
     PER_FETCH_TIMEOUT_MS: int = 3500
     MAX_EXTERNAL_CONCURRENCY: int = 4
     MAX_TOTAL_HTTP_REQUESTS: int = 90
-    # Representative sampling (A8): at most this many pages per URL template.
+    # Representative sampling: at most this many pages per URL template.
     MAX_PER_TEMPLATE: int = 3
-    # Courtesy stop (A1/A2): stop crawling after this many consecutive challenge
+    # Courtesy stop: stop crawling after this many consecutive challenge
     # or rate-limit responses -- repeating them adds load and no evidence.
     MAX_CONSECUTIVE_CHALLENGES: int = 3
-    # Non-text facts (A10): small, robots-checked range reads of key-fact PDFs.
+    # Non-text facts: small, robots-checked range reads of key-fact PDFs.
     MAX_ASSET_PROBES: int = 3
     ASSET_PROBE_BYTES: int = 65_536
 
@@ -40,7 +40,7 @@ class Limits:
 DEFAULT_LIMITS = Limits()
 
 
-# AI and search agents evaluated against robots.txt (A12). The role decides how
+# AI and search agents evaluated against robots.txt. The role decides how
 # much a block hurts: classic search indexes and AI search indexes decide whether a
 # page can be found and cited at all; user-triggered fetchers are what an assistant
 # uses to read a page live when a user asks about it; training crawlers only affect
@@ -56,7 +56,7 @@ AI_AGENTS = (
 )
 AI_AGENT_ROLE = dict(AI_AGENTS)
 
-# Keywords that mark a link, file or image as carrying key business facts (A10).
+# Keywords that mark a link, file or image as carrying key business facts.
 FACT_KEYWORDS = (
     "price", "pricing", "prices", "rate", "rates", "tariff", "fee", "fees", "menu", "catalog", "catalogue",
     "brochure", "spec", "specs", "specification", "datasheet", "timetable", "schedule", "hours",

@@ -64,7 +64,7 @@ def test_recommendations_present_when_all_evidence_insufficient():
     results = [skill_result("s", findings=[insufficient])]
     recs = generate_recommendations(results, [insufficient])
     assert len(recs) > 0
-    # Round 5 (A15): the insufficient-evidence item stays in `findings` (it is not
+    # The insufficient-evidence item stays in `findings` (it is not
     # lost) and is NOT copied into recommendations; recommendations hold only
     # beyond-defect and baseline items.
     assert all(r["provenance"].get("finding_id") is None for r in recs)
@@ -127,7 +127,7 @@ def test_robots_inaccessible_cascade_merges_into_single_finding():
 
 
 def test_recommendations_never_copy_findings_and_action_plan_references_them():
-    # Round 5 (A15): a finding appears once, in `findings`; the action plan points
+    # A finding appears once, in `findings`; the action plan points
     # at it by id, and recommendations never duplicate it.
     from generate_recommendations import build_action_plan
     f = _finding("ai_discoverability", "pages lack description", ["https://x/page1", "https://x/page2"],

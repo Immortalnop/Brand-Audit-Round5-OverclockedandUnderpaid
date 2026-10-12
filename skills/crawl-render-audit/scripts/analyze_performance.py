@@ -1,13 +1,13 @@
 """Measured retrieval and static loading hints; no browser timings or new fetches."""
 from statistics import median
-from check_helpers import eligible_pages, observation
+from check_helpers import content_pages, observation
 from models import skill_result
 
 CHECK_IDS = frozenset({'heavy-html','markup-ratio','blocking-scripts','image-sizing','fetch-latency','sitemap-unavailable'})
 
 
 def analyze_performance(artifacts, deadline):
-    pages=eligible_pages(artifacts)
+    pages=content_pages(artifacts)
     out=[]
     if deadline.expired():
         return skill_result('crawl-render-audit',status='insufficient_evidence',warnings=['Performance checks skipped: deadline reached.'])

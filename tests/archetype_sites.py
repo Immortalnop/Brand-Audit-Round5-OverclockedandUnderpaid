@@ -494,7 +494,7 @@ TRAPS = {"news": NEWS, "splash": SPLASH, "store": STORE}
 
 
 # ---------------------------------------------------------------------------
-# Robustness sites (tests/test_additions_round5.py). Each reproduces a way a real
+# Robustness sites (tests/test_checks_and_report_sections.py). Each reproduces a way a real
 # acquisition goes wrong: the audit must still return a valid, honest report.
 # ---------------------------------------------------------------------------
 

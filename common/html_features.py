@@ -46,7 +46,7 @@ def _leaf_strings(value,out,limit):
 def _hydration_strings(script,limit):
     """Human-readable strings carried in a client-side hydration payload. If many
     of them never appear in the server-sent visible text, the content exists only
-    for clients that execute JavaScript (A18)."""
+    for clients that execute JavaScript."""
     raw=''.join(script['parts'])
     if not raw or len(raw)>2_000_000:return []
     is_payload=script['id'] in _HYDRATION_IDS or (script['type']=='application/json' and len(raw)>200) or _HYDRATION_ASSIGN.search(raw[:5000])
@@ -78,10 +78,10 @@ class Document(HTMLParser):
         self.landmarks=set();self.head_blocking_scripts=0;self.images_missing_dims=0;self.images_lazy=0
         self.canonicals=[];self.paragraph_text=[]
         self._script=None
-        # Round-5 observations (A8, A9, A10, A18): which links sit in site-wide
-        # navigation regions, footer text (copyright year / holder), image and
-        # iframe metadata (facts locked in non-text), <time datetime> values, and
-        # client-side hydration payloads (raw-vs-rendered proxy without a browser).
+        # Which links sit in site-wide navigation regions, footer text
+        # (copyright year and holder), image and iframe metadata (facts locked in
+        # non-text), <time datetime> values, and client-side hydration payloads
+        # (a raw-vs-rendered proxy that needs no browser).
         self.region_links=[];self.footer_text=[];self.images_meta=[];self.iframes=[]
         self.time_values=[];self.noscript_text=[];self.hydration_strings=[]
         self._mount_marks=[];self.mount_empty=False

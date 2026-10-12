@@ -1,5 +1,5 @@
 """identity_signals.py -- brand-name candidates from first-party pages when no
-Organization JSON-LD declares one (A7).
+Organization JSON-LD declares one.
 
 Each source gives a candidate name and a weight. resolve_entity_identity.py uses
 these as fallbacks below Organization JSON-LD, and analyze_machine_readability.py

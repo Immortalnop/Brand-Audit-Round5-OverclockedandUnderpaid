@@ -6,7 +6,7 @@ Top-level (required by the handout and enforced by `validate_report.py`): `site`
 `hygiene_items`), `findings`, plus `coverage`, `execution_status`,
 `limitations`, `confidence`.
 
-Round-5 additions:
+Beyond the required fields:
 - `action_plan`: ordered `{rank, finding_ids, summary, severity, priority, effort,
   owner_role, priority_score, quick_win, start_here}` rows; references findings by
   id, never repeats them. `quick_win`: medium severity or above, low effort,

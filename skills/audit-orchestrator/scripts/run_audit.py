@@ -31,7 +31,7 @@ def _progress(msg):
         sys.stderr.flush()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _bootstrap import ensure_paths  # noqa: E402  (A24: clear error if installed outside the marketplace)
+from _bootstrap import ensure_paths  # noqa: E402  (clear error if installed outside the marketplace)
 _ROOT = ensure_paths()
 
 from constants import DEFAULT_LIMITS
@@ -222,7 +222,7 @@ def section_passage(page, fragment=None, limit=1500):
 
 
 def build_agent_brief(artifacts, identity, facts):
-    """Everything the calling agent needs for the entity-corroboration stage (A3),
+    """Everything the calling agent needs for the entity-corroboration stage,
     taken from the acquired snapshot, so the agent never has to re-fetch the site.
 
     AG-01 needs a specific passage: the About page's opening, or the homepage's
@@ -293,7 +293,7 @@ def build_agent_brief(artifacts, identity, facts):
                                 if passage_page else ""),
             "raw_visible_excerpt": (passage_page.visible_text or "")[:1200] if passage_page else "",
         },
-        # Kept for agents written against the first Round-5 brief.
+        # Kept for agents written against the first version of this brief.
         "about_url": passage_page.url if passage_page else None,
         "about_text": ((section[1] if section is not None and section[1] else opening_passage(passage_page))
                        if passage_page else ""),
@@ -363,7 +363,7 @@ def _platform_brief(artifacts, pages, brand):
 
 
 def finalize_findings(findings, ctx):
-    """Score, split core vs hygiene (A17), order and number. Shared by run_audit
+    """Score, split core vs hygiene, order and number. Shared by run_audit
     and finalize_report so both paths produce identical structure."""
     for f in findings:
         apply_scoring(f, ctx)
@@ -568,15 +568,12 @@ def write_outputs(report, out_dir):
         fh.write(render_markdown(report))
 
 
-def explain_run(report):
-    """--explain: how the audit spent its budget, from the telemetry this run
-    recorded. It reports measured behaviour, never a restated design claim:
-    acquisition is where the network cost sits, every analysis stage is CPU over
-    one immutable snapshot, and the skipped URLs are the politeness rules as data.
-    """
+def explain_run(report, limits=DEFAULT_LIMITS):
+    """--explain: what the run measured about itself, next to the budget it was
+    given. Every number comes from coverage.instrumentation; the block states the
+    measurements and leaves the conclusions to the reader."""
     cov = report.get("coverage") or {}
     tel = cov.get("instrumentation") or {}
-    limits = DEFAULT_LIMITS
     stages = tel.get("stage_timings_s") or {}
     total_stage = sum((s or {}).get("duration", 0) for s in stages.values()) or 0
     acquisition = (stages.get("acquisition") or {}).get("duration", 0)
@@ -590,9 +587,8 @@ def explain_run(report):
                   f"{cov.get('templates_sampled', 0)} distinct templates; {cov.get('pages_discovered', 0)} discovered"),
         ("excluded", f"{cov.get('pages_challenged', 0)} bot-challenged, {cov.get('pages_out_of_scope', 0)} login page(s)"),
         ("stage timings", "; ".join(f"{name} {(s or {}).get('duration', 0):.2f} s" for name, s in stages.items()) or "-"),
-        ("acquisition share", f"{(acquisition / total_stage * 100):.0f}% of measured stage time, and all of the "
-                              "network cost: every analysis stage is CPU over one immutable snapshot"
-         if total_stage else "-"),
+        ("acquisition share", f"{(acquisition / total_stage * 100):.0f}% of measured stage time "
+                              "(the only stage that makes requests)" if total_stage else "-"),
         ("skips", ", ".join(f"{n} {reason}" for reason, n in (cov.get("skip_reason_counts") or {}).items()) or "none"),
         ("rendering", "headless browser" if cov.get("rendered_pages") else "heuristic only (no browser available)"),
         ("agent stage", (report.get("agent_stage") or {}).get("status", "not_supplied")),
@@ -607,7 +603,7 @@ def explain_run(report):
 
 
 def console_summary(report):
-    """Ten-line human summary on stderr; stdout stays pure JSON (A25)."""
+    """Ten-line human summary on stderr; stdout stays pure JSON."""
     s = report.get("summary", {})
     lines = [f"[audit] {report.get('site')} -- {report.get('execution_status')}, confidence "
              f"{(report.get('confidence') or {}).get('score')}",
@@ -634,8 +630,8 @@ def main(argv=None):
                         help="File with one same-site URL per line: audit exactly these pages (e.g. the landing "
                              "pages for prompts a brand is losing) instead of a sampled crawl. Still robots-checked.")
     parser.add_argument("-v", "--progress", action="store_true",
-                        help="Progress on stderr. This is already the default; the flag is kept so existing "
-                             "command lines (e.g. the Round-4 REPLAY file) keep working.")
+                        help="Progress on stderr. This is already the default; the flag is accepted so that "
+                             "existing command lines keep working.")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress on stderr; JSON output is unchanged.")
     parser.add_argument("--explain", action="store_true",
                         help="Print how the run spent its budget (timings, requests, sampling, skips) on stderr. "
@@ -660,7 +656,7 @@ def main(argv=None):
         print(json.dumps(report, indent=2, default=str))
         if parsed.explain:
             # Explicitly asked for, so it prints even under --quiet.
-            sys.stderr.write(explain_run(report) + "\n")
+            sys.stderr.write(explain_run(report, active_limits) + "\n")
         if not parsed.quiet:
             sys.stderr.write(console_summary(report) + "\n")
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)

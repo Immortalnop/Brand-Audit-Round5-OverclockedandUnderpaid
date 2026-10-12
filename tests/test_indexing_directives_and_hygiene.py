@@ -1,6 +1,7 @@
-"""Offline v8 tests: snippet-suppression detection plus a static anti-overfitting
-guard. No public-site requests; every case runs against constructed page objects
-or the source tree itself.
+"""Indexing directives (noindex, nosnippet, max-snippet, max-image-preview) and
+output hygiene: pure-JSON stdout, the timeout cap, evidence text on every
+finding, and a static guard against a detector hard-coding a brand or domain.
+Offline; every case runs against constructed page objects or the source tree.
 """
 import re
 import sys
@@ -191,6 +192,6 @@ if __name__ == '__main__':
         if name.startswith('test_') and callable(func):
             func()
             print(f'PASS: {name}')
-    print('All v8 regression tests passed!')
+    print('All indexing-directive and hygiene tests passed.')
 
 

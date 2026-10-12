@@ -73,7 +73,7 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     try:canonical=urljoin(base,doc.canonical) if doc.canonical else None
     except ValueError:canonical=None
     features=doc.features()
-    # A1: a bot-protection interstitial is not the site's content. It is kept in
+    # A bot-protection interstitial is not the site's content. It is kept in
     # the snapshot as evidence, flagged, and excluded from every content check.
     access=classify_access(resp.status_code if resp else None,resp.headers if resp else {},
                            resp.text if resp else '',features['full_visible_chars']) if resp else {'kind':'ok','vendor':None,'signals':[]}
@@ -105,7 +105,7 @@ def _ai_crawler_directives(rp,origin,conservative):
     return {a:'allow' if rp.can_fetch(a,origin) else 'disallow' for a,_ in AI_AGENTS}
 
 def _ai_crawler_paths(rp,key_urls,conservative):
-    """A12: evaluate every agent against the key URLs actually sampled (homepage,
+    """Evaluate every agent against the key URLs actually sampled (homepage,
     one URL per key intent, sitemap, llms.txt), not just '/'. Returns
     {agent: [blocked key URLs]} for agents blocked somewhere."""
     if conservative:return {}
@@ -142,7 +142,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     else:
         robots_access=classify_access(resp.status_code,resp.headers,resp.text,len(resp.text))
         if robots_access['kind']=='challenge':
-            # A2: robots.txt itself sits behind a bot challenge. Permission is unknown,
+            # Robots.txt itself sits behind a bot challenge. Permission is unknown,
             # so no crawl -- but one homepage request is made below to tell "only the
             # robots file is challenged" apart from "the whole site is challenged".
             robots_status='challenged';robots_text=None
@@ -216,7 +216,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         else:
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
-    # A8: representative sampling. A priority frontier replaces the FIFO queue:
+    # Representative sampling. A priority frontier replaces the FIFO queue:
     # home first, then site-wide navigation/footer links, then key-intent pages,
     # then sitemap and body links -- and no URL template may take more than
     # MAX_PER_TEMPLATE pages, so one template (product versions, tag archives,
@@ -290,7 +290,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             discovered.add(visit_key(link))
             if visit_key(link) not in visited and not targeted:push(link,depth+1,1 if link in region else 3)
     if heap and not challenge_stop:i.record_skip('acquisition_limit_reached')
-    # A19: the HTTPS-availability probe for HTTP-served sites runs here, through a
+    # The HTTPS-availability probe for HTTP-served sites runs here, through a
     # Transport (budgeted, SSRF-checked, logged), instead of inside an analysis script.
     https_probe={'attempted':False}
     home_page=next((p for p in pages if p.url==site_url),None)
@@ -301,7 +301,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         pr,pst=probe_tr.get('https://'+host+'/',robots_exempt=True,max_bytes=4096)
         https_probe={'attempted':True,'https_available':pst=='ok','status':pr.status_code if pr else None,'outcome':pst}
         tr.requests+=probe_tr.requests;tr.bytes+=probe_tr.bytes
-    # A10: record document links (PDF/Office) instead of silently dropping them, and
+    # Record document links (PDF/Office) instead of silently dropping them, and
     # range-read up to MAX_ASSET_PROBES key-fact PDFs to see if they carry a text layer.
     asset_links=[];seen_assets=set()
     for p in pages:

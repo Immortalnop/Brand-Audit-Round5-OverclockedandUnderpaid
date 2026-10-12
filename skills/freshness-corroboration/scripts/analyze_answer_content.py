@@ -5,7 +5,7 @@ likelihood, app-store metadata or independent brand facts are invented here.
 """
 import re
 from collections import Counter
-from check_helpers import eligible_pages, observation
+from check_helpers import content_pages, observation
 from models import skill_result
 from structured_data import iter_nodes, types_of
 
@@ -20,7 +20,7 @@ def english(page):
     return (page.features.get('lang') or '').lower().split('-')[0]=='en'
 
 def analyze_answer_content(artifacts, entity_identity, deadline):
-    pages=eligible_pages(artifacts)
+    pages=content_pages(artifacts)
     out=[]
     if deadline.expired():
         return skill_result('freshness-corroboration',status='insufficient_evidence',warnings=['Answer-content checks skipped: deadline reached.'])
@@ -73,7 +73,7 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
         if missing:
             apps.append(p);app_details[p.url]='Observed software markup omits: '+', '.join(sorted(missing))+'. App-store listings and rankings were not inspected.'
     emit('app-identity','Review observed software application identity fields',apps,lambda p:app_details[p.url])
-    # A7: the brand name had to be inferred (no Organization JSON-LD). Reported once,
+    # The brand name had to be inferred (no Organization JSON-LD). Reported once,
     # on the homepage, with the sources the name was inferred from.
     if identity.get('declared') is False and identity.get('canonical_name'):
         home=next((p for p in pages if p.page_type=='home'),pages[0] if pages else None)

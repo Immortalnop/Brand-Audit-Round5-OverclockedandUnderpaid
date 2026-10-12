@@ -105,7 +105,7 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
 
 
 def overall_confidence(coverage: dict, execution_status: str) -> dict:
-    """Report-level confidence with its method shown (A6).
+    """Report-level confidence with its method shown.
 
     min(sample_quality, access_quality, execution_penalty):
       sample_quality   = min(1, content pages / 20) x min(1, templates / 5),

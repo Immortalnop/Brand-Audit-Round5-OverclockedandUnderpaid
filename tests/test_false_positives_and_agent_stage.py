@@ -1,4 +1,4 @@
-"""test_step3_hardening.py -- Step 3 post-porting verification and hardening.
+"""False-positive guards and the agent-performed corroboration stage.
 
 Covers, as continuous regression guards over the fully merged skill set:
 
@@ -44,7 +44,7 @@ from merge_findings import merge_findings
 LIMITS = Limits()
 
 # Content heuristics that a terse, well-built site must never trip. These are the
-# high-surface checks most at risk of misfiring after the Step 2 port.
+# checks with the widest surface, and so the most at risk of misfiring.
 _FALSE_POSITIVE_SENSITIVE = {
     "term-repetition", "generic-anchor-text", "orphan-pages", "dead-ends",
     "isolated-clusters", "no-internal-navigation", "render-gap",

@@ -1,4 +1,4 @@
-"""schema_rules.py -- what each schema.org type needs to be useful (A11).
+"""schema_rules.py -- what each schema.org type needs to be useful.
 
 Required properties are the ones consumers need to use the node at all (an Offer
 with no price is not an offer); recommended properties carry freshness and
@@ -101,22 +101,6 @@ def invalid_values(node):
         if isinstance(v, str) and not _absolute(v):
             bad.append(("sameAs", v[:80], "an absolute https:// profile URL"))
     return bad
-
-
-def parse_iso(value):
-    if not isinstance(value, str):
-        return None
-    v = value.strip()[:25]
-    for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
-        try:
-            d = datetime.strptime(v.replace("Z", "+0000") if "T" in v else v[:10], fmt)
-            return d.date()
-        except ValueError:
-            continue
-    try:
-        return date.fromisoformat(v[:10])
-    except ValueError:
-        return None
 
 
 def price_numbers(text):

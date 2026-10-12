@@ -3,7 +3,7 @@
 Two passes:
  1. Exact/near-duplicate merge (unchanged): same category, same scope and a
     normalized root cause with token-Jaccard >= 0.85.
- 2. Root-cause group merge (A14): findings from different checks -- even in
+ 2. Root-cause group merge: findings from different checks -- even in
     different categories -- describe ONE problem when they share a catalog
     `group` (e.g. heading-structure: no-headings, h1, page-orientation) and their
     affected pages overlap (Jaccard >= 0.5, or one set contains the other). They
@@ -133,7 +133,7 @@ def _pages_overlap(a, b):
 
 
 def _group_merge(findings: list) -> list:
-    """A14: merge findings that share a root-cause group and overlapping pages."""
+    """Merge findings that share a root-cause group and overlapping pages."""
     out = []
     for f in findings:
         group = meta_for(_check_id(f)).get("group")

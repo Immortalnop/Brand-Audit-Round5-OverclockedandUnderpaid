@@ -170,8 +170,8 @@ _SEVERITY_ORDER = ["low", "medium", "high", "critical"]
 
 
 def step_down_severity(severity: str, ratio: float, threshold: float = 0.5) -> str:
-    """Kept for the query-coverage case in assess_external_footprint.py only. Detectors
-    no longer scale severity by crawl coverage: since Round 5 severity is impact and
+    """Kept for the query-coverage case in assess_external_footprint.py only.
+    Detectors no longer scale severity by crawl coverage: severity is impact and
     scope (common/scoring.py), and sample size affects confidence only.
 
     Steps a defect's severity down exactly one tier when the evidence behind it
@@ -230,7 +230,7 @@ def make_evidence_text(evidence) -> str:
         elif isinstance(e, str):
             if e.strip():
                 parts.append(e.strip())
-    # A16: identical descriptions are reported once.
+    # Identical descriptions are reported once.
     return "; ".join(dict.fromkeys(p for p in parts if p)).strip()
 
 

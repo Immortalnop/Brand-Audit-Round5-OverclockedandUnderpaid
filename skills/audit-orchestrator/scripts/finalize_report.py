@@ -1,5 +1,5 @@
 """finalize_report.py -- pass 2 of the audit: merge the agent's corroboration
-findings into an existing report without re-crawling the site (A3).
+findings into an existing report without re-crawling the site.
 
 Flow (see skills/audit-orchestrator/SKILL.md):
   pass 1  run_audit.py <url> --out-dir audit_out

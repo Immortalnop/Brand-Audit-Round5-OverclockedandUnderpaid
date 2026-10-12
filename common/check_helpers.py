@@ -1,10 +1,11 @@
 """Shared, network-free helpers for snapshot check modules."""
+import re
 from collections import Counter, defaultdict
 from check_catalog import get_entry, meta_for
 from models import make_finding
 
 # Pages whose body is not the site's real content are never analysed for content
-# defects. bot_challenge / rate_limited (A1) are firewall interstitials; the others
+# defects. bot_challenge / rate_limited are firewall interstitials; the others
 # are incomplete or non-HTML responses.
 EXCLUDED_WARNINGS = frozenset({'non_html_content', 'response_truncated_at_byte_budget',
                                'html_parse_incomplete', 'bot_challenge', 'rate_limited', 'login_page'})
@@ -22,12 +23,14 @@ def content_pages(artifacts, require_features=True):
             and not EXCLUDED_WARNINGS & set(p.warnings)]
 
 
-def eligible_pages(artifacts):
-    return content_pages(artifacts)
+def meta_value(page, key):
+    """The first non-empty value of a meta tag on a page, or ''."""
+    values = ((page.features or {}).get('meta') or {}).get(key) or ()
+    return next((v.strip() for v in values if isinstance(v, str) and v.strip()), '')
 
 
 def grouped_evidence(pages, details, evidence_type='snapshot_observation', limit=10):
-    """A16: one evidence line per distinct observation ('40 page(s): ...'), not one
+    """One evidence line per distinct observation ('40 page(s): ...'), not one
     identical line per page."""
     by_detail = defaultdict(list)
     for p in pages:
@@ -80,6 +83,31 @@ def site_host(url):
     from urllib.parse import urlsplit
     host = (urlsplit(url).hostname or "").lower()
     return host[4:] if host.startswith("www.") else host
+
+
+# A share widget, a platform home page or a link back to the site itself is not
+# a profile of the brand on another platform.
+_SHARE_PATH = re.compile(r"/(?:sharer|share|intent|sharearticle|dialog|plugins|hashtag|search)(?:[/.?]|$)", re.I)
+
+
+def profile_link_problem(url, host_of_site):
+    """Why a URL cannot be the brand's profile on another platform, or None."""
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit((url or "").strip())
+        host = (parts.hostname or "").lower()
+    except ValueError:
+        return "is not a valid web address"
+    if parts.scheme not in ("http", "https") or not host:
+        return "is not an absolute http(s) web address"
+    host = host[4:] if host.startswith("www.") else host
+    if host_of_site and (host == host_of_site or host.endswith("." + host_of_site)):
+        return "points back at the site itself, not at a profile on another platform"
+    if _SHARE_PATH.search(parts.path):
+        return "is a share or widget link, not a profile"
+    if parts.path.strip("/") == "" and not parts.query:
+        return "points at the platform home page, not at a profile"
+    return None
 
 
 def own_email(address, site_host):

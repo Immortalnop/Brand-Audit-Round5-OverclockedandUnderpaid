@@ -1,7 +1,7 @@
 """validate_report.py -- schema and Invariant I-1 enforcement.
 
-Also enforces (Round 5): action priority consistent with severity (A5) for every
-scored finding, and validates the separate hygiene_findings array (A17).
+Also enforces: action priority consistent with severity for every scored
+finding, and validates the separate hygiene_findings array.
 """
 REQUIRED_FINDING_FIELDS = {"id", "category", "finding_type", "title", "severity",
                             "confidence", "status", "affected_pages", "root_cause",

@@ -1,14 +1,14 @@
 """Technical SEO and social preview observations over the one acquisition snapshot.
 
 No new requests: the HTTPS-availability probe for HTTP-served sites is made by
-acquire_site.py through the shared Transport (A19) and read here from
+acquire_site.py through the shared Transport and read here from
 acquisition_metadata['https_probe']. Missing hints are opportunities, not proof
 of ranking failure.
 Canonical and preview URLs are examined as strings and are never dereferenced.
 """
 import re
 from urllib.parse import urlsplit, urljoin
-from check_helpers import eligible_pages, observation
+from check_helpers import content_pages, observation
 from models import skill_result
 from url_safety import same_origin
 
@@ -28,7 +28,7 @@ def valid_http_url(value):
 
 
 def analyze_metadata(artifacts, deadline):
-    pages = eligible_pages(artifacts)
+    pages = content_pages(artifacts)
     out = []
     def emit(rid,title,selected,detail,**kw):
         if selected:

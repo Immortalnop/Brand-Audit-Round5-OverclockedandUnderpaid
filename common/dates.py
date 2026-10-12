@@ -1,4 +1,4 @@
-"""dates.py -- date extraction for freshness checks (A9).
+"""dates.py -- date extraction for freshness checks.
 
 Parses the formats real sites use in visible text (ISO, "Mar 5, 2024",
 "5 March 2024", "March 2024", unambiguous DD/MM/YYYY, copyright years) and

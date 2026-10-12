@@ -22,6 +22,7 @@ import re
 from collections.abc import Mapping
 from urllib.parse import urlsplit, unquote
 
+from check_helpers import profile_link_problem, site_host
 from models import make_finding, skill_result
 from structured_data import iter_nodes, types_of, CORE_ORGANIZATION_TYPES, ORGANIZATION_TYPES
 
@@ -29,16 +30,6 @@ _WIKIDATA_HOSTS = frozenset({"wikidata.org", "www.wikidata.org", "m.wikidata.org
 _QID_PATH = re.compile(r"/(?:wiki/(?:Special:EntityPage/)?|entity/)(Q[1-9][0-9]{0,11})/?")
 _WIKIPEDIA_HOST = re.compile(r"([a-z][a-z0-9-]{1,15})\.(?:m\.)?wikipedia\.org")
 _NON_ARTICLE = ("special:", "file:", "category:", "help:", "wikipedia:", "talk:", "user:", "template:", "portal:")
-_SHARE_PATH = re.compile(r"/(?:sharer|share|intent|sharearticle|dialog|plugins)(?:[/.?]|$)", re.I)
-
-
-def _host(url):
-    try:
-        host = (urlsplit(url).hostname or "").lower()
-    except ValueError:
-        return ""
-    return host[4:] if host.startswith("www.") else host
-
 
 def kg_links(urls):
     """(wikidata [(url, qid)], wikipedia [(url, lang, title)], malformed [url])."""
@@ -64,25 +55,6 @@ def kg_links(urls):
         else:
             malformed.append(raw)
     return wikidata, wikipedia, malformed
-
-
-def same_as_problem(url, site_host):
-    """Why a sameAs value cannot be an official profile, or None."""
-    try:
-        parts = urlsplit(url.strip())
-        host = (parts.hostname or "").lower()
-    except ValueError:
-        return "is not a valid web address"
-    if parts.scheme not in ("http", "https") or not host:
-        return "is not an absolute http(s) web address"
-    host = host[4:] if host.startswith("www.") else host
-    if site_host and (host == site_host or host.endswith("." + site_host)):
-        return "points back at the site itself, not at a profile on another platform"
-    if _SHARE_PATH.search(parts.path):
-        return "is a share or widget link, not a profile"
-    if parts.path.strip("/") == "" and not parts.query:
-        return "points at the platform home page, not at a profile"
-    return None
 
 
 def organization_markup(artifacts):
@@ -111,7 +83,7 @@ def check_entity_links(artifacts, deadline):
     if not org_pages:
         return skill_result("freshness-corroboration", findings=[],
                             metrics={"organization_pages": 0, "same_as_values": 0})
-    site_host = _host(artifacts.site_url)
+    host = site_host(artifacts.site_url)
     wikidata, wikipedia, malformed = kg_links(same_as)
     # Only suggested to a brand that already declares its profiles in sameAs: the
     # knowledge-graph link is then the missing piece of work it has started. Most
@@ -142,7 +114,7 @@ def check_entity_links(artifacts, deadline):
                 "verification": "Organization sameAs contains https://www.wikidata.org/wiki/Q... for the brand"},
             provenance={"skill": "freshness-corroboration", "script": "check_entity_links.py",
                         "rule_id": "kg-link-missing"}))
-    invalid = [(u, same_as_problem(u, site_host)) for u in same_as]
+    invalid = [(u, profile_link_problem(u, host)) for u in same_as]
     invalid = [(u, why) for u, why in invalid if why]
     if invalid:
         findings.append(make_finding(

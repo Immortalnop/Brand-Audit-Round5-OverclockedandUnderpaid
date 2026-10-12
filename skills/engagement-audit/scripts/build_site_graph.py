@@ -47,8 +47,8 @@ def _weakly_connected_components(urls, pages, key_to_url):
 
 def build_site_graph(artifacts, deadline):
     # Only real content pages are graph nodes: a bot-challenge interstitial has no
-    # links and would otherwise show up as a "dead end" (A1). Links are matched by
-    # visit_key so /a and /a/ are one node (A8).
+    # links and would otherwise show up as a "dead end". Links are matched by
+    # visit_key so /a and /a/ are one node.
     pages = tuple(content_pages(artifacts, require_features=False))
     urls = sorted({p.url for p in pages})
     key_to_url = {}

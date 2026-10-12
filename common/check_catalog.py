@@ -492,7 +492,7 @@ _BASE.update({
                              'The presence or absence of llms.txt can be assessed.'),
 })
 
-# A2 / A12 / A7 / A9 / A10 / A11: checks added in Round 5.
+# Access, identity, non-text, date and structured-data checks.
 _BASE.update({
     'bot-challenge-sitewide': _e('A bot-management firewall answers automated clients with a challenge page instead of '
                                  'content. Crawlers and AI fetchers cannot solve challenges, so unless they are '
@@ -672,7 +672,7 @@ _BASE.update({
                                   'Organization sameAs.',
                                   'Independent platforms corroborate the brand.'),
 })
-# A13: each page-type gap states why THAT type's markup matters.
+# Each page-type gap states why THAT type's markup matters.
 _PAGE_TYPE_MECHANISMS = {
     'home': 'The homepage is where machines look for who the site belongs to; Organization/WebSite markup '
             'declares the name, logo and official profiles once, which disambiguates the brand from same-named '
@@ -697,21 +697,19 @@ for _t, _mech in _PAGE_TYPE_MECHANISMS.items():
 
 for _old in ('stale-dates:commercial', 'stale-dates:contact', 'stale-dates:editorial',
              'stale-dates:legal', 'stale-dates:operational'):
-    _BASE.pop(_old, None)  # replaced by the context-classified date rules (A9)
+    _BASE.pop(_old, None)  # replaced by the context-classified date rules
 
 CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in _BASE.items()})
 
 
 # ---------------------------------------------------------------------------
-# WP0: check metadata. Every check belongs to one gate of the
-# reach -> read -> extract -> trust -> engage chain (Appendix A plus the trust
-# and engagement halves of Round 2). The gate sets the typical base severity,
-# group drives root-cause merging (A14), tier separates core findings from SEO
-# hygiene (A17), owner says who fixes it, and the two flags tell the scorer
-# (common/scoring.py, A4) how scope and sample size apply.
+# Check metadata. Every check belongs to one gate of the
+# reach -> read -> extract -> trust -> engage chain: a crawler must be let in,
+# read the content, pick out the fact, trust it, and the visitor it brings must
+# stay. The gate sets the typical base severity, group drives root-cause
+# merging, tier separates core findings from SEO hygiene, owner says who fixes
+# it, and the two flags tell common/scoring.py how scope and sample size apply.
 # ---------------------------------------------------------------------------
-GATES = ('access', 'readability', 'extractability', 'trust', 'engagement')
-
 def _m(gate, group=None, tier='core', owner='developer', category=None, scope_sensitive=True, absence_claim=False):
     return MappingProxyType({'gate': gate, 'group': group, 'tier': tier, 'owner': owner,
                              'category': category, 'scope_sensitive': scope_sensitive,

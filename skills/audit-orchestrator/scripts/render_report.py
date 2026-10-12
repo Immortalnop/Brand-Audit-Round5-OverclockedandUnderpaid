@@ -1,4 +1,4 @@
-"""render_report.py -- turns report.json into report.md for a non-expert reader (A25).
+"""render_report.py -- turns report.json into report.md for a non-expert reader.
 
 Standard library only. Layout:
   1. header: site, date, execution status, sample

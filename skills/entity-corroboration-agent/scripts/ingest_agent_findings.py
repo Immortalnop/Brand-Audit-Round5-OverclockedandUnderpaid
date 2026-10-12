@@ -8,7 +8,7 @@ to query public community platforms such as Reddit and Quora. That judgment is
 handed back as a small JSON array; this module ingests it in-process and returns
 a SkillResult in exactly the same shape as every other specialist.
 
-Two entry points share one builder. The normal two-pass flow (A3) is: run_audit
+Two entry points share one builder. The normal two-pass flow is: run_audit
 writes agent_brief.json, the agent searches, then finalize_report.py calls
 load_agent_findings(path). ingest_agent_findings() is kept for callers that set
 AGENT_FINDINGS_PATH before a single-pass run. Either way every ingested finding is
@@ -211,7 +211,7 @@ def _build_finding(raw):
 
 
 def load_agent_findings(path):
-    """A3: ingest an agent findings file without a live snapshot (used by
+    """Ingest an agent findings file without a live snapshot (used by
     finalize_report.py after the agent stage). Returns (SkillResult, stage) where
     stage is "ingested", "empty" (valid file, nothing fired) or "not_supplied"."""
     supplied = _load_supplied(path)

@@ -28,25 +28,18 @@ import json
 import re
 from urllib.parse import urljoin, urlsplit, urlunsplit, parse_qsl, urlencode
 
-from check_helpers import organization_contact, site_host, is_role_mailbox
+from check_helpers import (is_role_mailbox, meta_value, organization_contact,
+                            profile_link_problem, site_host)
 from structured_data import iter_nodes, types_of, ORGANIZATION_TYPES
 
 _PLACEHOLDER = re.compile(r"REPLACE_WITH_[A-Z_]+")
 _PROFILE_HOSTS = ("twitter.com", "x.com", "facebook.com", "linkedin.com", "instagram.com", "youtube.com",
                   "tiktok.com", "pinterest.com", "github.com", "wikipedia.org", "wikidata.org", "crunchbase.com",
                   "threads.net", "bsky.app", "trustpilot.com", "g2.com", "glassdoor.com")
-_SHARE_PATH = re.compile(r"/(?:sharer|share|intent|sharearticle|dialog|plugins|hashtag|search)(?:[/.?]|$)", re.I)
 _TRACKING = re.compile(r"^(?:utm_[a-z_]+|gclid|fbclid|msclkid|mc_cid|mc_eid|_ga|_gl)$", re.I)
 _MAX_PAGES = 3
 _NOTE = ("Generated from the audited pages. Check every value against the live page, replace each "
          "REPLACE_WITH_ placeholder, and validate before publishing.")
-
-
-def _host(url):
-    try:
-        return site_host(url)
-    except ValueError:
-        return ""
 
 
 def _clean_url(url):
@@ -70,11 +63,6 @@ def _absolute(value, base):
         return None
 
 
-def _meta(page, key):
-    values = ((page.features or {}).get("meta") or {}).get(key) or ()
-    return next((v.strip() for v in values if isinstance(v, str) and v.strip()), "")
-
-
 def _content(artifacts):
     return [p for p in artifacts.pages if p.status_code == 200 and p.features
             and not {"bot_challenge", "rate_limited", "login_page"} & set(p.warnings)]
@@ -96,8 +84,8 @@ def site_facts(artifacts, entity_identity=None):
         name = str(identity["canonical_name"])
         source = ("Organization JSON-LD name" if identity.get("identity_level", 1) == 1
                   else "brand name inferred from the site (" + str((identity.get("identity_sources") or [{}])[0].get("source", "site metadata")) + ")")
-    elif home is not None and _meta(home, "og:site_name"):
-        name, source = _meta(home, "og:site_name"), "og:site_name on the home page"
+    elif home is not None and meta_value(home, "og:site_name"):
+        name, source = meta_value(home, "og:site_name"), "og:site_name on the home page"
     facts["name"] = name[:120] or "REPLACE_WITH_BRAND_NAME"
     if name:
         facts["sources"]["name"] = source
@@ -130,14 +118,11 @@ def site_facts(artifacts, entity_identity=None):
     if same_as:
         facts["sources"]["sameAs"] = "existing Organization sameAs"
     elif home is not None:
+        host = site_host(origin)
         for link in home.external_links:
-            h = _host(link)
-            try:
-                path = urlsplit(link).path
-            except ValueError:
-                continue
-            if any(h == d or h.endswith("." + d) for d in _PROFILE_HOSTS) and path.strip("/") \
-                    and not _SHARE_PATH.search(path) and link not in same_as:
+            h = site_host(link)
+            if (any(h == d or h.endswith("." + d) for d in _PROFILE_HOSTS)
+                    and profile_link_problem(link, host) is None and link not in same_as):
                 same_as.append(link)
         if same_as:
             facts["sources"]["sameAs"] = "profile links on the home page"
@@ -185,7 +170,7 @@ def _shareable_image(url):
 
 
 def _og_values(page, facts):
-    image = _shareable_image(_absolute(_meta(page, "og:image"), page.final_url or page.url)) or _shareable_image(facts["logo"])
+    image = _shareable_image(_absolute(meta_value(page, "og:image"), page.final_url or page.url)) or _shareable_image(facts["logo"])
     label = next((h for h in page.headings if h.strip()), "") or page.title or "REPLACE_WITH_PAGE_NAME"
     return {"og:title": (page.title or label)[:120],
             "og:description": (page.meta_description or "").strip()[:200] or "REPLACE_WITH_PAGE_DESCRIPTION",
@@ -237,7 +222,7 @@ def build_snippet(check_id, pages, artifacts, facts):
         for page in pages[:_MAX_PAGES]:
             values = _og_values(page, facts)
             keys = (["og:url", "og:image"] if check_id == "social-url"
-                    else [k for k in values if not _meta(page, k)])
+                    else [k for k in values if not meta_value(page, k)])
             if keys:
                 out.append(f"<!-- {page.final_url or page.url} -->\n"
                            + "\n".join(f"<meta property=\"{k}\" content=\"{_attr(values[k])}\">" for k in keys))
@@ -251,11 +236,11 @@ def build_snippet(check_id, pages, artifacts, facts):
             return None
         code = "\n\n".join(
             f"<!-- {p.final_url or p.url} -->\n<meta name=\"twitter:card\" content=\""
-            f"{'summary_large_image' if _meta(p, 'og:image') else 'summary'}\">" for p in pages[:_MAX_PAGES])
+            f"{'summary_large_image' if meta_value(p, 'og:image') else 'summary'}\">" for p in pages[:_MAX_PAGES])
         used = ()
         filled["card"] = "summary_large_image when the page has an og:image, otherwise summary"
     elif check_id == "contact-markup-missing":
-        emails, phones = organization_contact(_content(artifacts), _host(home_url))
+        emails, phones = organization_contact(_content(artifacts), site_host(home_url))
         # Only a role mailbox (hello@, support@ ...) is filled in: a person's
         # address shown on a page is not the organization's contact address.
         email = next((e for e in emails if is_role_mailbox(e)), None)

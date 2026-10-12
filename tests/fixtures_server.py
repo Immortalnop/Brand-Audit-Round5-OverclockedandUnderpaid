@@ -70,7 +70,7 @@ _ORPHAN = "<html><head><title>Orphan</title></head><body><h1>Orphan</h1>" \
 
 
 # ---------------------------------------------------------------------------
-# Clean, well-built fixture (Step 3 false-positive guard). Every page is
+# Clean, well-built fixture (the false-positive guard). Every page is
 # server-rendered, declares lang and viewport, has a descriptive title, meta
 # description, a single H1, valid JSON-LD, descriptive internal anchors, and
 # terse copy with no keyword stuffing. Dates on the pricing page are refreshed to
@@ -195,8 +195,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
     llms_txt_mode = "absent"  # "absent" | "ok"
     big_body_bytes = 0  # if >0, /big serves this many bytes
     multi_brand = False  # if True, home page carries a second, unrelated Organization block
-    clean = False  # if True, serve the well-built site (Step 3 false-positive guard)
-    routes = {}  # Round-5 scenarios: path -> (status, body, headers); overrides everything else
+    clean = False  # if True, serve the well-built site (the false-positive guard)
+    routes = {}  # scenario overrides: path -> (status, body, headers); beats every rule below
 
     def log_message(self, fmt, *args):  # silence test output
         pass

@@ -1,5 +1,5 @@
 """analyze_nontext_facts.py -- key facts that exist only as a document, an image or
-an embedded third-party viewer (A10).
+an embedded third-party viewer.
 
 AI fetchers extract text from the HTML they receive. A price list, menu, fee table
 or spec sheet that is published only as a PDF, an image, or inside a document

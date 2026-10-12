@@ -1,4 +1,7 @@
-"""Offline regression tests for the v6 fixes; no public-site requests."""
+"""Acquisition and isolation: robots matching and redirect handling, bounded
+gzip expansion, the shared request budget, sitemap-index parsing, JSON-LD type
+normalization, the subprocess boundary around a run, and the marketplace
+manifest. Offline; no public-site requests."""
 import gzip
 import json
 import sys
@@ -203,5 +206,5 @@ if __name__ == '__main__':
     with site() as s:
         test_complete_report_survives_process_boundary_and_is_json(s)
         print("PASS: test_complete_report_survives_process_boundary_and_is_json")
-    print("All v6 regression tests passed!")
+    print("All acquisition and isolation tests passed.")
 
