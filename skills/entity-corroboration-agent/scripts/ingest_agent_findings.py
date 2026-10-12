@@ -32,6 +32,7 @@ import os
 from models import (skill_result, make_finding, insufficient_evidence_result,
                      apply_invariant_i1)
 from check_catalog import get_entry
+from url_safety import same_origin
 
 # Environment variable naming the agent's findings file. Kept as an env var (not a
 # fixed workdir path) so nothing about this stage assumes the donor's subprocess
@@ -144,6 +145,55 @@ _AG_RULES = {
 
 _VALID_SEVERITY = {"critical", "high", "medium", "low"}
 _VALID_STATUS = {"confirmed", "suspected", "insufficient_evidence"}
+_VALID_EFFORT = {"low", "medium", "high"}
+
+# Bounds on what one agent handoff can put into the report. The agent's text is
+# kept as evidence, so it is capped like any other observation.
+MAX_FILE_BYTES = 2 * 1024 * 1024
+MAX_AGENT_FINDINGS = 50
+_MAX_EVIDENCE_ITEMS = 10
+_MAX_URLS = 20
+_MAX_TEXT = 2000
+_MAX_TITLE = 300
+_MAX_STEPS = 8
+
+# Warning of the graceful skip; run_audit.py --from-report removes it once the
+# stage has been merged into a saved report.
+NOT_SUPPLIED_WARNING = (
+    "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the "
+    "qualitative About-concreteness and cross-web corroboration checks were "
+    "not run this audit (not checked, not \"no corroboration found\"). See "
+    "skills/entity-corroboration-agent/SKILL.md.")
+
+
+class AgentFindingsError(ValueError):
+    """The agent findings file cannot be used: missing, too large, not JSON, or
+    not a list of findings."""
+
+
+def load_agent_findings(path):
+    """The list of raw agent findings in the file at path: a JSON array, or an
+    object with a "findings" array. UTF-8 (with or without a byte order mark)
+    and UTF-16, which PowerShell's > redirect writes, are both read. Raises
+    AgentFindingsError with a plain-English reason when the file cannot be used."""
+    if not path or not os.path.isfile(path):
+        raise AgentFindingsError(f"no such file: {path}")
+    try:
+        if os.path.getsize(path) > MAX_FILE_BYTES:
+            raise AgentFindingsError(f"{path} is larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+    except OSError as exc:
+        raise AgentFindingsError(f"cannot read {path}: {exc}") from exc
+    try:
+        text = raw.decode("utf-16") if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else raw.decode("utf-8-sig")
+        data = json.loads(text)
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise AgentFindingsError(f"{path} is not valid JSON ({exc})") from exc
+    items = data.get("findings") if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        raise AgentFindingsError(f"{path} must hold a JSON array of findings, or an object with a \"findings\" array")
+    return items
 
 
 def _load_supplied(path):
@@ -153,31 +203,56 @@ def _load_supplied(path):
     if not path or not os.path.isfile(path):
         return None
     try:
-        with open(path, encoding="utf-8") as handle:
-            data = json.load(handle)
-    except (OSError, ValueError):
+        return load_agent_findings(path)
+    except AgentFindingsError:
         return None
-    items = data.get("findings", []) if isinstance(data, dict) else data
-    return items if isinstance(items, list) else None
+
+
+def _text(value, limit):
+    """value as one line of at most limit characters, or '' when it is not text."""
+    return " ".join(value.split())[:limit] if isinstance(value, str) else ""
+
+
+def _urls(value):
+    """The http(s) URLs in value (a list), at most _MAX_URLS of them."""
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [u.strip()[:_MAX_TEXT] for u in value
+            if isinstance(u, str) and u.strip().lower().startswith(("http://", "https://"))][:_MAX_URLS]
 
 
 def _evidence_list(raw):
     """Accept either a plain string (donor shape) or a list of evidence objects,
-    always returning the v6 list-of-dicts evidence shape."""
+    always returning the v6 list-of-dicts evidence shape. Each object keeps only
+    a text type, a description and a list of http(s) URLs, so nothing the agent
+    writes can change how the report reads its evidence."""
     ev = raw.get("evidence")
     if isinstance(ev, str) and ev.strip():
-        return [{"type": "agent_observation", "description": ev.strip()}]
+        return [{"type": "agent_observation", "description": _text(ev, _MAX_TEXT)}]
+    cleaned = []
     if isinstance(ev, list):
-        cleaned = [e for e in ev if isinstance(e, dict)]
-        if cleaned:
-            return cleaned
-    return [{"type": "agent_observation", "description": "Agent-supplied qualitative observation"}]
+        for e in ev[:_MAX_EVIDENCE_ITEMS]:
+            if not isinstance(e, dict):
+                continue
+            description = next((_text(e.get(k), _MAX_TEXT) for k in ("description", "snippet", "text")
+                                if _text(e.get(k), _MAX_TEXT)), "")
+            urls = _urls(e.get("urls"))
+            if not description and not urls:
+                continue
+            item = {"type": _text(e.get("type"), 60) or "agent_observation",
+                    "description": description or "Agent-supplied observation"}
+            if urls:
+                item["urls"] = urls
+            cleaned.append(item)
+    return cleaned or [{"type": "agent_observation", "description": "Agent-supplied qualitative observation"}]
 
 
-def _build_finding(raw):
+def _build_finding(raw, origin=None):
     """Reconstruct one agent finding through v6's make_finding so catalog
     enrichment and Invariant I-1 apply. Returns None when the entry cannot be
-    mapped to a known AG check."""
+    mapped to a known AG check. affected_pages keeps only URLs on the audited
+    origin when it is known: they name pages of the site, never a third-party
+    profile (those belong in evidence)."""
     check = str(raw.get("check") or raw.get("check_id") or "").strip().upper()
     rule = _AG_RULES.get(check)
     if rule is None:
@@ -193,23 +268,24 @@ def _build_finding(raw):
 
     action = raw.get("suggested_action")
     action = action if isinstance(action, dict) else {}
-    summary = str(action.get("summary") or rule["summary"])
-    steps = action.get("steps")
-    steps = list(steps) if isinstance(steps, (list, tuple)) and steps else list(rule["steps"])
+    summary = _text(action.get("summary"), _MAX_TEXT) or rule["summary"]
+    steps = [_text(s, _MAX_TEXT) for s in action.get("steps") or ()][:_MAX_STEPS] \
+        if isinstance(action.get("steps"), (list, tuple)) else []
+    steps = [s for s in steps if s] or list(rule["steps"])
+    effort = str(action.get("effort") or "medium").lower()
+    effort = effort if effort in _VALID_EFFORT else "medium"
 
     evidence = _evidence_list(raw)
-    pages = raw.get("affected_pages")
-    if isinstance(pages, list):
-        pages = [u for u in pages if isinstance(u, str) and u.startswith(("http://", "https://"))][:20]
-    else:
-        pages = []
+    pages = _urls(raw.get("affected_pages"))
+    if origin:
+        pages = [u for u in pages if same_origin(u, origin)]
     finding = make_finding(
         category=rule["category"],
         finding_type=finding_type,
         severity=severity,
         status=status,
         confidence=0.7 if status == "confirmed" else 0.55,
-        title=str(raw.get("title") or rule["title"]),
+        title=_text(raw.get("title"), _MAX_TITLE) or rule["title"],
         root_cause=(get_entry(rule["rule_id"])["mechanism"] if rule.get("root_cause_from_catalog")
                     else evidence[0]["description"]),
         evidence=evidence,
@@ -218,7 +294,7 @@ def _build_finding(raw):
             "summary": summary,
             "steps": steps,
             "priority": severity,
-            "effort": str(action.get("effort") or "medium"),
+            "effort": effort,
             "expected_benefit": rule.get("expected_benefit",
                                          "Improves identity clarity and independent corroboration"),
             "verification": "Re-run the qualitative agent stage after changes",
@@ -226,10 +302,26 @@ def _build_finding(raw):
         provenance={"skill": "entity-corroboration-agent",
                     "script": "ingest_agent_findings.py", "rule_id": rule["rule_id"]},
     )
+    # make_finding falls back to the evidence URLs when no page is named; those
+    # may be third-party profiles, so the pages are set from affected_pages alone.
+    finding["affected_pages"] = sorted(set(pages))
     # make_finding already applies Invariant I-1; re-apply defensively so an
     # agent-authored insufficient_evidence entry is capped no matter how it was
     # constructed. This is the same rule (apply_invariant_i1), not a second one.
     return apply_invariant_i1(finding)
+
+
+def build_agent_findings(items, origin=None):
+    """Findings for the raw entries in items (at most MAX_AGENT_FINDINGS are
+    read). Entries that are not objects or name no known AG check are skipped."""
+    findings = []
+    for raw in list(items or ())[:MAX_AGENT_FINDINGS]:
+        if not isinstance(raw, dict):
+            continue
+        built = _build_finding(raw, origin)
+        if built is not None:
+            findings.append(built)
+    return findings
 
 
 def ingest_agent_findings(artifacts, entity_identity, deadline, capabilities=None):
@@ -250,21 +342,11 @@ def ingest_agent_findings(artifacts, entity_identity, deadline, capabilities=Non
         # Graceful not_supplied skip. The qualitative stage is optional and
         # agent-driven; its absence says nothing about the site.
         return insufficient_evidence_result(
-            "entity-corroboration-agent",
-            "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the "
-            "qualitative About-concreteness and cross-web corroboration checks were "
-            "not run this audit (not checked, not \"no corroboration found\"). See "
-            "skills/entity-corroboration-agent/SKILL.md.",
+            "entity-corroboration-agent", NOT_SUPPLIED_WARNING,
             metrics={"agent_stage": "not_supplied", "findings_ingested": 0},
         )
 
-    findings = []
-    for raw in supplied:
-        if not isinstance(raw, dict):
-            continue
-        built = _build_finding(raw)
-        if built is not None:
-            findings.append(built)
+    findings = build_agent_findings(supplied, getattr(artifacts, "normalized_origin", None))
 
     return skill_result(
         "entity-corroboration-agent", findings=findings,

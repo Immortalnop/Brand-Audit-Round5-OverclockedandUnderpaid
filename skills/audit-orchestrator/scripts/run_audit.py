@@ -49,7 +49,7 @@ from capabilities import detect_capabilities, capability_report
 from field_vitals import start_field_lookup
 
 from acquire_site import acquire_site
-from merge_findings import merge_findings
+from merge_findings import merge_findings, fold_into
 from prioritize_findings import prioritize_findings, annotate_action_plan, top_actions, quick_wins
 from fix_snippets import attach_fix_snippets
 from generate_recommendations import generate_recommendations, is_finding_reference
@@ -272,7 +272,14 @@ def _run_audit_impl(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets:
     acq_coverage = artifacts.acquisition_metadata.get("coverage", {})
     pages_analyzed = acq_coverage.get("urls_analyzed", len(artifacts.pages))
     # No analyzed page: only checks that never read page content can be reported.
-    merged = merge_findings(site_level_only(skill_results) if not pages_analyzed else skill_results)
+    if not pages_analyzed:
+        merged = merge_findings(site_level_only(skill_results))
+    else:
+        # Agent findings fold into the script finding that already reports the
+        # same check, exactly as run_audit.py --from-report merges them later.
+        agent = dependent["agent_corroboration"]
+        merged, _ = fold_into(merge_findings([r for r in skill_results if r is not agent]),
+                              agent.get("findings") or [])
     prioritized = prioritize_findings(merged)
     for idx, finding in enumerate(prioritized, 1):
         finding["id"] = f"F-{idx:03d}"
@@ -484,13 +491,70 @@ def write_report(report, path):
     return path
 
 
+def _check_out(parser, out):
+    """Reject an --out path that cannot be written, before any work starts."""
+    if out is not None:
+        out_dir = os.path.dirname(os.path.abspath(out))
+        # Checked before the audit runs, so a typo never costs a five-minute run.
+        if os.path.isdir(os.path.abspath(out)) or not os.path.isdir(out_dir):
+            parser.error(f"--out must name a file in an existing folder: {out}")
+
+
+def _emit(report, out):
+    """Write the report to out as UTF-8, or print it; a failed write prints it."""
+    import json
+    written = None
+    if out is not None:
+        try:
+            written = write_report(report, out)
+            print(f"[audit] report written to {written} (UTF-8)", file=sys.stderr)
+        except OSError as exc:
+            # The finished audit is never lost: it goes to stdout instead.
+            print(f"[audit] could not write {out} ({exc}); printing the report instead", file=sys.stderr)
+    if written is None:
+        print(json.dumps(report, indent=2, default=str))
+
+
+def _merge_main(parser, parsed):
+    """--from-report: merge agent findings into a saved report. No request is made."""
+    if parsed.agent_findings is None:
+        parser.error("--from-report needs --agent-findings PATH")
+    if parsed.site is not None or parsed.max_pages is not None or parsed.timeout is not None:
+        parser.error("--from-report merges into a saved report and does not crawl; "
+                     "leave out the site, --max-pages and --timeout")
+    _check_out(parser, parsed.out)
+    from report_markdown import read_report
+    from ingest_agent_findings import load_agent_findings, AgentFindingsError
+    from merge_agent_stage import merge_agent_findings, ReportMergeError
+    try:
+        report = read_report(parsed.from_report)
+    except OSError as exc:
+        parser.error(f"--from-report: cannot read {parsed.from_report} ({exc})")
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        parser.error(f"--from-report: {parsed.from_report} is not a readable JSON report ({exc})")
+    try:
+        items = load_agent_findings(parsed.agent_findings)
+    except AgentFindingsError as exc:
+        parser.error(f"--agent-findings: {exc}")
+    try:
+        merged = merge_agent_findings(report, items, source=os.path.basename(parsed.agent_findings))
+    except ReportMergeError as exc:
+        parser.error(f"--from-report: {exc}")
+    info = merged["coverage"]["agent_corroboration"]
+    if not parsed.quiet:
+        print(f"[audit] merged {info['findings_ingested']} of {info['findings_supplied']} agent finding(s): "
+              f"{info['findings_folded_into_existing']} joined existing findings, {info['findings_added']} added",
+              file=sys.stderr)
+    _emit(merged, parsed.out)
+    return 0
+
+
 def main(argv=None):
     import argparse
-    import json
     parser = argparse.ArgumentParser(
         description="Brand AI-Readiness Audit. Emits one JSON report to stdout, or to a UTF-8 file with --out.")
-    parser.add_argument("site", nargs="?", default="https://example.com",
-                        help="Target URL or bare domain to audit.")
+    parser.add_argument("site", nargs="?", default=None,
+                        help="Target URL or bare domain to audit (default https://example.com).")
     parser.add_argument("--timeout", type=float, default=None,
                         help="Override the total audit wall-clock cap in seconds "
                              "(default 270, handout limit 300). Lower it for a quick "
@@ -505,7 +569,17 @@ def main(argv=None):
     parser.add_argument("--out", metavar="PATH", default=None,
                         help="Write the JSON report to PATH as UTF-8 instead of stdout. Use this in Windows "
                              "PowerShell, whose > redirect writes UTF-16.")
+    parser.add_argument("--agent-findings", metavar="PATH", default=None,
+                        help="JSON findings from the entity-corroboration-agent stage (AG-01 to AG-06). With a "
+                             "site, they are ingested during the audit (as AGENT_FINDINGS_PATH would be); with "
+                             "--from-report, they are merged into that saved report.")
+    parser.add_argument("--from-report", metavar="PATH", default=None,
+                        help="Merge-only mode: merge --agent-findings into this saved JSON report and emit the "
+                             "updated report. Makes no request and does not crawl again.")
     parsed = parser.parse_args(argv)
+    if parsed.from_report is not None:
+        return _merge_main(parser, parsed)
+    parsed.site = parsed.site or "https://example.com"
     import math
     if parsed.timeout is not None and (not math.isfinite(parsed.timeout) or parsed.timeout<=0):
         parser.error("--timeout must be a positive finite number")
@@ -515,11 +589,16 @@ def main(argv=None):
         os.environ["AUDIT_PROGRESS"] = "0"
     if parsed.max_pages is not None and not 1 <= parsed.max_pages <= MAX_PAGES_CEILING:
         parser.error(f"--max-pages must be between 1 and {MAX_PAGES_CEILING}")
-    if parsed.out is not None:
-        out_dir = os.path.dirname(os.path.abspath(parsed.out))
-        # Checked before the audit runs, so a typo never costs a five-minute run.
-        if os.path.isdir(os.path.abspath(parsed.out)) or not os.path.isdir(out_dir):
-            parser.error(f"--out must name a file in an existing folder: {parsed.out}")
+    _check_out(parser, parsed.out)
+    if parsed.agent_findings is not None:
+        from ingest_agent_findings import load_agent_findings, AgentFindingsError
+        try:
+            # Checked before the audit runs, so a bad handoff never costs a five-minute run.
+            load_agent_findings(parsed.agent_findings)
+        except AgentFindingsError as exc:
+            parser.error(f"--agent-findings: {exc}")
+        # The audit worker is a spawned process; it inherits this environment.
+        os.environ["AGENT_FINDINGS_PATH"] = os.path.abspath(parsed.agent_findings)
     active_limits = DEFAULT_LIMITS
     if parsed.timeout is not None:
         from dataclasses import replace as _dc_replace
@@ -528,17 +607,7 @@ def main(argv=None):
         active_limits = limits_for_pages(active_limits, parsed.max_pages)
     try:
         report=run_audit(parsed.site, limits=active_limits)
-        written = None
-        if parsed.out is not None:
-            try:
-                written = write_report(report, parsed.out)
-                print(f"[audit] report written to {written} (UTF-8)", file=sys.stderr)
-            except OSError as exc:
-                # The finished audit is never lost: it goes to stdout instead.
-                print(f"[audit] could not write {parsed.out} ({exc}); printing the report instead",
-                      file=sys.stderr)
-        if written is None:
-            print(json.dumps(report, indent=2, default=str))
+        _emit(report, parsed.out)
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)
     except KeyboardInterrupt:
         print("[audit] cancelled",file=sys.stderr)

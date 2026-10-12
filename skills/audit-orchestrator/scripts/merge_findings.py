@@ -141,6 +141,96 @@ def merge_evidence(group: list, by_severity: bool = False) -> dict:
     return merged
 
 
+def _check_ids_of(finding: dict) -> set:
+    """Every check ID one finding stands for: its own and any merged into it."""
+    ids = {c for c in finding.get("check_ids") or () if isinstance(c, str)}
+    cid = finding.get("check_id") or (finding.get("provenance") or {}).get("rule_id")
+    if cid:
+        ids.add(cid)
+    return ids
+
+
+def _contributors(finding: dict) -> list:
+    """The provenance entries behind one finding, flattened one level."""
+    prov = finding.get("provenance")
+    if isinstance(prov, dict) and isinstance(prov.get("contributing_skills"), list):
+        return list(prov["contributing_skills"])
+    return [prov]
+
+
+def fold_finding(base: dict, addition: dict) -> dict:
+    """base with addition folded in. The base keeps its title, action and any
+    fix snippet; evidence and pages are joined without duplicates and the check
+    IDs and provenance of both are kept. As in merge_evidence, the more
+    confident of the two sets status, confidence and finding type; severity is
+    the higher of the two, so a fold never lowers what the reader sees."""
+    from models import apply_invariant_i1, make_evidence_text
+    merged = dict(base)
+    evidence = [e for e in base.get("evidence") or () if isinstance(e, dict)]
+    seen = {_evidence_key(e) for e in evidence}
+    for item in addition.get("evidence") or ():
+        if isinstance(item, dict) and _evidence_key(item) not in seen:
+            seen.add(_evidence_key(item))
+            evidence.append(item)
+    merged["evidence"] = evidence
+    merged["evidence_text"] = make_evidence_text(evidence)
+    merged["affected_pages"] = sorted(set(base.get("affected_pages") or ()) | set(addition.get("affected_pages") or ()))
+    merged["check_ids"] = sorted(_check_ids_of(base) | _check_ids_of(addition))
+    merged["provenance"] = {"contributing_skills": _contributors(base) + _contributors(addition)}
+    if addition.get("confidence", 0) > base.get("confidence", 0):
+        for field in ("status", "confidence", "finding_type"):
+            merged[field] = addition.get(field, base.get(field))
+    if _SEVERITY_RANK.get(addition.get("severity"), 0) > _SEVERITY_RANK.get(base.get("severity"), 0):
+        merged["severity"] = addition["severity"]
+    if merged.get("status") != base.get("status") or merged.get("severity") != base.get("severity"):
+        # Notes about the old status or severity no longer describe the finding;
+        # prioritize_findings records them again if they still apply.
+        merged.pop("status_note", None)
+        merged.pop("severity_gate", None)
+    action = dict(base.get("suggested_action") or {})
+    if _SEVERITY_RANK.get(merged.get("severity"), 0) > _SEVERITY_RANK.get(action.get("priority"), 0):
+        action["priority"] = merged["severity"]
+    merged["suggested_action"] = action
+    return apply_invariant_i1(merged)
+
+
+def fold_into(findings: list, additions: list) -> tuple:
+    """(findings, folded): findings with each addition folded into the finding
+    that already reports it, or appended. An addition folds into, in order:
+    an original finding of the same category that carries its check ID, the one
+    sharing the most pages when there are several (an agent's vision reading of
+    an image joins the script's facts-in-images finding); else a finding of the
+    same check family;
+    else one with the same or a near-identical root cause on the same pages, as
+    merge_findings decides. folded counts the additions that joined a finding.
+    Neither input is changed."""
+    out = [dict(f) for f in findings]
+    originals = len(out)
+    keys = {}
+    for index, finding in enumerate(out):
+        keys.setdefault(_family_key(finding) or dedup_key(finding), index)
+    folded = 0
+    for addition in additions:
+        ids = _check_ids_of(addition)
+        pages = set(addition.get("affected_pages") or ())
+        same_check = [i for i in range(originals)
+                      if out[i].get("category") == addition.get("category") and ids & _check_ids_of(out[i])]
+        # Of several findings for the check, the one sharing the most pages; the first on a tie.
+        target = max(same_check, key=lambda i: (len(pages & set(out[i].get("affected_pages") or ())), -i),
+                     default=None)
+        if target is None:
+            key = _family_key(addition) or find_matching_bucket(addition, keys)
+            target = keys.get(key) if key is not None else None
+        if target is None:
+            # Same shape as a merge_findings result: every finding lists its check IDs.
+            out.append(dict(addition, check_ids=sorted(_check_ids_of(addition))))
+            keys.setdefault(_family_key(addition) or dedup_key(addition), len(out) - 1)
+        else:
+            out[target] = fold_finding(out[target], addition)
+            folded += 1
+    return out, folded
+
+
 def merge_findings(results: list) -> list:
     """Input MUST be list[SkillResult]; intermediate artifacts are rejected outright."""
     for r in results:

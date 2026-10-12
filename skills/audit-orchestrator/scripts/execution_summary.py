@@ -30,6 +30,15 @@ def derive_execution_status(deadline, skill_results: list, worker_timeout_events
     return "completed"
 
 
+# Phrases that mark the limitations an agent stage would lift. run_audit.py
+# --from-report drops the lines holding them once agent findings are merged
+# into a saved report, as derive_limitations does when the stage was ingested.
+AG04_NOT_SUPPLIED = "the agent vision stage (AG-04) was not supplied"
+AG05_NOT_SUPPLIED = "only the agent stage (AG-05) can look the brand name up"
+AG06_NOT_SUPPLIED = "the agent stage (AG-06) was not supplied"
+AGENT_STAGE_LIMITATION_MARKS = (AG04_NOT_SUPPLIED, AG05_NOT_SUPPLIED, AG06_NOT_SUPPLIED)
+
+
 def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_status: str) -> list:
     """Plain-English limitations. Each line is gated on a real signal from this
     run -- nothing here is boilerplate that runs regardless of what happened, and
@@ -115,8 +124,8 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     if unread_raster and coverage.get("agent_corroboration_stage") != "ingested":
         out.append(
             f"{len(unread_raster)} image(s) whose file name or alt text suggests prices, hours or "
-            f"specifications were not read: the scripts never interpret raster pixels, and the agent "
-            f"vision stage (AG-04) was not supplied, so facts inside those images are suspected, not confirmed."
+            f"specifications were not read: the scripts never interpret raster pixels, and {AG04_NOT_SUPPLIED}, "
+            f"so facts inside those images are suspected, not confirmed."
         )
     skipped_pdfs = media.get("pdfs_discovered", 0) - media.get("pdfs_fetch_attempted", 0)
     if skipped_pdfs > 0:
@@ -136,8 +145,8 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     if kg.get("organization_pages") and coverage.get("agent_corroboration_stage") != "ingested":
         out.append(
             "No search for same-named knowledge-graph entities was run: robots.txt for Wikidata and "
-            "Wikipedia disallows their search endpoints, so only the agent stage (AG-05) can look the "
-            "brand name up; namesake ambiguity is unassessed."
+            "Wikipedia disallows their search endpoints, so " + AG05_NOT_SUPPLIED + "; namesake ambiguity is "
+            "unassessed."
         )
 
     off_site = coverage.get("off_site_profiles") or {}
@@ -157,8 +166,8 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
             and coverage.get("agent_corroboration_stage") != "ingested":
         out.append(
             "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not "
-            "searched for the brand: they block automated clients, no search provider was configured, and the "
-            "agent stage (AG-06) was not supplied. Only profiles linked from the site were considered."
+            "searched for the brand: they block automated clients, no search provider was configured, and "
+            + AG06_NOT_SUPPLIED + ". Only profiles linked from the site were considered."
         )
 
     vitals = coverage.get("web_vitals") or {}

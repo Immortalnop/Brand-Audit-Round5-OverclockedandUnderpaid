@@ -26,7 +26,8 @@ This marketplace runs one orchestration model: the entrypoint acquires a single
 immutable site snapshot and every specialist is an in-process function that
 returns a SkillResult. This stage fits that model. It is not a subprocess and does
 not use a workdir handoff. The calling agent writes its observations to a small
-JSON file, points the environment variable AGENT_FINDINGS_PATH at that file, and
+JSON file and hands it to run_audit.py with --agent-findings (merged into a saved
+report with --from-report, or read during an audit like AGENT_FINDINGS_PATH), and
 run_audit.py ingests it in-process through ingest_agent_findings.py, which
 reconstructs each entry with the shared finding factory. That means catalog
 enrichment and Invariant I-1 cap agent findings exactly as they cap script
@@ -129,17 +130,30 @@ matters: "nobody discusses this brand" is a finding about the brand; "I could no
 check" is a finding about the audit. Collapsing the second into the first is the
 single most common way an audit manufactures a false negative.
 
-Step 4, handoff. Write a JSON array of finding objects to the file named by
-AGENT_FINDINGS_PATH. Do not merge them into the report; the entrypoint ingests that
-file, reconstructs each finding through the shared factory, re-applies Invariant
-I-1, deduplicates against script findings by check ID, and prioritizes everything
-together.
+Step 4, handoff. Write a JSON array of finding objects to a file (agent.json
+below). Do not edit the report yourself; the entrypoint ingests that file,
+reconstructs each finding through the shared factory, re-applies Invariant I-1,
+folds it into the script finding that reports the same check, and prioritizes
+everything together. Two ways in:
+
+```
+python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.json --agent-findings agent.json --out report.json
+python3 skills/audit-orchestrator/scripts/run_audit.py <site> --agent-findings agent.json --out report.json
+```
+
+The first merges into the report the audit already wrote, with no request and no
+new crawl; use it after reading that report. The second runs the audit with the
+file (the same as setting AGENT_FINDINGS_PATH). affected_pages keeps only pages
+of the audited site; put third-party URLs (a review profile, a namesake's
+Wikidata item) in an evidence entry's urls. At most 50 entries are read.
 
 ## Output
 
-The file named by AGENT_FINDINGS_PATH: a JSON array of findings (or an object with
-a findings array). Useful keys per finding: check (AG-01 to AG-06), title,
-severity, status, evidence, and suggested_action with summary and steps. mechanism,
+The file passed with --agent-findings (or named by AGENT_FINDINGS_PATH): a JSON
+array of findings (or an object with a findings array), UTF-8 or UTF-16. Useful
+keys per finding: check (AG-01 to AG-06), title, severity, status, evidence (a
+string, or a list of objects with description and urls), affected_pages, and
+suggested_action with summary and steps. mechanism,
 implementation_detail and expected_outcome are filled automatically from
 common/check_catalog.py, so supply only what you observed.
 
@@ -159,8 +173,8 @@ common/check_catalog.py, so supply only what you observed.
 ]
 ```
 
-If nothing fires, supply an empty array, or do not set AGENT_FINDINGS_PATH at all.
-Both are valid; the stage records not_supplied when the variable is unset.
+If nothing fires, supply an empty array (the stage is then recorded as ingested
+with no finding), or supply no file at all (recorded as not_supplied).
 
 ## Guarantees
 

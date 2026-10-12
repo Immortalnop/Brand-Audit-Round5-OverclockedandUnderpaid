@@ -64,7 +64,7 @@ An agent-executed qualitative stage. When invoked by an AI agent with web search
 - Reads facts drawn inside raster images with the agent's own vision (AG-04)
 - Searches Wikidata and Wikipedia for entities that share the brand name (AG-05); robots.txt disallows their search endpoints to scripts
 - Searches review and directory platforms, Reddit and Quora for the brand's profiles (AG-06); those platforms block automated clients
-- Produces structured findings the entrypoint merges into the report
+- Produces structured findings the entrypoint merges into the report: either merged into a saved report afterwards (`run_audit.py --from-report report.json --agent-findings agent.json`, no request and no new crawl) or read during the audit (`run_audit.py <site> --agent-findings agent.json`). An agent finding that reports the same check as a script finding, such as AG-04 and facts-in-images, is folded into it
 
 Skips gracefully when no search capability is available; it does not report its own absence as a site defect.
 
@@ -118,6 +118,12 @@ In Windows PowerShell, `>` writes UTF-16. Use `--out`, which always writes UTF-8
 python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in --out results.json; python common/report_markdown.py results.json
 ```
 
+After the audit, an agent with web search or vision can run the `entity-corroboration-agent` checks (AG-01 to AG-06) and merge its findings into the saved report, without crawling again:
+
+```powershell
+python skills/audit-orchestrator/scripts/run_audit.py --from-report results.json --agent-findings agent.json --out results.json
+```
+
 `--out` checks the path before the audit starts, writes the file in one step (a failed run never leaves half a report), and prints the report to stdout instead if the file cannot be written. `examples/sample-report.json` is a full report made this way.
 
 The Markdown report is built from the JSON report alone, with no new requests: confidence and why, a summary, where to start, top actions, quick wins, every finding with its evidence, steps and ready-to-paste fix, what is working, and what the audit could not check. It reads UTF-8 or UTF-16 JSON (PowerShell's `>` writes UTF-16) and always writes UTF-8. Text from the audited site is escaped, so it cannot add headings, links, table columns or HTML. Pass a second path to name the file, or `-` to print it.
@@ -133,7 +139,7 @@ Optional environment variables:
 | `OFF_SITE_LOOKUP=0` | Do not fetch sameAs or review profiles; only the checks that need no network run. |
 | `KNOWLEDGE_GRAPH_LOOKUP=0` | Do not verify the declared Wikidata or Wikipedia entity. |
 | `SEARCH_API_URL`, `SEARCH_API_KEY` | Optional search provider for corroboration, footprint and review-platform search. |
-| `AGENT_FINDINGS_PATH` | JSON findings from the agent stage (AG-01 to AG-06). |
+| `AGENT_FINDINGS_PATH` | JSON findings from the agent stage (AG-01 to AG-06), read during the audit; `--agent-findings PATH` does the same. |
 
 ## Safety
 
@@ -199,6 +205,7 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 │   │       ├── generate_recommendations.py
 │   │       ├── validate_report.py         <- schema + invariant enforcement
 │   │       ├── whats_working.py           <- checks that ran and passed, with evidence
+│   │       ├── merge_agent_stage.py       <- --from-report: agent findings into a saved report
 │   │       ├── execution_summary.py       <- status/limitations/confidence
 │   │       └── diagnose_transport.py
 │   ├── crawl-render-audit/        <- crawlability + machine-readability checks
@@ -279,6 +286,7 @@ python3 -m pytest tests/test_benchmark_tools.py  # measurement harness and fixtu
 python3 -m pytest tests/test_robustness.py  # blocked and empty runs, bot challenges, encodings, --out
 python3 -m pytest tests/test_whats_working.py  # passed checks: never skipped, never contradicting a finding
 python3 -m pytest tests/test_offers_facts_crawlers.py  # expired offers, fact consistency, labelled AI crawlers
+python3 -m pytest tests/test_agent_stage_merge.py  # agent stage: --agent-findings, --from-report merge
 ```
 
 `tests/conftest.py` switches the third-party lookups off for every test, so the suite never leaves the machine; tests of those lookups inject a fake transport.

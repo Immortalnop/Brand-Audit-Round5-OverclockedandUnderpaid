@@ -37,6 +37,19 @@ Coverage also reports `offer_expiry` (`offer_expiry_pages_scanned`,
 (crawler name to `search`, `training`, `user_fetch` or `unclassified`, from
 common/ai_crawlers.py).
 
+Agent stage: `coverage.agent_corroboration_stage` is `not_supplied` or
+`ingested`. A report merged with `run_audit.py --from-report R --agent-findings
+A` also carries `coverage.agent_corroboration`: `{"merged_from", "merged_at",
+"findings_supplied", "findings_ingested", "findings_folded_into_existing",
+"findings_added"}`. An agent finding that reports the same check as a script
+finding is folded into it (its evidence, pages, `check_ids` and provenance are
+added; severity never drops); the others are appended. The merge renumbers
+findings, rebuilds `recommendations`, `top_actions`, `quick_wins` and the
+summary, drops the limitations and warning about the missing agent stage, and
+keeps `confidence`, fix snippets and the `whats_working` entries no merged
+finding contradicts. Implemented in
+`skills/audit-orchestrator/scripts/merge_agent_stage.py`.
+
 Every finding and baseline recommendation also exposes a stable `check_id`, `mechanism`,
 `implementation_detail` and `expected_outcome` from common/check_catalog.py.
 Merged findings include `check_ids` for all contributing rules. Per-report `id`

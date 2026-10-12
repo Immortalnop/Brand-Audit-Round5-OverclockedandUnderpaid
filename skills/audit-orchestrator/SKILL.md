@@ -44,7 +44,21 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    (`validate_report.py`). Both of the last two apply the severity gate: a high or
    critical finding must be confirmed or backed by two independent kinds of
    evidence, else it is lowered and says why. See `references/severity-rubric.md`.
-4. Return the resulting report to the user as-is.
+4. Agent stage (AG-01 to AG-06), only when you can read pages, view images or
+   search the web. Write the report to a file
+   (`python3 scripts/run_audit.py <site> --out report.json`), then follow
+   `skills/entity-corroboration-agent/SKILL.md` using that report: the brand
+   name, the facts-in-images and review-platform-missing findings, and
+   `coverage.off_site_profiles`. Write what you observed to a JSON file, then
+   merge it, with no new crawl and no request:
+   `python3 scripts/run_audit.py --from-report report.json --agent-findings agent.json --out report.json`.
+   Each agent finding is rebuilt by the shared finding factory and folded into
+   the script finding that reports the same check; the report is renumbered and
+   validated again. A report can take one merge, and only when it analyzed at
+   least one page. Already holding the agent findings before the audit? Pass
+   `--agent-findings agent.json` with the site instead. Skip this step when
+   you have no such tools: the report then records the stage as `not_supplied`.
+5. Return the resulting report to the user as-is.
 
 ## Safety guarantees (enforced by `acquire_site.py`, not just documented)
 - **SSRF protection**: every URL fetched -- the initial target, robots.txt,
@@ -152,6 +166,7 @@ process cannot block the orchestrator past its deadline.
 ```
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json
+$ python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.json --agent-findings agent.json --out report.json
 ```
 
 `--out PATH` writes the same JSON as UTF-8 (use it in Windows PowerShell, whose
