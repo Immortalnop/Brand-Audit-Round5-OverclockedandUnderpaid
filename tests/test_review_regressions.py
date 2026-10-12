@@ -1056,3 +1056,62 @@ def test_a11_wildcard_and_crawl_delay_follow_the_same_token_rule():
     assert rp.crawl_delay("Applebot-Extended") == 2.0
     assert rp.can_fetch("Applebot-Extended", "https://x.example/admin") is False
     assert rp.can_fetch("Applebot-Extended", "https://x.example/pricing") is True
+
+
+# ------------------------------------------- A12 non-text and optional network
+def test_a12_pdf_prefix_probe_does_not_claim_an_image_only_document():
+    """A /Font object missing from the first 64 KiB proves only that none appears
+    in that prefix: a PDF whose first pages are scanned covers and whose body is
+    text looks identical. The probe used to report text_layer=False and that made
+    facts-in-pdf a confirmed defect."""
+    from constants import Limits
+    from models import make_deadline, freeze_value, AuditArtifacts
+    from analyze_nontext_facts import analyze_nontext_facts
+    page = _page("<html><title>Fees</title><h1>Fee structure</h1>"
+                 "<p>Download the fee structure below.</p>"
+                 "<a href='/fees/fee-structure.pdf'>Fee structure (PDF)</a></html>", SITE + "fees")
+    meta = {"coverage": {},
+            "asset_links": [{"url": SITE + "fees/fee-structure.pdf", "anchor": "Fee structure (PDF)",
+                             "linked_from": SITE + "fees", "fact_keyword": True}],
+            "asset_probes": [{"url": SITE + "fees/fee-structure.pdf", "outcome": "ok", "status": 200,
+                              "content_type": "application/pdf", "bytes_read": 65536,
+                              "probe_scope": "prefix", "complete": False,
+                              "text_layer_in_prefix": False, "text_layer": None}]}
+    artifacts = AuditArtifacts(SITE, SITE.rstrip("/"), (page,),
+                               freeze_value({"status": "ok", "ai_crawler_directives": {}}),
+                               freeze_value({"present": False, "status": "absent"}),
+                               freeze_value({"status": "ok", "urls": [], "lastmod": {}}),
+                               freeze_value(meta), ())
+    result = analyze_nontext_facts(artifacts, make_deadline(Limits()))
+    pdf = [f for f in result["findings"] if f["check_id"] == "facts-in-pdf"]
+    assert pdf and pdf[0]["status"] == "suspected"
+    text = " ".join(e["description"] for e in pdf[0]["evidence"])
+    assert "no text layer found in the first 65536 bytes read" in text
+    assert "the rest of the document was not read" in text
+    assert "image-only PDF (no text layer)" not in text
+
+
+def test_a12_image_fact_findings_say_no_image_was_read():
+    from constants import Limits
+    from models import make_deadline
+    from analyze_nontext_facts import analyze_nontext_facts
+    page = _page("<html><title>Menu</title><h1>Our menu</h1>"
+                 "<img src='/img/price-list.jpg' alt='Price list' width='800'></html>", SITE + "menu")
+    result = analyze_nontext_facts(_snapshot([page]), make_deadline(Limits()))
+    img = [f for f in result["findings"] if f["check_id"] == "facts-in-images"]
+    assert img and img[0]["status"] == "suspected"
+    assert "no image was read" in img[0]["root_cause"]
+    assert result["metrics"]["images_read"] == 0
+
+
+def test_a12_documentation_scopes_the_stages_that_make_requests():
+    """The blanket claim that no analysis script makes a request was inaccurate
+    for the enabled optional paths (headless rendering, search provider)."""
+    readme = (ROOT / "README.md").read_text()
+    assert "no analysis script makes a network request." not in readme
+    assert "Headless rendering" in readme and "request_accounting" in readme
+    skill = (ROOT / "skills/audit-orchestrator/SKILL.md").read_text()
+    assert "Which stages make requests" in skill
+    assert "reserves from what is left" in skill
+    policy = (ROOT / "skills/audit-orchestrator/references/execution-policy.md").read_text()
+    assert "never as a confirmed" in policy

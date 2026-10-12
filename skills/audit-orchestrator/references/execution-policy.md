@@ -16,7 +16,11 @@ bytes. Each hop checks URL safety and robots permission. robots.txt follows
 RFC 9309 (4xx allow, 429/5xx disallow); a challenged robots file allows one
 homepage request only. Cross-origin redirects are blocked. Crawl-delay is
 respected; at most 3 pages per URL template; 3 consecutive challenge responses
-stop the crawl. Up to 3 key-fact PDFs are range-read (64 KiB) to detect a text layer.
+stop the crawl. Up to 3 key-fact PDFs are range-read (64 KiB prefix) and checked for a /Font
+object: finding one proves the document has a text layer, while not finding one proves only
+that none appears in that prefix, so it is reported as a candidate and never as a confirmed
+image-only PDF. Those reads share the auxiliary request allowance (MAX_AUX_PROBE_REQUESTS)
+inside the global one.
 
 Optional rendering is opt-in and uses additional local caps of 20 requests,
 4 MiB and 25 seconds. Only same-origin GETs are fulfilled.

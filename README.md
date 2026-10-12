@@ -61,7 +61,19 @@ entity-corroboration-agent  (the calling agent searches and reads images,
 audit-orchestrator  pass 2: finalize_report.py  (merge, re-score, re-validate; no re-crawl)
 ```
 
-All analysis skills read the same immutable acquisition snapshot; no analysis script makes a network request.
+All analysis skills read the same immutable acquisition snapshot. The *default* run makes no request outside
+acquisition, but two optional stages do when they are enabled, and the report accounts for both in
+`coverage.request_accounting`:
+
+- **Headless rendering** (`analyze_rendering.py`, only when a browser is available) fetches the candidate
+  pages through a child-process Transport under the same GET-only, same-origin, robots-checked policy. It
+  reserves a slice of the audit's *remaining* request and byte allowance (`MAX_RENDER_REQUESTS`), reports what
+  it spent, and is skipped when nothing is left.
+- **Claim corroboration and off-site footprint** (`corroborate_claims.py`,
+  `assess_external_footprint.py`, only when a search provider is configured) query that provider -- not the
+  audited site -- bounded by `MAX_FOOTPRINT_QUERIES` and `MAX_EXTERNAL_FETCHES`.
+
+Every other analysis script is pure over the snapshot.
 
 ## What the report gives a non-expert
 

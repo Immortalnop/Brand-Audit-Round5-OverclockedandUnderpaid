@@ -71,7 +71,18 @@ lives in `common/scoring.py`; every check's wording and metadata in
 - **Read-only**: only GET requests; optional rendering runs under a GET-only,
   same-origin policy; the audit never clicks, types or submits forms.
 - **Bounded**: 50 pages, 90 requests, 40 MiB, 270 s wall clock; byte budgets
-  enforced while streaming.
+  enforced while streaming. The 90 requests are ONE allowance covering robots,
+  sitemap and llms.txt probes, page fetches, redirect hops, retries, the
+  auxiliary HTTPS and PDF diagnostics, and optional headless rendering -- which
+  reserves from what is left rather than getting a budget of its own.
+  `coverage.request_accounting` reports the split, and a diagnostic is skipped
+  rather than run off-budget.
+- **Which stages make requests**: acquisition always; optional headless
+  rendering when a browser is available (same GET-only, same-origin,
+  robots-checked policy, through a child-process Transport); optional claim
+  corroboration and off-site footprint when a search provider is configured,
+  and those go to the provider, not to the audited site. Every other analysis
+  script is pure over the acquisition snapshot.
 
 ## Output
 `report.json` (schema: `references/report-schema.md`): `site`, `audited_at`,

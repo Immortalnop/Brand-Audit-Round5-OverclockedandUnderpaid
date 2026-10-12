@@ -10,12 +10,25 @@ downloads and decorative images do not fire:
   facts-in-pdf     a fact-keyword document (menu.pdf, price-list.pdf, "Download
                    fee structure") is linked AND the linking page shows no
                    matching facts in text (e.g. a pricing page with no prices).
-                   Range-read probes (acquire_site.py) add "image-only PDF" evidence.
   facts-in-images  on a content page, an image whose file name or alt names a fact
                    (menu, price-list, timetable ...), with little supporting text;
                    or a pricing/menu page that is mostly a large image
   facts-in-iframe  a document-viewer embed (Google Docs/Drive, Issuu, Scribd,
                    Calameo, Canva) on a page with little text of its own
+
+What these rules do NOT do, stated because the difference matters to a reader
+acting on the finding:
+
+  * No image is read. A file name, an alt attribute and a short page are how a
+    CANDIDATE is identified; whether the image actually carries prices or hours
+    is a question for the agent stage (AG-04, which opens the image with its own
+    vision). So the script's facts-in-images is suspected, never confirmed.
+  * No PDF is text-extracted. acquire_site range-reads a bounded prefix and
+    looks for a /Font object. Finding one proves the document has a text layer;
+    not finding one proves only that none appears in that prefix. A PDF whose
+    first pages are scanned covers and whose body is text looks identical. So
+    the absence is reported as "no text layer in the first N bytes read", and it
+    never makes facts-in-pdf confirmed on its own.
 """
 import re
 from urllib.parse import urlsplit
@@ -72,28 +85,37 @@ def analyze_nontext_facts(artifacts, deadline):
             continue
         intent = intent_of(page.url) or ''
         probe = probes.get(a['url'], {})
-        image_only = probe.get('text_layer') is False
-        if image_only or not _facts_in_text(page):
-            pdf_hits.append((a, page, intent, image_only))
+        # A bounded prefix read found no /Font object. That is a candidate signal
+        # for an image-only PDF, not proof of one: the document's later pages were
+        # never read.
+        no_font_in_prefix = probe.get('text_layer_in_prefix') is False
+        if no_font_in_prefix or not _facts_in_text(page):
+            pdf_hits.append((a, page, intent, no_font_in_prefix, probe.get('bytes_read')))
     if pdf_hits:
-        key = any(intent in _PRICE_INTENTS or page.page_type in ('product', 'home') for _, page, intent, _ in pdf_hits)
+        key = any(intent in _PRICE_INTENTS or page.page_type in ('product', 'home') for _, page, intent, _, _ in pdf_hits)
         findings.append(make_finding(
             category='ai_discoverability', finding_type='defect', severity='high' if key else 'medium',
-            status='confirmed' if any(io for *_, io in pdf_hits) else 'suspected', confidence=0.75,
-            title='Key facts are published only as linked documents',
+            # The linked-document observation itself is direct (the link and the
+            # page text are both in the snapshot), but whether the document is the
+            # only home of the fact is not established from outside, and the
+            # prefix read cannot confirm an image-only PDF. Suspected throughout.
+            status='suspected', confidence=0.75,
+            title='Key facts appear to be published only as linked documents',
             root_cause='Fact documents (prices, menus, fees, specifications) are linked from pages that do not state '
                        'those facts as text, so AI fetchers reading the page find nothing to quote',
             evidence=[{'type': 'non_text_fact',
                        'description': f"'{a['anchor'] or a['url'].rsplit('/', 1)[-1]}' -> {a['url']} linked from a page with "
                                       + ('no prices in text' if not price_numbers(page.visible_text or '') else 'little text')
-                                      + ('; range read shows an image-only PDF (no text layer)' if io else ''),
-                       'urls': [page.url, a['url']]} for a, page, _, io in pdf_hits[:6]],
-            affected_pages=sorted({page.url for _, page, _, _ in pdf_hits}),
+                                      + (f'; no text layer found in the first {nbytes or 0} bytes read, so this may be '
+                                         'an image-only (scanned) PDF -- the rest of the document was not read'
+                                         if no_font else ''),
+                       'urls': [page.url, a['url']]} for a, page, _, no_font, nbytes in pdf_hits[:6]],
+            affected_pages=sorted({page.url for _, page, _, _, _ in pdf_hits}),
             suggested_action={
                 'summary': 'Publish the document facts as HTML text on the linking page',
                 'steps': ['Copy the key facts (prices, items, fees, specs) into an HTML table or list on the page',
                           'Keep the document as an optional download below the text',
-                          'For image-only PDFs, at minimum provide a text version'],
+                          'Check whether the PDF has a text layer at all; if it is a scan, provide a text version'],
                 'priority': 'high' if key else 'medium', 'effort': 'medium',
                 'expected_benefit': 'The facts become readable and quotable from the page itself',
                 'verification': 'The raw HTML of the page contains the facts'},
@@ -104,8 +126,9 @@ def analyze_nontext_facts(artifacts, deadline):
         findings.append(make_finding(
             category='ai_discoverability', finding_type='defect', severity='medium', status='suspected',
             confidence=0.65, title='Key facts appear to be carried inside images',
-            root_cause='Images that look like fact carriers (price lists, menus, timetables) sit on pages with little '
-                       'supporting text; their content is pixels to a text extractor',
+            root_cause='Images whose file name or alt text names a fact (price list, menu, timetable) sit on pages '
+                       'with little supporting text; no image was read, so these are candidates identified from '
+                       'their names and their page, and the agent stage (AG-04) is what reads them',
             evidence=[{'type': 'non_text_fact',
                        'description': f"{why}: {img.get('src') or '(inline)'} (alt: {img.get('alt')!r})",
                        'urls': [p.url]} for p, img, why in img_hits[:6]],
@@ -141,5 +164,9 @@ def analyze_nontext_facts(artifacts, deadline):
 
     return skill_result('crawl-render-audit', findings=findings,
                         metrics={'asset_links': len(assets), 'asset_probes': len(probes),
+                                 'pdf_fact_candidates': len(pdf_hits), 'image_fact_candidates': len(img_hits),
+                                 'iframe_fact_candidates': len(frame_hits),
+                                 'pdfs_with_no_text_layer_in_prefix': sum(1 for *_, nf, _ in pdf_hits if nf),
+                                 'images_read': 0,
                                  'pdf_fact_hits': len(pdf_hits), 'image_fact_hits': len(img_hits),
                                  'iframe_fact_hits': len(frame_hits)})

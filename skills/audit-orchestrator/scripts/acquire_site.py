@@ -477,8 +477,20 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         if not rp.can_fetch(USER_AGENT,a['url']):continue
         ar,ast=tr.get(a['url'],max_bytes=getattr(limits,'ASSET_PROBE_BYTES',65536))
         if ast!='ok' or not ar:asset_probes.append({'url':a['url'],'outcome':ast});continue
+        # A bounded prefix read, not text extraction. Finding a /Font object in
+        # the first ASSET_PROBE_BYTES proves the PDF HAS a text layer; not finding
+        # one proves only that none appears in that prefix, so it is reported as
+        # a candidate ('no text layer in the first N bytes'), never as a
+        # confirmed image-only document.
+        probed=len(ar.content)
+        has_font=b'/Font' in ar.content if ar.content.startswith(b'%PDF') else None
         asset_probes.append({'url':a['url'],'outcome':'ok','status':ar.status_code,'content_type':ar.headers.get('Content-Type',''),
-                             'text_layer':(b'/Font' in ar.content) if ar.content.startswith(b'%PDF') else None})
+                             'bytes_read':probed,'probe_scope':'prefix',
+                             'complete':not ar.truncated and probed<getattr(limits,'ASSET_PROBE_BYTES',65536),
+                             'text_layer_in_prefix':has_font,
+                             # Kept for readers of the previous key: True means a
+                             # text layer was seen, None means not established.
+                             'text_layer':True if has_font else None})
     key_urls=[site_url]+[p.url for p in pages if intent_of(p.url)][:12]+[urljoin(origin,'/llms.txt')]+sitemap_urls[:1]
     ai_paths=_ai_crawler_paths(rp,list(dict.fromkeys(key_urls)),conservative)
     challenged=[p for p in pages if {'bot_challenge','rate_limited'}&set(p.warnings)]
