@@ -76,7 +76,10 @@ def check_llms_txt(artifacts, deadline):
     format_problems = []
     if present:
         format_problems.extend(data.get("structure_issues", ()))
-    if full.get("status") == "malformed":
+    # The companion file is judged only beside a published llms.txt: a site that
+    # answers every unknown path with its HTML home page publishes neither file,
+    # which is not a malformed one.
+    if full.get("status") == "malformed" and present:
         format_problems.append("/llms-full.txt answers with an HTML page instead of a text file"
                                if full.get("served_html") else
                                "/llms-full.txt is empty or redirects to a different path")

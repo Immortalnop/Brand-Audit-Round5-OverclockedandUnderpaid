@@ -4,7 +4,16 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Limits:
+    # The controlled audit worker is hard-stopped at TOTAL_AUDIT_TIMEOUT_S. Most
+    # sites finish well before it; the optional agent stage gets what the worker
+    # left before the workflow target, at most AGENT_STAGE_BUDGET_S, and the
+    # merge MERGE_FINALIZATION_S. Only the worker limit is enforced by this code;
+    # the agent stage is timed and reported, not stopped (run_audit.timing_plan).
     TOTAL_AUDIT_TIMEOUT_S: float = 270
+    WORKFLOW_TARGET_S: float = 270
+    AGENT_STAGE_BUDGET_S: float = 55
+    MERGE_FINALIZATION_S: float = 15
+    # Inside the worker: acquisition, then the analysis batches, then the report.
     ACQUISITION_BUDGET_S: float = 110
     RENDERING_BUDGET_S: float = 55
     EXTERNAL_ANALYSIS_BUDGET_S: float = 55
@@ -25,8 +34,25 @@ class Limits:
     MAX_FOOTPRINT_QUERIES: int = 4
     MAX_FETCH_RETRIES: int = 1
     PER_FETCH_TIMEOUT_MS: int = 3500
+    # robots.txt and the start URL: without them nothing else can be read, so a
+    # slow first answer gets longer. Still capped by the remaining stage deadline,
+    # and the single retry still applies, so one critical resource can spend up to
+    # about 20 seconds.
+    CRITICAL_FETCH_TIMEOUT_MS: int = 10000
     MAX_EXTERNAL_CONCURRENCY: int = 4
+    # Shared site allowance (common/network_budget.py "site" pool): every request
+    # to the audited origin, re-anchored origin included, plus the headless
+    # browser's reserved slice. MAX_TOTAL_BYTES above is its byte ceiling.
     MAX_TOTAL_HTTP_REQUESTS: int = 90
+    # Shared third-party allowance ("external" pool): knowledge graphs, linked
+    # profiles, the PageSpeed API and a configured search provider, each still
+    # under its own smaller cap.
+    MAX_EXTERNAL_HTTP_REQUESTS: int = 40
+    MAX_EXTERNAL_BYTES: int = 16 * 1024 * 1024
+    # Slice of the site pool reserved for the optional headless browser, which
+    # runs in a child process and is charged its whole slice.
+    HEADLESS_RENDER_REQUESTS: int = 20
+    HEADLESS_RENDER_BYTES: int = 4_000_000
     # Non-text media (facts locked in images and PDFs). Fetched after the page
     # crawl from whatever request, byte and time budget remains; same origin only.
     MAX_IMAGE_FETCHES: int = 6

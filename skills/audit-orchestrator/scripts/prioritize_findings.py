@@ -108,7 +108,9 @@ def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
 
 def top_actions(findings: list, limit: int = 5) -> list:
     """The defects to act on first, in priority order, each with its impact x
-    effort placement. A quick win among them is marked start_here."""
+    effort placement. One confirmed defect among them is marked start_here,
+    a quick win when there is one; a suspected or unconfirmed defect never is,
+    so the report may have no start_here at all."""
     defects = [f for f in findings if f.get("finding_type") == "defect"][:limit]
     rows = []
     for f in defects:
@@ -116,8 +118,10 @@ def top_actions(findings: list, limit: int = 5) -> list:
         rows.append({"finding_id": f["id"], "title": f.get("title"), "summary": action.get("summary"),
                      "priority": action.get("priority"), "impact": action.get("impact"),
                      "effort": action.get("effort"), "quadrant": action.get("quadrant"),
-                     "quick_win": bool(action.get("quick_win")), "start_here": False})
-    first = next((r for r in rows if r["quick_win"]), rows[0] if rows else None)
+                     "quick_win": bool(action.get("quick_win")), "start_here": False,
+                     "status": f.get("status")})
+    confirmed = [r for r in rows if r["status"] == "confirmed"]
+    first = next((r for r in confirmed if r["quick_win"]), confirmed[0] if confirmed else None)
     if first is not None:
         first["start_here"] = True
     return rows

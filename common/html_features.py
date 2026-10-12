@@ -49,6 +49,56 @@ _STATE_SCRIPT_IDS = frozenset({'__NEXT_DATA__', '__NUXT_DATA__', '__APOLLO_STATE
 _STATE_GLOBAL = re.compile(r'window\.__(?:INITIAL_STATE|PRELOADED_STATE|NUXT|APOLLO_STATE|REDUX_STATE|INITIAL_DATA)__\s*=')
 # A JSON string literal of at least 20 characters with no markup or URL in it.
 _STATE_PROSE = re.compile(r'"((?:[^"\\<>]|\\.){20,2000})"')
+# Page data serialized into an element attribute (Inertia's data-page, React
+# on Rails' data-react-props and similar). Named attributes always count as page
+# state; another data-* attribute counts only when it holds JSON with readable
+# prose, so a large settings or tracking blob is never taken for hidden content.
+_STATE_ATTRS = frozenset({'data-page', 'data-props', 'data-react-props', 'data-state', 'data-initial-state',
+                          'data-server-state', 'data-hydrate', 'data-hypernova-props'})
+_STATE_ATTR_NAMED_MIN = 200
+_STATE_ATTR_GENERIC_MIN = 2000
+_STATE_ATTR_PROSE_MIN = 200
+_STATE_ATTR_MAX_INSPECTED = 5
+_STATE_ATTR_MAX_CHARS = 200_000
+_STATE_JSON_MAX_ITEMS = 5000
+_STATE_JSON_MAX_DEPTH = 12
+_STATE_TEXT_CAP = 20000
+
+
+def state_prose_chars(text, cap=_STATE_TEXT_CAP):
+    """(characters of readable prose, limited) in serialized page data: string
+    values of four or more words. JSON is parsed when it can be and walked with a
+    depth and item limit; otherwise quoted strings are matched. Nothing is
+    executed. limited is True when a limit cut the walk short."""
+    import json
+    chars = 0
+    try:
+        data = json.loads(text)
+    except (ValueError, RecursionError):
+        for m in _STATE_PROSE.finditer(text):
+            if chars >= cap:
+                return cap, True
+            if len(m.group(1).split()) >= 4:
+                chars += len(m.group(1))
+        return min(chars, cap), False
+    stack = [(data, 0)]
+    items = 0
+    while stack:
+        value, depth = stack.pop()
+        items += 1
+        if items > _STATE_JSON_MAX_ITEMS or chars >= cap:
+            return min(chars, cap), True
+        if isinstance(value, str):
+            if len(value.split()) >= 4:
+                chars += len(value)
+        elif depth >= _STATE_JSON_MAX_DEPTH:
+            if isinstance(value, (dict, list)) and value:
+                return min(chars, cap), True
+        elif isinstance(value, dict):
+            stack.extend((v, depth + 1) for v in value.values())
+        elif isinstance(value, list):
+            stack.extend((v, depth + 1) for v in value)
+    return min(chars, cap), False
 
 
 # Wording that marks a form as an email subscription: on its submit control, in
@@ -392,6 +442,33 @@ class Document(HTMLParser):
         # Signs that a client-side framework builds the page: framework attributes
         # or bundle names, and page data serialized for a script to render.
         self.framework_hint=False;self.state_blob=False;self.state_text_chars=0
+        # Where page state was found ('script#__NEXT_DATA__', 'attr:data-page'),
+        # how many state attributes were inspected, and whether a bound cut it short.
+        self.state_sources=[];self.state_attrs_inspected=0;self.state_extraction_limited=False
+        # Scripts that run: external or inline JavaScript. JSON-LD and other data
+        # blocks are not counted.
+        self.executable_scripts=0
+    def _add_state_source(self,label):
+        if label not in self.state_sources and len(self.state_sources)<5:self.state_sources.append(label)
+    def _observe_state_attrs(self,a):
+        """Page data serialized into data-* attributes. Bounded: at most
+        _STATE_ATTR_MAX_INSPECTED attributes per page, each read up to
+        _STATE_ATTR_MAX_CHARS characters."""
+        for name,value in a.items():
+            if not name.startswith('data-') or self.state_text_chars>=_STATE_TEXT_CAP:continue
+            named=name in _STATE_ATTRS
+            if named:
+                if len(value)<_STATE_ATTR_NAMED_MIN:continue
+            elif len(value)<_STATE_ATTR_GENERIC_MIN or not value.lstrip().startswith(('{','[')):continue
+            if self.state_attrs_inspected>=_STATE_ATTR_MAX_INSPECTED:
+                self.state_extraction_limited=True;return
+            self.state_attrs_inspected+=1
+            if len(value)>_STATE_ATTR_MAX_CHARS:self.state_extraction_limited=True
+            prose,limited=state_prose_chars(value[:_STATE_ATTR_MAX_CHARS],_STATE_TEXT_CAP-self.state_text_chars)
+            if limited:self.state_extraction_limited=True
+            if named or prose>=_STATE_ATTR_PROSE_MIN:
+                self.state_blob=True;self._add_state_source('attr:'+name[:40])
+                self.state_text_chars=min(_STATE_TEXT_CAP,self.state_text_chars+prose)
     def _observe_auth(self,tag,a,frame):
         """Visible password inputs, and for each form that holds one: its action,
         its id, class and name, its submit labels and whether it sits in the page
@@ -614,8 +691,8 @@ class Document(HTMLParser):
         if tag=='script':
             self.scripts+=1;self._script={'type':a.get('type','').lower(),'parts':[],'src':bool(a.get('src')),
                                           'id':a.get('id','').strip()}
-            if a.get('src'):
-                self.external_scripts+=1
+            if a.get('src') and self._script['type'] in _JS_TYPES:
+                self.external_scripts+=1;self.executable_scripts+=1
                 src=a['src'].strip()
                 if not self.framework_hint and _FRAMEWORK_SCRIPT.search(src):self.framework_hint=True
                 if src.startswith(('http://','https://','//')) and len(self.script_hosts)<60:
@@ -626,6 +703,7 @@ class Document(HTMLParser):
         if a.get('id','').lower() in {'root','app','__next','___gatsby','app-root'}:self.spa=True
         if not self.framework_hint and (tag in ('app-root',) or any(k in a for k in _FRAMEWORK_ATTRS)):
             self.framework_hint=True
+        self._observe_state_attrs(a)
         if 'itemscope' in a or 'typeof' in a:self.microdata=True
         if a.get('itemtype') and len(self.microdata_types)<30:
             for value in a['itemtype'].split()[:5]:
@@ -746,7 +824,9 @@ class Document(HTMLParser):
         if tag=='script' and self._script:
             if self._script['type']=='application/ld+json':self.jsonld.append(''.join(self._script['parts']))
             elif not self._script['src'] and self._script['type'] in _JS_TYPES:
-                self.inline_script_bytes+=sum(len(part) for part in self._script['parts'])
+                inline=sum(len(part) for part in self._script['parts'])
+                self.inline_script_bytes+=inline
+                if inline:self.executable_scripts+=1
             if not self._script['src'] and self._script['type'] in _JS_TYPES+('application/json',):
                 self._add_saved_state_hint(''.join(self._script['parts'])[:100000])
             if not self._script['src'] and self._script['type']!='application/ld+json' and self.state_text_chars<20000:
@@ -756,10 +836,13 @@ class Document(HTMLParser):
                 if (self._script['id'] in _STATE_SCRIPT_IDS or _STATE_GLOBAL.search(body[:200000])
                         or (self._script['type']=='application/json' and len(body)>=2000)):
                     self.state_blob=True
+                    self._add_state_source('script#'+self._script['id'][:40] if self._script['id']
+                                           else 'script:'+(self._script['type'] or 'inline'))
+                    if len(body)>200000:self.state_extraction_limited=True
                     # Prose inside it: string values of four or more words, the text a
                     # script will put on the page.
                     for m in _STATE_PROSE.finditer(body[:200000]):
-                        if self.state_text_chars>=20000:break
+                        if self.state_text_chars>=20000:self.state_extraction_limited=True;break
                         if len(m.group(1).split())>=4:self.state_text_chars+=len(m.group(1))
             self._script=None
         if tag in _BLOCK_TAGS:self._block_break()
@@ -858,7 +941,9 @@ class Document(HTMLParser):
                 'password_inputs':self.password_inputs,
                 'signup_forms':sum(1 for f in self.form_records if is_signup_form(f)),
                 'framework_hint':self.framework_hint,'state_blob':self.state_blob,
-                'state_text_chars':self.state_text_chars,
+                'state_text_chars':self.state_text_chars,'state_sources':self.state_sources,
+                'state_extraction_limited':self.state_extraction_limited,
+                'executable_scripts':self.executable_scripts,
                 'password_forms':[{k:(list(v) if k=='labels' else v) for k,v in f.items() if k!='password'}
                                   for f in self.password_forms],
                 **self._extended_features()}

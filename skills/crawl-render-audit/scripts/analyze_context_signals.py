@@ -74,6 +74,12 @@ _OWN_LOCATION_PATH = re.compile(r"/(?:contact|contact-us|about|about-us|location
                                 r"|visit(?:-us)?|directions|offices?|campus|hours)(?:/|$|[-_.])", re.I)
 
 
+# A post-office box is a mailing address, not a place a visitor or a local
+# answer can be sent to, so it is never physical-location evidence.
+_PO_BOX = re.compile(r"\b(?:p\.?\s*o\.?\s*box|post\s+office\s+box|gpo\s+box|locked\s+bag|postfach|apartado"
+                     r"|boite\s+postale|casilla\s+postal)\b", re.I)
+
+
 def _key(text):
     return " ".join((text or "").lower().split())
 
@@ -82,7 +88,7 @@ def _plain_locations(page):
     """Postal addresses written as plain text, map embeds and map links on one page,
     as {kind: [values]}."""
     f = page.features or {}
-    return {"address": [t for t in f.get("postal_address_text") or () if t],
+    return {"address": [t for t in f.get("postal_address_text") or () if t and not _PO_BOX.search(t)],
             "map_embed": [(r.get("src") or "").strip() for r in f.get("media_records") or ()
                           if r.get("tag") == "iframe" and _MAP_URL.search((r.get("src") or "").strip())],
             "map_link": [(h or "").strip() for h, _ in f.get("anchors") or () if _MAP_URL.search((h or "").strip())]}
@@ -99,7 +105,7 @@ def _location_evidence(page, repeated=frozenset()):
     f = page.features or {}
     found = {}
     for text in f.get("address_text") or ():
-        if re.search(r"\d", text) and len(text.split()) >= 3:
+        if re.search(r"\d", text) and len(text.split()) >= 3 and not _PO_BOX.search(text):
             found["address"] = text[:120]
             break
     try:

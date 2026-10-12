@@ -112,19 +112,16 @@ ___________________________________________
 
 ## List 2: rubric improvements still open
 
-Detection accuracy
-5. Gate the email-summary check. F-004 says "Review outbound email text" on a site with no newsletter evidence. That is padding, and the rubric penalises false positives. Emit it only if a newsletter or signup form exists.
-   (Partial: it now needs an email input and a form, and the title no longer claims a signup. It still fires on contact and login forms with an email field.)
-
-Output design
-14. Add a grouped "what's working" section. Passed checks support the claim of no false positives and make the report credible.
+Nothing open here. Both former items are implemented:
+- 5 (email-summary): done. The email-summary check is retired (RETIRED_CHECK_IDS in common/check_catalog.py keeps its entry so old reports still validate). Its replacement, email-summary-readable, fires only when email-capture pages carry their substance in images rather than text.
+- 14 (what's working): done. skills/audit-orchestrator/scripts/whats_working.py lists passed checks, each with the observation that shows it, and drops any that a reported finding contradicts; the Markdown report shows them under "What's working".
 
 
 ## Known bugs and limitations
 
 1. (Fixed, see FIXED Issues.) Pages built by JS not read properly.
 2. (Fixed, see FIXED Issues.) Location evidence missed addresses written in a plain <div>.
-3. results.json at the repo root is UTF-16 and breaks the em-dash test; examples/sample-report.json is missing (test_2_6). Fix: delete results.json, regenerate the sample with Out-File -Encoding utf8.
+3. (Fixed.) results.json is gone from the repo root and examples/sample-report.json is shipped as UTF-8 (test_2_6).
 4. (Fixed 2026-10-12.) Timing-flaky subprocess tests: every run_isolated timing bound in the suite now leaves room for a slow Windows process start (timeouts 30 s, elapsed bounds 10-15 s), and each still proves its point.
 
 ## Calibration results (2026-10-12)
@@ -135,4 +132,16 @@ Sites: 7 dev (basecamp, mit.edu, theguardian, tartinebakery, svelte.dev, bellroy
 - Rules fixed on dev: page-orientation (short H1s), teaser question headings, muted autoplay background video, noscript images, term-repetition (running text only), markup-ratio (3%), Google Maps place profiles, email-summary (now a warning), question headings over tables, duplicate titles (query variants, hreflang alternates), the 200-entry sitemap read limit, URLs redirecting to one page analyzed twice, redirect targets counted as never attempted.
 - --suggest confidences set for 10 checks in CALIBRATED_CONFIDENCE (common/check_catalog.py).
 - Holdout, scored once with rules frozen: precision 0.653 (49 labelled), 1 false high (patagonia no-jsonld), ECE 0.137; fixture recall 25/25. 3 of 6 holdout sites gave no analyzable page (two bot challenges, one robots.txt timeout), reported honestly as insufficient_evidence. patagonia served a "Hang Tight! Routing to checkout..." waiting-room page for every URL; the audit analyzed it as the site and all 12 of its labelled findings are false. Without patagonia: 0.865 (37 labelled).
-- Open: detect waiting-room interstitials (queue pages served for every URL) as a gate, like bot challenges; then score a fresh holdout set, since this one has now been seen.
+- Done (ROUND5_PLAN T2.1): waiting-room interstitials are a gate, like bot challenges. Still open: score a fresh holdout set, since this one has now been seen.
+- The CALIBRATED_CONFIDENCE values are heuristics until the agent-made labels are reviewed by a person: each has at most 6 labelled findings, one per site. CALIBRATION_PROVENANCE records the counts, sites, dataset hash and evidence class of each, and every finding carries confidence_basis. score_benchmark.py --suggest now flags a rule below 0.5 precision for repair or suppression instead of giving it 0.5.
+
+## Round 5 validation results (2026-10-12, release 8.3.0 candidate)
+
+Labels were made by the agent from report evidence plus single-page checks of the live sites; no person has reviewed them yet, so treat every number as provisional. Runs, labels and freeze records are local in benchmark_runs/ (r5_known, r5_holdout, r5_holdout2, r5_invocation, r5_rehearsal). Live sites change between runs, so a rerun can differ. Sample sizes are small (6 sites per holdout) and do not support claims of broad reliability.
+
+- Development review (the 7 dev sites and the 6 old holdout sites, rerun with the Phase 1-6 code): precision 0.821 over 201 labelled findings, 0 false high or critical, ECE 0.096; 10 of 13 sites gave analyzable pages (two bot challenges, one robots.txt timeout). Findings that changed: no-jsonld and page-type-schema-gap moved from defects to improvement opportunities at most medium (Phase 6), labels carried over. Repairs made from this review, each with a regression test in tests/test_round5_release.py or test_round5_observations.py: a waiting-room page with a long contact list was analyzed as the site (patagonia, 13 false findings; now gated on title wording plus a holding message), a PO Box counted as a physical location, and one priced article made every product-typed page of a news site a shop (context-retention-missing on 36 pages). Rerun after repair: patagonia gated, the Guardian finding gone.
+- First fresh holdout (6 sites, code frozen at sha256 51c0486c...): precision 0.833 over 36, 0 false high, ECE 0.126, but only 2 of 6 sites gave pages. Two of the four failures were audit defects: a docs root that is only an immediate meta refresh (now followed as a redirect) and a 30-second robots.txt crawl delay spent on the sitemap and llms.txt before the start URL (pages now come first; the two files are recorded as not checked). Also repaired: brand-definition searching for a brand name that is a URL. Because it was used for repairs, this holdout is now development material.
+- Second fresh holdout, the release score (6 sites: commerce, publishing, local business, documentation, education, nonprofit; code frozen at sha256 ae158222...): precision 0.883 over 94 labelled findings; defects 0.75 over 12; improvement opportunities judged useful 0.902 over 82; 0 false high or critical; ECE 0.139 (94 findings, 6 sites; confidence values are heuristics, see CALIBRATION_PROVENANCE); completion 6 of 6; wall time p50 115 s, p95 239 s; site requests p50 52, max 68; bytes p50 2.9 MB, max 17.1 MB. Fixture recall: 24 of 24 planted defects (archetype and trap corpora; the SPA no-headings expectation was removed in Phase 2).
+- Failures in the second holdout, repaired after it was scored and not yet re-scored on unseen sites: a 403 "Checking connection" bot challenge counted as 49 broken pages, and an HTML soft 404 for /llms-full.txt reported as a malformed llms.txt on a site with no llms.txt. Score a third fresh holdout before claiming these repairs generalize.
+- Targets not met: precision 0.95 (0.883) and ECE 0.10 (0.139). Met: zero false high or critical, recall at least 0.90.
+- Agent invocation (T7.3): the CLI audit of svelte.dev wrote the report and packet; the host agent read the packet, judged AG-01 a pass on E001 (no About page was discovered) and declared search and vision not run; the merge and Markdown made no request. The site saw one acquisition (73 requests), and the whole workflow took 73 seconds.

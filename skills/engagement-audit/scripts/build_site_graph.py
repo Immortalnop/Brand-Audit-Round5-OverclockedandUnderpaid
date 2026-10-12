@@ -17,36 +17,65 @@ Beyond flat in/out-degree:
     then it is the largest component, and the start page's own component is not
     reported as isolated.
   - Crawl-scope accounting: orphan and cluster status is only ever a statement
-    about the CRAWLED subgraph. When the crawl did not reach every discovered URL
-    (a sample of a large sitemap, MAX_PAGES_CRAWLED, MAX_CRAWL_DEPTH or the
-    deadline), a page that nothing in the sample links to may be linked from a
-    page that was never fetched, and a group of pages whose linking pages were
-    not fetched looks exactly like an isolated one. Even the page's own section
-    index is no proof: a news or staff index lists its newest or first items and
-    reaches the rest through pagination, "load more" scripts or search. So on an
-    incomplete crawl, orphans and clusters are counted (crawl_scope.complete is
-    False) and the engagement check does not report them.
+    about the CRAWLED subgraph. A missing inbound link is a global absence: it
+    holds only when every page that could link was observed in full. So the
+    graph is complete only when no discovered URL was left unfetched AND every
+    fetched page's outgoing links are fully known: a fetch failure or error
+    status (other than 404/410), a response cut by the byte budget, a parse
+    failure, a link list cut at its cap, a challenge, a waiting room, a login
+    page or a page built by JavaScript (its navigation is not in the HTML) each
+    leave the graph unresolved (crawl_scope.unresolved says which and why). Even
+    the page's own section index is no proof: a news or staff index lists its
+    newest or first items and reaches the rest through pagination, "load more"
+    scripts or search. On an incomplete graph, orphans and clusters are counted
+    and the engagement check does not report them. A complete graph still speaks
+    only for the discovered URLs, never for every page of the site.
+  - Dead ends are local: a page with no outgoing link in its delivered HTML. It
+    is judged only on pages whose links are fully known (link_graph in
+    check_helpers.page_observation), whatever the rest of the crawl did.
+  - Redirect aliases come from acquisition (acquisition_metadata.url_aliases),
+    which records every requested URL that redirected before a duplicate copy
+    of the final page is dropped, so a link to a dropped alias still reaches
+    the page that was kept.
 """
-from urllib.parse import urlsplit
-
+from check_helpers import page_observation
 from models import intermediate_artifact
+from url_identity import page_identity
+
+# Ledger scopes that leave a page's outgoing links unknown.
+_UNRESOLVED_SCOPES = frozenset({"partial", "fetch_failed", "http_error", "challenge", "waiting_room", "login_page"})
+_MAX_UNRESOLVED_LISTED = 20
 
 
 def page_key(url):
     """Identity of a page URL for link matching: host (lower case, without a
-    leading www.), path without a trailing slash, and query. None when the URL
-    cannot be parsed."""
-    try:
-        p = urlsplit(url or "")
-    except ValueError:
-        return None
-    host = (p.hostname or "").lower()
-    if not host:
-        return None
-    if host.startswith("www."):
-        host = host[4:]
-    path = (p.path or "/").rstrip("/") or "/"
-    return host, path, p.query
+    leading www.), path without a trailing slash, and query
+    (url_identity.page_identity). None when the URL cannot be parsed."""
+    return page_identity(url)
+
+
+def _unresolved_observations(artifacts):
+    """[{url, reason}] for fetches whose outgoing links are not fully known."""
+    out = []
+    for record in (artifacts.acquisition_metadata or {}).get("observations") or ():
+        scope = record.get("scope")
+        status = record.get("http_status")
+        if scope == "http_error" and status in (404, 410):
+            continue  # a missing page is not a page that could link elsewhere
+        reasons = [r for r in record.get("reasons") or () if r in ("link_list_truncated", "script_dependent")]
+        if scope in _UNRESOLVED_SCOPES or reasons:
+            out.append({"url": record.get("requested_url"),
+                        "reason": scope if scope in _UNRESOLVED_SCOPES else reasons[0]})
+    # The pages themselves, for snapshots built without a ledger.
+    listed = {item["url"] for item in out}
+    for p in artifacts.pages:
+        seen = page_observation(p)
+        if p.url in listed or seen["link_graph"] or seen["status"] == "non_html":
+            continue
+        if seen["status"] == "http_error" and p.status_code in (404, 410):
+            continue
+        out.append({"url": p.url, "reason": seen["status"] if seen["status"] != "complete" else seen["reasons"][0]})
+    return out
 
 
 def _weakly_connected_components(keys, edges):
@@ -93,6 +122,14 @@ def build_site_graph(artifacts, deadline):
             k = page_key(u)
             if k is not None:
                 alias.setdefault(k, key)
+    # Requested URLs whose copy acquisition dropped (a second URL redirecting to
+    # a page already kept) still resolve to the kept node.
+    recorded_aliases = {}
+    for requested, final in ((artifacts.acquisition_metadata or {}).get("url_aliases") or {}).items():
+        source, target = page_key(requested), page_key(final)
+        if source is not None and target in node_url:
+            alias.setdefault(source, target)
+            recorded_aliases.setdefault(target, set()).add(requested)
 
     keys = sorted(node_url)
     edges = {k: set() for k in keys}
@@ -118,7 +155,11 @@ def build_site_graph(artifacts, deadline):
 
     start_key = alias.get(page_key(artifacts.site_url)) if page_key(artifacts.site_url) else None
     orphan_keys = [k for k in keys if in_degree[k] == 0 and k != start_key]
-    dead_end_keys = [k for k in keys if out_degree[k] == 0]
+    # A dead end needs the page's own links fully known: every copy of the node
+    # read in full, with no cut link list and no navigation built by JavaScript.
+    links_known = {k: all(page_observation(p)["link_graph"] for p in members[k]) for k in keys}
+    dead_end_keys = [k for k in keys if out_degree[k] == 0 and links_known[k]]
+    dead_ends_unassessed = [k for k in keys if out_degree[k] == 0 and not links_known[k]]
 
     components = _weakly_connected_components(keys, edges)
     start_component = next((c for c in components if start_key in c), None)
@@ -130,7 +171,8 @@ def build_site_graph(artifacts, deadline):
 
     coverage = artifacts.acquisition_metadata.get("coverage", {})
     urls_never_attempted = coverage.get("urls_never_attempted", 0)
-    complete = urls_never_attempted == 0
+    unresolved = _unresolved_observations(artifacts)
+    complete = urls_never_attempted == 0 and not unresolved
 
     cluster_id_by_key = {}
     for idx, component in enumerate(components):
@@ -146,7 +188,8 @@ def build_site_graph(artifacts, deadline):
             "is_dead_end": k in dead_end_keys,
             "cluster_id": cluster_id_by_key.get(k, 0),
             "importance": min(1.0, in_degree[k] / max(1, len(keys))),
-            "aliases": sorted({p.url for p in members[k]} - {url_of(k)}),
+            "aliases": sorted(({p.url for p in members[k]} | recorded_aliases.get(k, set())) - {url_of(k)}),
+            "links_fully_observed": links_known[k],
         }
         for k in keys
     }
@@ -155,17 +198,22 @@ def build_site_graph(artifacts, deadline):
         "urls_discovered": coverage.get("urls_discovered", len(keys)),
         "urls_analyzed": coverage.get("urls_analyzed", len(keys)),
         "urls_never_attempted": urls_never_attempted,
-        # Only a complete crawl can turn "orphan/dead-end within the crawled
-        # subgraph" into a confirmed, whole-site statement.
+        # Fetches whose outgoing links are not fully known, and why.
+        "unresolved_count": len(unresolved),
+        "unresolved": unresolved[:_MAX_UNRESOLVED_LISTED],
+        # Only a complete graph can support "nothing among the discovered URLs
+        # links to this page"; it never covers pages that were not discovered.
         "complete": complete,
     }
 
     return intermediate_artifact("site_graph", data={
         "nodes": nodes,
-        # Every page nothing in the crawled sample links to; a whole-site
-        # statement only when crawl_scope.complete is True.
+        # Every page nothing in the crawled sample links to; a statement about
+        # the discovered URLs only when crawl_scope.complete is True.
         "orphans": sorted(url_of(k) for k in orphan_keys),
         "dead_ends": sorted(url_of(k) for k in dead_end_keys),
+        # Pages with no observed outgoing link whose links are not fully known.
+        "dead_ends_unassessed": sorted(url_of(k) for k in dead_ends_unassessed),
         "isolated_clusters": sorted(sorted(url_of(k) for k in c) for c in isolated_components),
         "main_cluster_size": len(main_component),
         "crawl_scope": crawl_scope,

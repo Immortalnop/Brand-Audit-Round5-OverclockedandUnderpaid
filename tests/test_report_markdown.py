@@ -137,7 +137,7 @@ def test_findings_are_capped_but_counted():
     md = render(_report(findings=[_finding(affected_pages=pages)]))
     assert "- <https://x.test/p9>" in md and "<https://x.test/p10>" not in md
     assert "- and 15 more" in md
-    assert "| F-001 | low | confirmed | No llms.txt file found | 25 |" in md
+    assert "| F-001 | Improvement opportunity | low | confirmed | No llms.txt file found | 25 |" in md
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def test_hostile_titles_cannot_break_tables_or_add_headings():
     assert "<script>" not in md
     assert not re.search(r"^## Injected", md, re.M)
     row = next(line for line in md.splitlines() if line.startswith("| F-001 |"))
-    assert len(re.findall(r"(?<!\\)\|", row)) == 6  # five columns
+    assert len(re.findall(r"(?<!\\)\|", row)) == 7  # six columns
     # A summary that opens its own line cannot become a list item.
     assert "\n\\- injected list\n" in md
 

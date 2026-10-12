@@ -18,8 +18,9 @@ from non_text import image_tokens,fact_keywords,is_excluded_image,image_kind,ras
 from pdf_text import extract_pdf_text
 from llms_txt import parse_llms_txt
 from auth_pages import login_page_signals
-from bot_challenge import challenge_signals
+from bot_challenge import challenge_signals,waiting_room_signals,visible_digest
 from ai_crawlers import AI_CRAWLER_NAMES
+from check_helpers import page_observation,PARTIAL_OBSERVATION_WARNINGS
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -72,16 +73,40 @@ def _classify_page_type(url,origin,jsonld_blocks,path):
         if re.search(r'/(?:'+pattern+r')(?:/|-|$)',path,re.I):return kind
     return 'other'
 
+_MAX_PAGE_LINKS=200
+# Parse errors kept per page, and characters of source shown on each side of one.
+_MAX_JSONLD_ERRORS=5
+_JSONLD_EXCERPT_CHARS=40
+
+def _escape_excerpt(text):
+    """Source text safe to show: control characters (a raw tab or newline inside
+    a JSON string is itself a parse error) are written as \\uXXXX escapes."""
+    return ''.join(c if c>=' ' and c!='\x7f' else '\\u%04x'%ord(c) for c in text)
+
+def _jsonld_error(index,raw,exc):
+    """Where one JSON-LD block failed to parse: its position among the page's
+    blocks (1-based), the parser message, line and column within the block, and
+    a bounded, escaped excerpt around the error."""
+    pos=getattr(exc,'pos',None)
+    out={'block_index':index,'message':str(getattr(exc,'msg',None) or exc)[:200],
+         'line':getattr(exc,'lineno',None),'column':getattr(exc,'colno',None)}
+    if isinstance(pos,int):
+        start=max(0,pos-_JSONLD_EXCERPT_CHARS)
+        out['excerpt']=_escape_excerpt(raw[start:pos+_JSONLD_EXCERPT_CHARS])
+    return out
+
 def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     ctype=resp.headers.get('Content-Type','') if resp else ''
     html=resp.text if resp and resp.ok and ('html' in ctype or not ctype) else ''
     doc=Document();warnings=[]
     try:doc.feed(html);doc.close()
     except (ValueError,RecursionError):warnings.append('html_parse_incomplete')
-    blocks=[]
-    for raw in doc.jsonld:
+    blocks=[];jsonld_errors=[]
+    for index,raw in enumerate(doc.jsonld,1):
         try:blocks.append(json.loads(raw))
-        except (ValueError,RecursionError):warnings.append('malformed_jsonld_block')
+        except (ValueError,RecursionError) as exc:
+            if 'malformed_jsonld_block' not in warnings:warnings.append('malformed_jsonld_block')
+            if len(jsonld_errors)<_MAX_JSONLD_ERRORS:jsonld_errors.append(_jsonld_error(index,raw,exc))
     base=getattr(resp,'final_url',url) if resp else url
     internal=[];external=[]
     for href,_ in doc.links:
@@ -89,6 +114,9 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
         except ValueError:continue
         if not link:continue
         (internal if same_origin(link,base) else external).append(link)
+    internal=list(dict.fromkeys(internal));external=list(dict.fromkeys(external))
+    # The link lists keep _MAX_PAGE_LINKS each; a longer list is only partly known.
+    if len(internal)>_MAX_PAGE_LINKS or len(external)>_MAX_PAGE_LINKS:warnings.append('link_list_truncated')
     visible=' '.join(doc.text)[:limits.VISIBLE_TEXT_MAX_CHARS]
     if resp is None:warnings.append('fetch_'+fetch_status)
     if resp and resp.redirect_hops:warnings.append(f'redirected_{resp.redirect_hops}_hop(s)')
@@ -101,6 +129,11 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     features['html_bytes']=len(resp.content) if resp and html else 0
     features['network_duration_ms']=getattr(resp,'network_duration_ms',None) if resp else None
     features['redirect_hops']=resp.redirect_hops if resp else 0
+    features['jsonld_block_count']=len(doc.jsonld)
+    # A JSON-LD block cut by the byte budget is a transport limit, not malformed
+    # source JSON; the flag lets checks tell the two apart.
+    features['jsonld_errors']=[dict(e,response_truncated=bool(resp and resp.truncated)) for e in jsonld_errors]
+    features['internal_links_total']=len(internal)
     images=[]
     for record in features.get('image_records',())[:limits.MAX_IMAGE_RECORDS_PER_PAGE]:
         try:src=normalize_url(record['src'],base)
@@ -112,7 +145,7 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
         evidence_snippet=visible[:limits.EVIDENCE_SNIPPET_MAX_CHARS] or None,visible_text=visible,
         title=' '.join(''.join(doc.title_parts).split()) or None,
         meta_description=next(iter(doc.meta.get('description',[])),None),canonical_url=canonical,
-        headings=tuple(doc.headings[:50]),internal_links=tuple(dict.fromkeys(internal))[:200],external_links=tuple(dict.fromkeys(external))[:200],
+        headings=tuple(doc.headings[:50]),internal_links=tuple(internal[:_MAX_PAGE_LINKS]),external_links=tuple(external[:_MAX_PAGE_LINKS]),
         jsonld_blocks=tuple(freeze_value(b) for b in blocks),page_type=_classify_page_type(url,_normalized_origin(url),blocks,urlsplit(url).path),
         fetch_duration_ms=fetch_ms,render_status='not_rendered',breadcrumb_visible=tuple(doc.breadcrumb[:20]),breadcrumb_schema=freeze_value(breadcrumb),
         ai_crawler_directives=freeze_value({}),warnings=tuple(warnings),features=freeze_value(features),
@@ -342,7 +375,8 @@ def _probe_https(tr,origin,pages,limits,instrumentation,allow_private):
     if tr.requests>=limits.MAX_TOTAL_HTTP_REQUESTS or tr.bytes>=limits.MAX_TOTAL_BYTES:return {'status':'not_checked','fetch_status':'budget_exhausted'}
     host=urlsplit(origin).hostname or ''
     https_origin='https://'+(f'[{host}]' if ':' in host else host)
-    probe=Transport(https_origin,tr.deadline,limits,instrumentation,allow_private)
+    # Charged to the same shared ledger as the crawl, never to a fresh allowance.
+    probe=Transport(https_origin,tr.deadline,limits,instrumentation,allow_private,budget=tr.budget,pool=tr.pool,stage='https_probe')
     # Same host, so the same pacing: crawl-delay and the gap since the last request carry over.
     probe.delay=tr.delay;probe.last_request=tr.last_request
     url=https_origin+'/robots.txt'
@@ -356,7 +390,7 @@ def _acquire_media(tr,pages,pdf_links,origin,limits):
     """Facts locked in non-text media: bounded, same-origin, robots-checked GETs
     for the images most likely to carry facts and for linked PDFs. Runs after the
     page crawl, so it only spends request, byte and time budget the crawl left."""
-    images={}
+    tr.stage='media';images={}
     for p in pages:
         for record in (p.features or {}).get('image_records',()):
             url=record['src'];entry=images.get(url)
@@ -460,6 +494,7 @@ _FAILURE_TEXT={
     'robots_unavailable':'robots.txt could not be read, so no page was fetched without known permission',
     'blocked_by_safety_policy':'the address is not allowed by the safety policy (private, local or metadata address)',
     'blocked_by_challenge':'the site answered with a bot-protection challenge instead of its content',
+    'waiting_room':'the site answered with a waiting-room or queue page instead of its content',
     'access_denied':'the server refused access',
     'rate_limited':'the server asked the crawler to slow down',
     'not_found':'the start URL does not exist',
@@ -506,6 +541,8 @@ def acquisition_failure(robots_url,robots_fetch,robots_http,robots_status,robots
         return _failure(_NETWORK_REASONS.get(start['fetch_status'],'connection_error'),'start_url',site_url)
     if start.get('challenge'):
         return _failure('blocked_by_challenge','start_url',site_url,start.get('http_status'),start['challenge'])
+    if start.get('waiting_room'):
+        return _failure('waiting_room','start_url',site_url,start.get('http_status'),start['waiting_room'])
     if start.get('login'):return _failure('login_page','start_url',site_url)
     code=start.get('http_status')
     if code and code>=400:return _failure(_http_reason(code),'start_url',site_url,code)
@@ -515,6 +552,42 @@ def acquisition_failure(robots_url,robots_fetch,robots_http,robots_status,robots
 # site is refusing automated clients, and more requests would only add load.
 _CHALLENGE_STOP_CONSECUTIVE=2
 _CHALLENGE_STOP_TOTAL=3
+
+# Bounds on the observation ledger and the redirect alias map kept in
+# acquisition metadata.
+_MAX_OBSERVATION_RECORDS=300
+_MAX_URL_ALIASES=500
+
+# A robots.txt crawl delay at least this long leaves room for only a few
+# requests in the acquisition stage. The pages come first then: the sitemap and
+# llms.txt are not read (recorded as not checked, never as absent).
+_SLOW_CRAWL_DELAY_S = 10.0
+# A near-empty HTML page whose meta refresh sends the visitor on within this
+# many seconds is a redirect: the audit follows it to a same-origin target.
+_META_REFRESH_MAX_DELAY_S = 5.0
+_META_REFRESH_VISIBLE_CHARS = 200
+_META_REFRESH = re.compile(r"<meta\b[^>]*http-equiv\s*=\s*[\"']?refresh[\"']?[^>]*>", re.I)
+_REFRESH_CONTENT = re.compile(r"content\s*=\s*[\"']\s*(\d+(?:\.\d+)?)\s*[;,]\s*(?:url\s*=\s*)?['\"]?([^'\">]+)", re.I)
+
+
+def meta_refresh_target(page, body, origin):
+    """The same-origin URL a near-empty page sends the visitor to with an
+    immediate meta refresh, or None. A page with its own content, a slow
+    refresh or a target on another origin is not a redirect."""
+    if not body or len((page.visible_text or '').strip()) > _META_REFRESH_VISIBLE_CHARS:
+        return None
+    tag = _META_REFRESH.search(body[:8192])
+    match = _REFRESH_CONTENT.search(tag.group(0)) if tag else None
+    if not match or float(match.group(1)) > _META_REFRESH_MAX_DELAY_S:
+        return None
+    try:
+        target = normalize_url(match.group(2).strip(), page.final_url or page.url)
+    except ValueError:
+        return None
+    if not target or not same_origin(target, origin) or target in (page.url, page.final_url):
+        return None
+    return target
+
 
 # Seconds the acquisition stage must still have left to re-anchor on a new origin.
 _REANCHOR_MIN_S=20.0
@@ -572,11 +645,18 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         return AuditArtifacts(site_url,origin,(),freeze_value({'allowed_general':False,'status':'not_checked','ai_crawler_directives':{}}),freeze_value({'present':False,'status':'not_checked'}),freeze_value({'discovered':False,'status':'not_checked','urls':[]}),freeze_value({'pages_crawled':0,'total_bytes':0,'total_requests':0,'acquisition_failure':_failure('blocked_by_safety_policy','start_url',site_url)}),('initial_url_blocked:'+check.reason,)),None
     tr=Transport(origin,min(deadline.deadline_monotonic,deadline.stage_deadlines['acquisition']),limits,i,allow_private_targets)
     warnings=[];probe_failures=[];moved=None
+    # robots.txt and the start URL get the longer critical timeout; the stage
+    # deadline still caps every attempt, and retries count against the budget.
+    critical_ms=getattr(limits,'CRITICAL_FETCH_TIMEOUT_MS',limits.PER_FETCH_TIMEOUT_MS)
     if start_redirect:
         warnings.append(f"The start URL {start_redirect['requested_url']} redirects to another site "
                         f"({start_redirect['audited_url']}); that site was audited instead, after reading its own "
                         f"robots.txt.")
-    robots_url=urljoin(origin,'/robots.txt');resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
+    # A re-anchored origin gets a new transport for its own robots.txt and pacing,
+    # but the shared ledger (common/network_budget.py) carries over: it inherits
+    # what the first origin left, never a fresh allowance.
+    tr.stage='robots'
+    robots_url=urljoin(origin,'/robots.txt');resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000,timeout_ms=critical_ms)
     if status=='cross_origin_redirect_blocked' and tr.last_cross_origin_redirect:
         # The whole host moved: robots.txt itself redirects. The start URL's path is
         # kept on the new origin.
@@ -588,7 +668,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     retryable={'tls_certificate_error','tls_handshake_error','tls_protocol_error','connection_error','dns_error','timeout','failed'}
     if status in retryable and limits.MAX_FETCH_RETRIES>0 and monotonic()<tr.deadline:
         i.record_retry()
-        resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
+        resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000,timeout_ms=critical_ms)
         robots_attempts.append(status)
     # A challenge in place of robots.txt is recorded; it is never retried.
     robots_challenge=challenge_signals(resp.status_code,resp.headers,resp.text) if status=='ok' else []
@@ -614,14 +694,20 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     general_disallow=None if conservative else not rp.can_fetch(USER_AGENT,site_url)
     directives=_ai_crawler_directives(rp,site_url,conservative)
     sitemap={'discovered':False,'status':'not_checked','urls':[]};llms={'present':False,'status':'not_checked'}
+    slow=not conservative and tr.delay>=_SLOW_CRAWL_DELAY_S
+    if slow:
+        sitemap['reason']=llms['reason']='crawl_delay'
+        warnings.append(f'robots.txt asks for {tr.delay:g} seconds between requests, so only a few requests fit in '
+                        f'the audit; the pages were fetched first and the sitemap and llms.txt were not read '
+                        f'(not checked, not absent).')
     # Probe failures never justify fetching blocked pages, including under blanket disallow.
-    if not conservative:
+    if not conservative and not slow:
         maps=list(dict.fromkeys(rp.sitemaps or [urljoin(origin,'/sitemap.xml')]))[:4];seen_maps=set();locs=[];statuses=[]
         lastmods={};url_entries=[0];sitemap_hreflang={};checked=[];partial=[]
         while maps and len(seen_maps)<4:
             sm=urljoin(origin,maps.pop(0))
             if sm in seen_maps:continue
-            seen_maps.add(sm);r,st=tr.get(sm,max_bytes=512_000)
+            seen_maps.add(sm);tr.stage='sitemap';r,st=tr.get(sm,max_bytes=512_000)
             if st=='tls_certificate_error':probe_failures.append({'url':sm,'reason':st})
             if st!='ok':outcome='blocked' if st in ('robots_disallowed','blocked','cross_origin_redirect_blocked') else 'inaccessible'
             elif r.status_code==404:outcome='absent'
@@ -645,7 +731,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         sitemap={'discovered':'ok' in statuses,'status':'ok' if 'ok' in statuses else next(iter(statuses),'not_checked'),'urls':stratify_by_section(list(dict.fromkeys(locs)))[:_SITEMAP_KEPT_URLS],
                  'url_entries':url_entries[0],'lastmod':lastmods,'hreflang':sitemap_hreflang,'checked':checked,
                  'partial':partial}
-        r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
+        tr.stage='llms_txt';r,st=tr.get(urljoin(origin,'/llms.txt'),max_bytes=256_000)
         if st=='tls_certificate_error':probe_failures.append({'url':urljoin(origin,'/llms.txt'),'reason':st})
         if st!='ok':llms={'present':False,'status':'blocked' if st in ('blocked','robots_disallowed') else 'inaccessible'}
         elif r.status_code==404:llms={'present':False,'status':'absent'}
@@ -661,9 +747,26 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
     login_pages=[];out_of_scope=[]
     # Bot-challenge interstitials: requested, never analyzed as site content.
     challenged=[];challenged_pages=[];consecutive_challenges=0;challenge_stop=False
+    # Waiting rooms and queue pages: requested, never analyzed as site content,
+    # never retried, rendered or waited out. They end the crawl at the same
+    # thresholds as challenges.
+    waiting=[];waiting_pages=[];waiting_digests=[];consecutive_waiting=0;waiting_stop=False
     # Final URLs of the pages kept so far, so URLs redirecting to one page add it
     # once. The extra copies answered a request, so they still count as fetched.
     kept_finals=set();redirect_copies=[]
+    # Every requested URL that redirected, mapped to its final URL, kept before
+    # any duplicate copy is dropped: links to a dropped alias still reach the
+    # page that was kept (build_site_graph.py).
+    url_aliases={}
+    # One record per fetch attempt: what was requested, what answered and what
+    # the observation can support (check_helpers.page_observation).
+    observations=[]
+    def observe(page,scope,reasons=()):
+        if len(observations)<_MAX_OBSERVATION_RECORDS:
+            observations.append({'requested_url':page.url,'final_url':page.final_url,'http_status':page.status_code,
+                                 'scope':scope,'reasons':list(reasons)})
+        if page.final_url and page.final_url!=page.url and page.status_code is not None and len(url_aliases)<_MAX_URL_ALIASES:
+            url_aliases[page.url]=page.final_url
     # What the start URL answered, for the reason given when no page is analyzed.
     start_outcome=None
     sitemap_urls=[]
@@ -683,10 +786,11 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         if not rp.can_fetch(USER_AGENT,url):blocked.add(url);i.record_skip('robots_disallowed');continue
         if _SENSITIVE_ROUTE.search(urlsplit(url).path):i.record_skip('sensitive_route');continue
         tr.last_cross_origin_redirect=None
-        start=monotonic();r,st=tr.get(url)
+        timeout_ms=critical_ms if url==site_url else None
+        tr.stage='pages';start=monotonic();r,st=tr.get(url,timeout_ms=timeout_ms)
         for _ in range(limits.MAX_FETCH_RETRIES):
             if st not in retryable:break
-            i.record_retry();r,st=tr.get(url)
+            i.record_retry();tr.stage='retries';r,st=tr.get(url,timeout_ms=timeout_ms)
         if url==site_url and st=='cross_origin_redirect_blocked' and tr.last_cross_origin_redirect and not moved:
             moved=dict(tr.last_cross_origin_redirect,via='start_url')
         if url==site_url:
@@ -696,7 +800,7 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         page=_extract_page(url,r,int((monotonic()-start)*1000),limits,st)
         challenge=challenge_signals(r.status_code,r.headers,r.text,page.title,(page.features or {}).get('full_visible_chars')) if r else []
         if challenge:
-            challenged.append(page);i.record_skip('bot_challenge')
+            challenged.append(page);i.record_skip('bot_challenge');observe(page,'challenge',challenge)
             if len(challenged_pages)<20:
                 challenged_pages.append({'url':url,'final_url':page.final_url,'http_status':r.status_code,'signals':challenge})
             if url==site_url:start_outcome['challenge']=challenge
@@ -706,21 +810,52 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
                 challenge_stop=True;break
             continue
         consecutive_challenges=0
+        queue_signals=waiting_room_signals(r.status_code,r.text,page.title,page.headings,page.visible_text,
+                                           len(page.internal_links),waiting_digests) \
+            if r and (r.ok or r.status_code in (429,503)) and 'non_html_content' not in page.warnings else []
+        if queue_signals:
+            waiting.append(page);i.record_skip('waiting_room');observe(page,'waiting_room',queue_signals)
+            digest=visible_digest(page.visible_text)
+            if digest not in waiting_digests:waiting_digests.append(digest)
+            if len(waiting_pages)<20:
+                waiting_pages.append({'url':url,'final_url':page.final_url,'http_status':r.status_code,
+                                      'reason':'waiting_room','signals':queue_signals,'content_digest':digest})
+            if url==site_url:start_outcome['waiting_room']=queue_signals
+            consecutive_waiting+=1
+            if consecutive_waiting>=_CHALLENGE_STOP_CONSECUTIVE or len(waiting)>=_CHALLENGE_STOP_TOTAL:
+                waiting_stop=True;break
+            continue
+        consecutive_waiting=0
+        # An empty page that refreshes straight to another page of the site (a
+        # docs root sending visitors to /en/getting-started/) is a redirect: the
+        # target is fetched next and links to this URL resolve to it.
+        refresh=meta_refresh_target(page,r.text if r and r.ok and 'non_html_content' not in page.warnings else '',origin)
+        if refresh:
+            redirect_copies.append(page);observe(page,'meta_refresh_redirect',['meta_refresh_to:'+refresh])
+            if len(url_aliases)<_MAX_URL_ALIASES:url_aliases[url]=refresh
+            discovered.add(refresh)
+            if refresh not in visited:queue.insert(0,(refresh,depth))
+            if url==site_url:start_outcome['meta_refresh']=refresh
+            continue
         # Several URLs can redirect to one page (/br/ and /ach/ to /en-US/). The
         # page is analyzed once: a second copy would count its findings twice.
         final_key=page.final_url or url
-        if final_key!=url and final_key in kept_finals:redirect_copies.append(page);i.record_deduplicated();continue
+        if final_key!=url and final_key in kept_finals:
+            redirect_copies.append(page);i.record_deduplicated();observe(page,'redirect_copy',['same_final_url']);continue
         kept_finals.add(final_key)
         signals=login_page_signals(url,page.final_url,page.title,page.headings,page.features,page.jsonld_blocks) if page.status_code and 200<=page.status_code<300 else []
         if signals:
-            login_pages.append(page);i.record_skip('login_page_out_of_scope')
+            login_pages.append(page);i.record_skip('login_page_out_of_scope');observe(page,'login_page',signals)
             if len(out_of_scope)<20:
                 out_of_scope.append({'url':url,'final_url':page.final_url,'reason':'login_page','signals':signals})
             if url==site_url:
                 start_outcome['login']=True
                 warnings.append(f'The start URL {url} is a login page ({", ".join(signals)}); it was left out of the '
                                 f'audit, which never signs in. Audit a public page such as the home page instead.')
-        else:pages.append(page)
+        else:
+            pages.append(page)
+            seen=page_observation(page)
+            observe(page,seen['status'],seen['reasons'])
         # Real final URLs resolve relative links; fragments are canonicalized before queueing.
         if r and r.final_url!=url:visited.add(r.final_url)
         links=sorted(page.internal_links,key=lambda u:(not bool(re.search(r'/(about|contact|product|pricing|blog|docs)',u)),u))
@@ -737,30 +872,54 @@ def _acquire_origin(site_url,deadline,limits,i,allow_private_targets,start_redir
         i.record_skip('crawl_stopped_by_bot_challenge')
         warnings.append(f'The site answered {len(challenged)} request(s) with a bot-protection challenge, so the crawl '
                         f'stopped there. The audit does not retry or get around challenges.')
+    elif waiting_stop:
+        i.record_skip('crawl_stopped_by_waiting_room')
+        warnings.append(f'The site answered {len(waiting)} request(s) with a waiting-room or queue page instead of its '
+                        f'content, so the crawl stopped there. The audit does not retry, wait out or get around queues.')
     elif queue:i.record_skip('acquisition_limit_reached')
-    # Every fetched page, login and challenge pages included: they answered a request.
-    fetched=pages+login_pages+challenged+redirect_copies
+    stopped=challenge_stop or waiting_stop
+    # Every fetched page, login, challenge and waiting-room pages included: they answered a request.
+    fetched=pages+login_pages+challenged+waiting+redirect_copies
     # A discovered URL that a fetched page redirected to was reached, not skipped.
     reached={p.url for p in fetched}|{p.final_url for p in fetched if p.final_url}
-    # After a challenge stop no optional request is made.
-    https_probe=_probe_https(tr,origin,[] if challenge_stop else fetched,limits,i,allow_private_targets)
-    if llms.get('links') and not challenge_stop:_verify_llms_links(tr,llms,fetched,origin,limits)
-    media=_acquire_media(tr,[] if challenge_stop else pages,{} if challenge_stop else pdf_links,origin,limits)
+    # After a challenge or waiting-room stop no optional request is made.
+    https_probe=_probe_https(tr,origin,[] if stopped else fetched,limits,i,allow_private_targets)
+    tr.stage='llms_link_checks'
+    if llms.get('links') and not stopped:_verify_llms_links(tr,llms,fetched,origin,limits)
+    media=_acquire_media(tr,[] if stopped else pages,{} if stopped else pdf_links,origin,limits)
     ok=[p for p in pages if p.status_code and 200<=p.status_code<300];analyzed=[p for p in ok if p.visible_text or p.jsonld_blocks or (p.features or {}).get('scripts')]
     timed=[p for p in fetched if 'fetch_timeout' in p.warnings]
+    # Analyzed pages whose HTML was not read in full: their positive observations
+    # count, their absences do not (check_helpers.page_observation).
+    partial=[p for p in analyzed if PARTIAL_OBSERVATION_WARNINGS & set(p.warnings)]
+    sitemap_partial=bool(sitemap.get('partial')) or (sitemap.get('url_entries') or 0)>_SITEMAP_KEPT_URLS
     cov={'urls_discovered':len(discovered),'urls_fetched_attempted':len(fetched),'urls_fetched_ok':len(ok)+len(login_pages),'urls_fetched_error':sum(bool(p.status_code and p.status_code>=400) for p in fetched),
          'urls_blocked':len(blocked),'urls_timed_out':len(timed),'urls_failed_other':sum(p.status_code is None and p not in timed for p in fetched),
          'urls_out_of_scope':len(login_pages),'out_of_scope_pages':out_of_scope,
          'urls_challenged':len(challenged),'challenged_pages':challenged_pages,'crawl_stopped_by_challenge':challenge_stop,
+         'urls_waiting_room':len(waiting),'waiting_room_pages':waiting_pages,'crawl_stopped_by_waiting_room':waiting_stop,
          'start_url_out_of_scope':any(p.url==site_url for p in login_pages),
-         'urls_analyzed':len(analyzed),'urls_never_attempted':len(discovered-reached),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
+         # urls_analyzed: 2xx pages kept for analysis that carry text, structured
+         # data or scripts. Of those, urls_partially_observed were cut by the byte
+         # budget or the parser and urls_fully_observed were read in full.
+         'urls_analyzed':len(analyzed),'urls_partially_observed':len(partial),
+         'urls_fully_observed':len(analyzed)-len(partial),
+         # Requests that redirected to a page already kept: one page, several URLs.
+         'urls_redirect_duplicates':len(redirect_copies),'url_aliases':len(url_aliases),
+         'urls_never_attempted':len(discovered-reached),'skip_reason_counts':dict(Counter(i.pages_skipped_reasons)),
+         # How the URLs were found: the sitemap (status, entries read, whether a
+         # read limit cut it) and whether the crawl stopped with URLs left over.
+         'sitemap_status':sitemap.get('status'),'sitemap_url_entries':sitemap.get('url_entries',0),
+         'sitemap_candidates':len(sitemap_urls),'sitemap_partial':sitemap_partial,
+         'crawl_limit_reached':bool(queue) and not stopped,
          # Representativeness of the sample: site sections (first path segment)
          # discovered versus sections with at least one analyzed page.
          'sections_discovered':len({site_section(u) for u in discovered}),
          'sections_analyzed':len({site_section(p.final_url or p.url) for p in analyzed}),
          'page_types_analyzed':sorted({p.page_type for p in analyzed if p.page_type})}
     section_blocks=_ai_crawler_section_blocks(rp,discovered,conservative)
-    metadata={'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'https_probe':https_probe,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov}
+    metadata={'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'https_probe':https_probe,'pages_crawled':len(pages),'total_bytes':tr.bytes,'total_requests':tr.requests,'coverage':cov,
+              'url_aliases':url_aliases,'observations':observations,'critical_fetch_timeout_ms':critical_ms}
     if start_redirect:metadata['start_redirect']=start_redirect
     if not analyzed:
         # As in probe_failures: a certificate error on any attempt is the cause,

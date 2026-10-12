@@ -11,7 +11,7 @@ this script only reads it, never assigns it.
 """
 from collections.abc import Mapping
 from check_catalog import calibrated_confidence
-from check_helpers import commerce_evidence
+from check_helpers import commerce_evidence, script_dependent
 from models import skill_result, make_finding, coverage_ratio, scale_confidence, step_down_severity
 
 # Expected schema.org @type(s) for each page_type that should realistically carry
@@ -20,13 +20,15 @@ from models import skill_result, make_finding, coverage_ratio, scale_confidence,
 from structured_data import iter_nodes, types_of, ORGANIZATION_TYPES
 
 # Organization and LocalBusiness are matched with their subtypes (Plumber,
-# CollegeOrUniversity...), which are Organizations too.
+# CollegeOrUniversity...), which are Organizations too. A gap is an improvement
+# opportunity at most medium: the markup is optional for indexing, and no
+# specific machine-use requirement is established by its absence alone.
 _EXPECTED_SCHEMA = {
     "service": {"types": {"Service"}, "severity": "low", "label": "Service"},
     "software": {"types": {"SoftwareApplication", "MobileApplication", "WebApplication"}, "severity": "low", "label": "SoftwareApplication"},
-    "home": {"types": ORGANIZATION_TYPES | {"WebSite"}, "severity": "high",
+    "home": {"types": ORGANIZATION_TYPES | {"WebSite"}, "severity": "medium",
              "label": "Organization/WebSite"},
-    "product": {"types": {"Product", "Offer"}, "severity": "high", "label": "Product/Offer"},
+    "product": {"types": {"Product", "Offer"}, "severity": "medium", "label": "Product/Offer"},
     "article": {"types": {"Article", "BlogPosting", "NewsArticle"}, "severity": "medium",
                 "label": "Article/BlogPosting"},
     "contact": {"types": ORGANIZATION_TYPES | {"ContactPage"}, "severity": "medium",
@@ -38,10 +40,76 @@ def _page_jsonld_types(page):
     return set().union(*(types_of(n) for n in iter_nodes(page.jsonld_blocks)))
 
 
+def _block_word(n):
+    return "block" if n == 1 else "blocks"
+
+
+def _parse_error_text(page):
+    """One line naming where each JSON-LD block on page failed to parse."""
+    parts = []
+    total = (page.features or {}).get("jsonld_block_count")
+    for e in (page.features or {}).get("jsonld_errors") or ():
+        where = f"block {e.get('block_index')}" + (f" of {total}" if total else "")
+        if e.get("line"):
+            where += f", line {e['line']}, column {e.get('column')}"
+        text = f"{where}: {e.get('message')}"
+        if e.get("excerpt"):
+            text += f" near \"{e['excerpt']}\""
+        parts.append(text)
+    return "; ".join(parts) or "a JSON-LD block could not be parsed"
+
+
+def _malformed_jsonld(pages):
+    """One finding for JSON-LD blocks that fail to parse, or None.
+
+    The parse failure is observed directly, so it is confirmed; its severity
+    follows its reach: the share of pages carrying JSON-LD that hold a broken
+    block, and whether a broken page keeps no usable typed entity from another
+    block (the failed block was central, not one optional block among several).
+    Pages cut by the byte budget are never in `pages`: a prefix of a valid block
+    is a transport limit, not malformed source JSON."""
+    affected = [p for p in pages if "malformed_jsonld_block" in p.warnings]
+    if not affected:
+        return None
+    with_jsonld = [p for p in pages if p.jsonld_blocks or "malformed_jsonld_block" in p.warnings]
+    reach = len(affected) / max(1, len(with_jsonld))
+    central = [p for p in affected if not _page_jsonld_types(p)]
+    if reach >= 0.5 and central:
+        severity = "high"
+    elif reach >= 0.2 or any(p.page_type in ("home", "product") for p in central):
+        severity = "medium"
+    else:
+        severity = "low"
+    broken_blocks = sum(len((p.features or {}).get("jsonld_errors") or ()) or 1 for p in affected)
+    return make_finding(
+        category="ai_discoverability", finding_type="defect", severity=severity,
+        status="confirmed", confidence=0.85,
+        title="Malformed JSON-LD blocks prevent reliable fact extraction",
+        root_cause=(f"{len(affected)} of {len(with_jsonld)} sampled page(s) with JSON-LD hold at least one block that "
+                    f"is not valid JSON ({broken_blocks} {_block_word(broken_blocks)} in all), so automated readers "
+                    "discard that block's facts"
+                    + (f"; on {len(central)} of them no other block supplies a typed entity" if central else
+                       "; each affected page still has another valid typed block")),
+        evidence=[{"type": "structured_data", "description": _parse_error_text(p), "urls": [p.url]}
+                  for p in affected[:10]],
+        suggested_action={
+            "summary": "Repair and validate every application/ld+json block",
+            "steps": ["Fix the JSON syntax at the block, line and column named in the evidence",
+                      "Preserve valid @graph nodes and required properties",
+                      "Re-run a structured-data validator after deployment"],
+            "priority": severity, "effort": "low",
+            "expected_benefit": "Prevents parsers from dropping important entity and product facts",
+            "verification": "All sampled JSON-LD blocks parse successfully"},
+        provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py", "rule_id": "malformed-jsonld"},
+        affected_pages=[p.url for p in affected])
+
+
 def analyze_machine_readability(artifacts, deadline):
     pages = tuple(p for p in artifacts.pages if p.status_code == 200 and "html_parse_incomplete" not in p.warnings and "non_html_content" not in p.warnings and "response_truncated_at_byte_budget" not in p.warnings)
     no_jsonld = [p for p in pages if not p.jsonld_blocks and not (p.features or {}).get("alternative_structured_markup")]
-    no_headings = [p for p in pages if not p.headings]
+    # A page built by JavaScript has its headings added after load; its raw HTML
+    # cannot show that the page lacks them.
+    no_headings = [p for p in pages if not p.headings and not script_dependent(p)]
 
     # Evidence-completeness ratio: these findings only ever speak for the pages
     # actually crawled. "0/N have JSON-LD" is strong evidence when N is most of
@@ -55,30 +123,19 @@ def analyze_machine_readability(artifacts, deadline):
 
     findings = []
 
-    malformed_pages = [p for p in pages if "malformed_jsonld_block" in p.warnings]
-    if malformed_pages:
-        findings.append(make_finding(
-            category="ai_discoverability", finding_type="defect", severity="high",
-            status="confirmed", confidence=0.85,
-            title="Malformed JSON-LD blocks prevent reliable fact extraction",
-            root_cause="One or more sampled pages contain JSON-LD that could not be parsed, so structured facts may be discarded by automated readers",
-            evidence=[{"type": "structured_data", "description": f"{len(malformed_pages)} sampled page(s) contain malformed JSON-LD", "urls": [p.url for p in malformed_pages[:10]]}],
-            suggested_action={
-                "summary": "Repair and validate every application/ld+json block",
-                "steps": ["Validate each JSON-LD block as strict JSON", "Preserve valid @graph nodes and required properties", "Re-run a structured-data validator after deployment"],
-                "priority": "high", "effort": "low",
-                "expected_benefit": "Prevents parsers from dropping important entity and product facts",
-                "verification": "All sampled JSON-LD blocks parse successfully"},
-            provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py", "rule_id": "malformed-jsonld"},
-            affected_pages=[p.url for p in malformed_pages]))
+    malformed = _malformed_jsonld(pages)
+    if malformed:
+        findings.append(malformed)
 
     if pages and len(no_jsonld) == len(pages):
         # No structured data anywhere -- the coarsest, most severe version of this
         # gap. Kept as its own finding rather than folded into the per-type checks
         # below, since it's evidence about the whole site, not one page type.
+        # The absence is observed directly (confirmed), but structured data is
+        # optional for indexing: an improvement opportunity, not a high defect.
         findings.append(make_finding(
-            category="ai_discoverability", finding_type="defect",
-            severity=step_down_severity("high", crawl_ratio),
+            category="ai_discoverability", finding_type="proactive_improvement",
+            severity=step_down_severity("medium", crawl_ratio),
             status="confirmed", confidence=0.85,
             title="No structured data (JSON-LD) found on any crawled page",
             root_cause="Pages lack schema.org JSON-LD markup"
@@ -88,11 +145,12 @@ def analyze_machine_readability(artifacts, deadline):
                           "actually crawled)"),
             evidence=[{"type": "structured_data", "description": f"0/{len(pages)} pages contain JSON-LD",
                        "urls": [p.url for p in pages][:10]}],
+            affected_pages=[p.url for p in pages],
             suggested_action={
                 "summary": "Add Organization/Product/Article JSON-LD to key pages",
                 "steps": ["Identify page types", "Add matching schema.org JSON-LD blocks"],
-                "priority": "high", "effort": "medium",
-                "expected_benefit": "Facts become machine-extractable",
+                "priority": "medium", "effort": "medium",
+                "expected_benefit": "Key facts are also stated as explicit structured data; no ranking or citation gain is implied",
                 "verification": "Validate JSON-LD with a schema.org validator",
             },
             provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py",
@@ -117,7 +175,7 @@ def analyze_machine_readability(artifacts, deadline):
         for page_type, urls in by_type_gaps.items():
             spec = _EXPECTED_SCHEMA[page_type]
             findings.append(make_finding(
-                category="ai_discoverability", finding_type="defect",
+                category="ai_discoverability", finding_type="proactive_improvement",
                 severity=step_down_severity(spec["severity"], crawl_ratio),
                 status="confirmed", confidence=calibrated_confidence(f"page-type-schema-gap:{page_type}", 0.8),
                 title=f"{page_type.capitalize()} pages are missing {spec['label']} structured data",
@@ -126,12 +184,14 @@ def analyze_machine_readability(artifacts, deadline):
                 evidence=[{"type": "structured_data",
                            "description": f"{len(urls)} '{page_type}' page(s) missing {spec['label']} markup",
                            "urls": urls[:10]}],
+                affected_pages=urls,
                 suggested_action={
                     "summary": f"Add {spec['label']} JSON-LD to {page_type} pages",
                     "steps": [f"Add {spec['label']} schema.org JSON-LD matching each {page_type} page's content",
                               "Validate with a schema.org/Rich Results validator"],
                     "priority": spec["severity"], "effort": "medium",
-                    "expected_benefit": f"{page_type.capitalize()} facts become machine-extractable and citable",
+                    "expected_benefit": f"{page_type.capitalize()} facts are also stated as explicit structured data; "
+                                        "no ranking, rich-result or citation gain is implied",
                     "verification": "Re-crawl and confirm the expected @type is present",
                 },
                 provenance={"skill": "crawl-render-audit", "script": "analyze_machine_readability.py",
@@ -146,6 +206,7 @@ def analyze_machine_readability(artifacts, deadline):
             root_cause="Pages have no h1-h6 elements",
             evidence=[{"type": "headings", "description": f"{len(no_headings)} pages have no headings",
                        "urls": [p.url for p in no_headings][:10]}],
+            affected_pages=[p.url for p in no_headings],
             suggested_action={
                 "summary": "Add semantic heading structure",
                 "steps": ["Add an h1 per page", "Structure sections with h2/h3"],

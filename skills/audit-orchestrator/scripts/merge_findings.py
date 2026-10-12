@@ -194,7 +194,7 @@ def fold_finding(base: dict, addition: dict) -> dict:
     return apply_invariant_i1(merged)
 
 
-def fold_into(findings: list, additions: list) -> tuple:
+def fold_into(findings: list, additions: list, strict_pages: bool = False) -> tuple:
     """(findings, folded): findings with each addition folded into the finding
     that already reports it, or appended. An addition folds into, in order:
     an original finding of the same category that carries its check ID, the one
@@ -203,6 +203,9 @@ def fold_into(findings: list, additions: list) -> tuple:
     same check family;
     else one with the same or a near-identical root cause on the same pages, as
     merge_findings decides. folded counts the additions that joined a finding.
+    With strict_pages, an addition that names pages joins only a finding of its
+    check that shares one of them, and is otherwise appended: an agent's image
+    reading of one page never joins a script finding about other pages.
     Neither input is changed."""
     out = [dict(f) for f in findings]
     originals = len(out)
@@ -215,10 +218,13 @@ def fold_into(findings: list, additions: list) -> tuple:
         pages = set(addition.get("affected_pages") or ())
         same_check = [i for i in range(originals)
                       if out[i].get("category") == addition.get("category") and ids & _check_ids_of(out[i])]
+        strict = strict_pages and bool(pages)
+        if strict:
+            same_check = [i for i in same_check if pages & set(out[i].get("affected_pages") or ())]
         # Of several findings for the check, the one sharing the most pages; the first on a tie.
         target = max(same_check, key=lambda i: (len(pages & set(out[i].get("affected_pages") or ())), -i),
                      default=None)
-        if target is None:
+        if target is None and not strict:
             key = _family_key(addition) or find_matching_bucket(addition, keys)
             target = keys.get(key) if key is not None else None
         if target is None:

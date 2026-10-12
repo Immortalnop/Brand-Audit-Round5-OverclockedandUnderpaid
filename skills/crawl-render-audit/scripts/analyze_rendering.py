@@ -110,6 +110,27 @@ def independent_sign_count(signs):
     return count
 
 
+# Page types whose content is what an assistant is asked about.
+_IMPORTANT_TYPES = frozenset({"home", "product", "article", "about", "service", "software", "category"})
+
+
+def _shell_severity(shells, signs, by_url):
+    """Severity of a suspected rendering gap without a browser. Signs of an app
+    shell describe one static page from several sides (thin text, a framework,
+    a mount point), so counting them never raises severity by itself. High needs
+    two independent signs on an important page, one of them the directly
+    observed discrepancy (readable text present in serialized page data but
+    missing from the HTML), or two independent signs on the home page, where the
+    access consequence is widest. Anything else stays medium."""
+    for u in shells:
+        page_type = by_url[u].page_type
+        if independent_sign_count(signs[u]) < 2 or page_type not in _IMPORTANT_TYPES:
+            continue
+        if "state_content" in signs[u] or page_type == "home":
+            return "high"
+    return "medium"
+
+
 def _noscript_summary(pages):
     """Per-page noscript observations for evidence and metrics."""
     js_required, fallback = [], []
@@ -142,8 +163,22 @@ def _render_with_headless_browser(urls: list, limits, timeout_s: float = None) -
     past its own timeout.
     """
     from subprocess_isolation import run_isolated
+    import network_budget
     timeout_s = timeout_s if timeout_s is not None else (limits.PER_FETCH_TIMEOUT_MS / 1000) * max(1, len(urls)) + 5
-    result = run_isolated(_render_urls_in_child, args=(urls, limits.MAX_RENDERED_PAGES, limits.PER_FETCH_TIMEOUT_MS),
+    max_requests = getattr(limits, "HEADLESS_RENDER_REQUESTS", 20)
+    max_bytes = getattr(limits, "HEADLESS_RENDER_BYTES", 4_000_000)
+    # The child cannot share the audit's ledger lock, so its whole slice is
+    # reserved from the site pool first and charged in full: a killed child
+    # reports nothing back. Its own transport is capped at that slice.
+    budget = network_budget.active()
+    if budget is not None:
+        max_requests = min(max_requests, budget.remaining("site")[0])
+        max_bytes = budget.reserve("site", "headless_rendering", max_bytes, requests=max_requests) \
+            if max_requests >= 2 else 0
+        if not max_bytes:
+            return {}, False, "the shared network allowance had too little left for headless rendering"
+    result = run_isolated(_render_urls_in_child, args=(urls, limits.MAX_RENDERED_PAGES, limits.PER_FETCH_TIMEOUT_MS,
+                                                       max_requests, max_bytes),
                            timeout_s=timeout_s)
     if not result.ok:
         # Killed, crashed, or errored -- never fabricate rendered content. The
@@ -153,7 +188,8 @@ def _render_with_headless_browser(urls: list, limits, timeout_s: float = None) -
     return result.value, False, None
 
 
-def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout_ms: int) -> dict:
+def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout_ms: int,
+                          max_requests: int = 20, max_bytes: int = 4_000_000) -> dict:
     """Runs in the child process spawned by run_isolated(). Must stay picklable-by-
     reference (top-level function, plain-type args/return) and must not touch
     anything from the parent's memory beyond its arguments."""
@@ -171,7 +207,8 @@ def _render_urls_in_child(urls: list, max_rendered_pages: int, per_fetch_timeout
             from time import monotonic
             part = urlsplit(urls[0])
             origin = f"{part.scheme}://{part.netloc}"
-            tr = Transport(origin, monotonic() + 25, replace(DEFAULT_LIMITS, MAX_TOTAL_BYTES=4_000_000, MAX_TOTAL_HTTP_REQUESTS=20), Instrumentation())
+            tr = Transport(origin, monotonic() + 25, replace(DEFAULT_LIMITS, MAX_TOTAL_BYTES=max_bytes,
+                                                             MAX_TOTAL_HTTP_REQUESTS=max_requests), Instrumentation())
             robots, status = tr.get(origin + "/robots.txt", robots_exempt=True)
             if status != "ok" or robots.status_code not in (200, 404) or robots.truncated:
                 return {}
@@ -245,6 +282,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                 evidence=[{"type": "render_subprocess_timeout",
                            "description": subprocess_error or "subprocess killed on timeout",
                            "urls": heuristic_gap_pages[:10]}],
+                affected_pages=heuristic_gap_pages,
                 suggested_action={"summary": "Re-run the audit; if this recurs, the target site may be slow "
                                               "or blocking headless browsers",
                                    "steps": ["Re-run the audit", "Check for bot-detection on the target site"],
@@ -273,6 +311,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                            "for these pages -- could be genuinely thin content rather than a JS dependency",
                 evidence=[{"type": "render_gap_unconfirmed", "description": "Rendered content still thin or unavailable",
                            "urls": unconfirmed[:10]}],
+                affected_pages=unconfirmed,
                 suggested_action={"summary": "Manually inspect these pages to confirm whether content is missing",
                                    "steps": ["Open the page in a browser and compare to the raw HTML"],
                                    "priority": "low", "effort": "low",
@@ -332,15 +371,27 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                 urls = [u for u in shells if kind in signs[u]]
                 if urls:
                     evidence.append({"type": kind, "description": description, "urls": urls[:10]})
+            # The observed discrepancy, page by page: readable text in serialized
+            # page data against text in the delivered HTML. The state is counted,
+            # never shown as rendered content.
+            for u in [u for u in shells if "state_content" in signs[u]][:5]:
+                f = by_url[u].features or {}
+                evidence.append({"type": "state_discrepancy",
+                                 "description": f"Serialized page data ({', '.join(f.get('state_sources') or ()) or 'script'}) "
+                                                f"holds about {int(f.get('state_text_chars') or 0)} characters of readable "
+                                                f"text; the delivered HTML shows {len((by_url[u].visible_text or '').strip())}"
+                                                + ("; extraction stopped at its size limit"
+                                                   if f.get("state_extraction_limited") else ""),
+                                 "urls": [u]})
             strongest = max(independent_sign_count(signs[u]) for u in shells)
-            severity = "high" if strongest >= 2 else "medium"
+            severity = _shell_severity(shells, signs, by_url)
             findings.append(make_finding(
                 category="ai_discoverability", finding_type="defect", severity=severity,
                 status="suspected", confidence=0.75 if strongest >= 2 else 0.6,
                 title="Content appears to require JavaScript rendering",
                 root_cause="Raw HTML shows near-empty visible content, and the page carries signs of client-side "
                            "rendering (" + ", ".join(sorted({_SIGN_LABEL[k] for u in shells for k in signs[u]})) + ")",
-                evidence=evidence,
+                evidence=evidence, affected_pages=shells,
                 suggested_action={
                     "summary": "Server-side render or pre-render key content",
                     "steps": ["Add SSR or static generation for key pages",
@@ -363,6 +414,7 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                 evidence=[{"type": "render_gap_unconfirmed",
                            "description": "Little raw-HTML text and no sign of client-side rendering",
                            "urls": thin[:10]}],
+                affected_pages=thin,
                 suggested_action={"summary": "Open these pages with JavaScript turned off and check that the "
                                              "content visitors need is still there",
                                   "steps": ["Compare each page in a browser with and without JavaScript",
@@ -374,9 +426,18 @@ def analyze_rendering(artifacts, deadline, limits, capabilities=None):
                             "rule_id": "render-gap-unconfirmed", "tier": "rendering_gap_heuristic"},
             )))
 
+    warnings = []
+    state_pages = [p.url for p in artifacts.pages if (p.features or {}).get("state_text_chars")
+                   and p.url in heuristic_gap_pages]
+    if state_pages:
+        # Embedded state is detected and measured, not extracted: claim and fact
+        # checks read only the delivered HTML.
+        warnings.append(f"{len(state_pages)} page(s) hold readable text in serialized page data that their HTML does "
+                        "not show; that text was not extracted, so claim, freshness and fact checks did not read it.")
     return skill_result(
-        "crawl-render-audit", findings=findings,
+        "crawl-render-audit", findings=findings, warnings=warnings,
         metrics={"rendered_pages": rendered_count, "raw_rendered_gap_pages": confirmed_gap_pages or heuristic_gap_pages,
+                 "state_pages": state_pages[:10],
                  "rendering_mode": "headless_browser" if headless_available else "heuristic_only",
                  "noscript_js_required_pages": len(js_required_pages),
                  "noscript_fallback_pages": noscript_fallback_pages[:10]},

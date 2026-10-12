@@ -69,7 +69,7 @@ def check_ai_crawler_access(artifacts, deadline):
                    else "robots.txt blocks training or user-fetch AI crawlers from some site sections"),
             root_cause="robots.txt rules for " + describe(sections) + " disallow sections of the site that "
                        "it leaves open to other crawlers, so those sections cannot be read or cited by these crawlers",
-            affected_pages=urls[:10],
+            affected_pages=urls,
             evidence=[{"type": "robots", "description": f"{agent} ({PURPOSE_LABELS[purpose_of(agent)]}) may not fetch: "
                                                         + ", ".join(us[:5]),
                        "urls": list(us[:5])} for agent, us in sorted(sections.items())],

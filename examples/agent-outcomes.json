@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "audit_id": "94f90d32c928419a86b534ed1eb566b6",
+  "snapshot_sha256": "d4a0f4f37c6df4fd84365eb37479d5f511f249427653fd3d70dfa556424b8897",
+  "capabilities": {
+    "local_reading": true,
+    "search": false,
+    "vision": false
+  },
+  "checks": [
+    {
+      "check": "AG-01",
+      "outcome": "pass",
+      "source_refs": [
+        "E001"
+      ],
+      "reason": "The About page was not discovered, so the home page passage was judged. It names the project (Svelte), what it offers (a UI framework that uses a compiler to build components) and its category (web development framework)."
+    },
+    {
+      "check": "AG-02",
+      "outcome": "not_assessed",
+      "reason": "No search tool was run in this invocation."
+    },
+    {
+      "check": "AG-03",
+      "outcome": "not_assessed",
+      "reason": "No search tool was run in this invocation."
+    },
+    {
+      "check": "AG-05",
+      "outcome": "not_assessed",
+      "reason": "No search tool was run in this invocation."
+    },
+    {
+      "check": "AG-06",
+      "outcome": "not_assessed",
+      "reason": "No search tool was run in this invocation."
+    },
+    {
+      "check": "AG-04",
+      "outcome": "not_assessed",
+      "reason": "Image viewing was not used in this invocation."
+    }
+  ]
+}

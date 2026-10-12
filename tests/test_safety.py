@@ -159,7 +159,8 @@ def test_robots_disallow_all_blocks_every_page():
 def test_robots_timeout_fails_closed_not_open():
     base_url, shutdown = start_server(robots_mode="timeout", slow_delay_s=0.3)
     try:
-        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=100)  # shorter than the 0.3s delay
+        # robots.txt gets the critical timeout; both are shorter than the 0.3s delay.
+        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=100, CRITICAL_FETCH_TIMEOUT_MS=100)
         deadline = make_deadline(limits)
         artifacts = acquire_site(base_url + "/", deadline, limits, allow_private_targets=True)
         assert artifacts.robots_data["status"] == "timeout"

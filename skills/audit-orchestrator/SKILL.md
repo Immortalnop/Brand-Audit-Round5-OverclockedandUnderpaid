@@ -44,20 +44,23 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    (`validate_report.py`). Both of the last two apply the severity gate: a high or
    critical finding must be confirmed or backed by two independent kinds of
    evidence, else it is lowered and says why. See `references/severity-rubric.md`.
-4. Agent stage (AG-01 to AG-06), only when you can read pages, view images or
-   search the web. Write the report to a file
-   (`python3 scripts/run_audit.py <site> --out report.json`), then follow
-   `skills/entity-corroboration-agent/SKILL.md` using that report: the brand
-   name, the facts-in-images and review-platform-missing findings, and
-   `coverage.off_site_profiles`. Write what you observed to a JSON file, then
-   merge it, with no new crawl and no request:
-   `python3 scripts/run_audit.py --from-report report.json --agent-findings agent.json --out report.json`.
-   Each agent finding is rebuilt by the shared finding factory and folded into
-   the script finding that reports the same check; the report is renumbered and
-   validated again. A report can take one merge, and only when it analyzed at
-   least one page. Already holding the agent findings before the audit? Pass
-   `--agent-findings agent.json` with the site instead. Skip this step when
-   you have no such tools: the report then records the stage as `not_supplied`.
+4. Agent stage (AG-01 to AG-06). Run the audit with the evidence packet
+   (`python3 scripts/run_audit.py <site> --out report.json --evidence-out packet.json`).
+   The report is complete at this point; the agent stage is optional. Then
+   follow `skills/entity-corroboration-agent/SKILL.md`: read the packet (never
+   the audit's process, and never a new crawl of the site), run each check your
+   tools allow, and write one outcome per check to an outcome envelope. Merge
+   it, with no request:
+   `python3 scripts/run_audit.py --from-report report.json --agent-findings envelope.json --evidence packet.json --out final.json`.
+   The envelope is checked against the report and the packet (audit ID,
+   snapshot digest, evidence IDs, per-check evidence, severity ceilings) and
+   rejected as a whole, with reasons, if anything fails; report.json is left
+   unchanged either way and stays the merge base. AG-01 needs only the packet;
+   AG-02, AG-03, AG-05 and AG-06 need a search tool; AG-04 needs image viewing.
+   A missing capability leaves only its own checks `not_assessed`, and their
+   limitations stay in the report. A legacy findings array is still accepted
+   (`legacy_partial`) but assesses no check. Skip this step when you have no
+   such tools: the report then records the stage as `not_supplied`.
 5. Return the resulting report to the user as-is.
 
 ## Safety guarantees (enforced by `acquire_site.py`, not just documented)
@@ -166,11 +169,25 @@ process cannot block the orchestrator past its deadline.
 ```
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json
-$ python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.json --agent-findings agent.json --out report.json
+$ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json --evidence-out packet.json
+$ python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.json --agent-findings envelope.json --evidence packet.json --out final.json
 ```
 
 `--out PATH` writes the same JSON as UTF-8 (use it in Windows PowerShell, whose
-`>` writes UTF-16).
+`>` writes UTF-16). `--evidence-out PATH` also writes the bounded agent evidence
+packet; it is written only when at least one page was analyzed. The report,
+packet, agent input and final report must be four different files.
+
+Time plan: the audit worker is stopped at 270 seconds (`--timeout` lowers it).
+The whole workflow targets 270 seconds: the agent stage gets what the audit
+left before that, at most 55 seconds, and the merge 15. A slow site that uses
+the full worker limit leaves no agent time. The report's `timing` and the
+packet's `timing` give the agent deadline as a UTC time. This code cannot stop the host agent: stop the agent
+stage by that deadline, and skip it when `agent_stage_recommended` is false.
+The merge records the measured workflow time. Network: every request of the
+audit is charged to one ledger with a site pool (90 requests, 40 MiB by
+default) and an external pool (40 requests, 16 MiB), reported in
+`coverage.network_budget`; the agent's own tool calls are not in it.
 
 Illustrative excerpt (not a complete report):
 

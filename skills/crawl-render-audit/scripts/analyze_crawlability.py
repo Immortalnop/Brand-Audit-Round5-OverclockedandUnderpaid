@@ -81,6 +81,7 @@ def analyze_crawlability(artifacts, deadline):
                           "crawled -- the rest of the site was not checked)"),
             evidence=[{"type": "http_status", "description": f"{len(error_pages)} pages returned errors",
                        "urls": [p.url for p in error_pages][:10]}],
+            affected_pages=[p.url for p in error_pages],
             suggested_action={
                 "summary": "Fix or redirect broken URLs",
                 "steps": ["Audit error pages", "Add 301 redirects or restore content"],

@@ -219,12 +219,17 @@ def test_merge_folds_adds_and_refreshes_the_report(media_report):
     info = merged["coverage"]["agent_corroboration"]
     assert info["findings_supplied"] == 5 and info["findings_ingested"] == 3
     assert info["findings_folded_into_existing"] == 2 and info["findings_added"] == 1
-    assert merged["coverage"]["agent_corroboration_stage"] == "ingested"
+    # A legacy array is legacy_partial: it assesses no check (ROUND5_PLAN T4.1).
+    assert merged["coverage"]["agent_corroboration_stage"] == "legacy_partial"
+    assert merged["coverage"]["agent_stage"]["submission_status"] == "legacy"
+    assert merged["coverage"]["agent_checks_assessed"] == []
     images = [f for f in merged["findings"] if f["check_id"] == "facts-in-images"]
     assert len(images) == len([f for f in report["findings"] if f["check_id"] == "facts-in-images"])
     assert any("Basic $19" in e["description"] for f in images for e in f["evidence"])
     [contradiction] = [f for f in merged["findings"] if f["check_id"] == "independent-contradiction"]
-    assert contradiction["severity"] == "high" and contradiction["status"] == "confirmed"
+    # Without the envelope's source contract a contradiction is capped at
+    # medium and only suspected.
+    assert contradiction["severity"] == "medium" and contradiction["status"] == "suspected"
     assert contradiction["coverage"]["pages_analyzed"] == report["coverage"]["pages_analyzed"]
     assert not any("trustpilot" in p for f in merged["findings"] for p in f["affected_pages"])
     # Numbering, references and summary agree with the new findings.
@@ -233,11 +238,14 @@ def test_merge_folds_adds_and_refreshes_the_report(media_report):
     assert all(r["finding_id"] in ids for r in merged["recommendations"] if "finding_id" in r)
     assert all(t["finding_id"] in ids for t in merged["top_actions"])
     assert merged["summary"]["total_findings"] == len(merged["findings"]) == len(report["findings"]) + 1
-    assert merged["summary"]["high"] == report["summary"]["high"] + 1
-    # The stage is no longer reported as missing.
-    assert _agent_lines(report["limitations"]) and not _agent_lines(merged["limitations"])
+    assert merged["summary"]["high"] == report["summary"]["high"]
+    assert merged["summary"]["medium"] == report["summary"]["medium"] + 1
+    # A legacy array clears no missing-stage limitation, and says why.
+    assert _agent_lines(report["limitations"])
+    assert _agent_lines(merged["limitations"]) == _agent_lines(report["limitations"])
     assert ingest.NOT_SUPPLIED_WARNING in report["warnings"]
     assert ingest.NOT_SUPPLIED_WARNING not in merged["warnings"]
+    assert ingest.LEGACY_WARNING in merged["warnings"]
     assert merged["confidence"] == report["confidence"]
 
 
@@ -308,9 +316,9 @@ def test_merge_matches_a_live_audit_with_the_same_agent_findings(media_report, t
     def normalized(r, origin):
         return [(c, s, v, tuple(p.replace(origin, "ORIGIN") for p in pages), n)
                 for c, s, v, pages, n in _shape(r)]
-    assert live["coverage"]["agent_corroboration_stage"] == "ingested"
+    assert live["coverage"]["agent_corroboration_stage"] == "legacy_partial"
     assert normalized(live, url) == normalized(merged, base)
-    assert not _agent_lines(live["limitations"])
+    assert _agent_lines(live["limitations"]) == _agent_lines(merged["limitations"])
 
 
 # ---------------------------------------------------------------- command line
@@ -338,16 +346,20 @@ def test_cli_merges_a_utf16_report_without_any_request(media_report, tmp_path, m
     assert "merged 3 of 5 agent finding(s)" in err
 
 
-def test_cli_merge_can_overwrite_its_own_input(media_report, tmp_path, monkeypatch):
+def test_cli_merge_refuses_to_overwrite_its_own_input(media_report, tmp_path, monkeypatch, capsys):
+    # The deterministic report stays the merge base; the final report is a
+    # separate file (ROUND5_PLAN T4.3).
     from run_audit import main
     _, report = media_report
     report_path, agent_path = tmp_path / "r.json", tmp_path / "ag.json"
     report_path.write_text(json.dumps(report), encoding="utf-8")
     agent_path.write_text("[]", encoding="utf-8")
     _no_network(monkeypatch)
-    main(["--from-report", str(report_path), "--agent-findings", str(agent_path), "--out", str(report_path),
-          "--quiet"])
-    assert json.loads(report_path.read_text(encoding="utf-8"))["coverage"]["agent_corroboration_stage"] == "ingested"
+    with pytest.raises(SystemExit) as exc:
+        main(["--from-report", str(report_path), "--agent-findings", str(agent_path), "--out", str(report_path),
+              "--quiet"])
+    assert exc.value.code == 2 and "same file" in capsys.readouterr().err
+    assert json.loads(report_path.read_text(encoding="utf-8")) == report
 
 
 @pytest.mark.parametrize("extra", [[], ["https://example.com"], ["--max-pages", "5"], ["--timeout", "30"]])

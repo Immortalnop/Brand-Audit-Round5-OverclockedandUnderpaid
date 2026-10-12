@@ -158,7 +158,8 @@ def _profile_transport(origin, deadline_monotonic, limits):
                       MAX_RESPONSE_BYTES=_PROFILE_MAX_BYTES,
                       PER_FETCH_TIMEOUT_MS=max(limits.PER_FETCH_TIMEOUT_MS, _FETCH_TIMEOUT_MS))
     # Never allow private targets here: these are public third-party hosts.
-    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False)
+    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False,
+                     pool="external", stage="off_site_profiles")
 
 
 def _page_summary(resp):

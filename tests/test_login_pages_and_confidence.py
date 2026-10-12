@@ -425,8 +425,9 @@ def test_zero_identity_is_explained_but_does_not_lower_the_score():
 def test_high_confidence_explanation():
     conf = overall_confidence(_GOOD, "completed")
     assert conf["level"] == "high" and conf["score"] == 1.0
-    assert "both hold up" in conf["explanation"]
-    assert set(conf["reasons"]) == {"sample_representativeness", "identity_confidence", "execution_penalty"}
+    assert "all hold up" in conf["explanation"]
+    assert set(conf["reasons"]) == {"sample_representativeness", "observation_completeness", "identity_confidence",
+                                    "execution_penalty"}
 
 
 def test_thin_sample_is_named_with_its_numbers():

@@ -21,11 +21,12 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                     'site.',
                            'mechanism': 'A brand discussed nowhere but its own site is a single fragile '
                                         'assertion that retrieval systems cannot corroborate.'},
- 'independent-contradiction': {'expected_outcome': 'Independent sources and the site agree, so the fact is '
-                                                  'repeated confidently by assistants.',
-                              'implementation_detail': 'Reconcile the conflicting fact: correct it at the '
-                                                       'wrong source and state the accurate version on-site '
-                                                       'and in Organization markup.',
+ 'independent-contradiction': {'expected_outcome': 'The site and the independent sources state one value for '
+                                                  'the fact; how assistants then answer is not measured here.',
+                              'implementation_detail': 'Reconcile the conflicting fact: confirm which '
+                                                       'version is accurate, correct whichever source is '
+                                                       'wrong, and state the accurate version on-site and in '
+                                                       'Organization markup.',
                               'mechanism': 'When independent sources describe the brand differently from the '
                                            'site, retrieval surfaces the discrepancy and confidence drops '
                                            'across every associated fact.'},
@@ -122,7 +123,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                      'URL only if the external canonical is unintended.',
                             'mechanism': 'An external canonical can nominate another origin as the preferred '
                                          'copy.'},
- 'dead-ends': {'expected_outcome': 'Keeps visitors engaged longer',
+ 'dead-ends': {'expected_outcome': 'Each listed page offers at least one link to another page of the site; '
+                                    'the effect on visitor behaviour is not measured here.',
                'implementation_detail': 'Add related-content links. Add a clear next-step call to action.',
                'mechanism': 'Pages provide no next step for the visitor'},
  'duplicate-titles': {'expected_outcome': 'Helps readers distinguish the sampled pages.',
@@ -153,8 +155,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                    'mechanism': 'An offer whose stated end date has passed still reads as current: an assistant '
                                 'that quotes the page repeats a deal that no longer applies, and a visitor who '
                                 'acts on it is turned away.'},
- 'fact-inconsistent-across-pages': {'expected_outcome': 'Every page states the same value, so assistants repeat '
-                                                        'it with confidence.',
+ 'fact-inconsistent-across-pages': {'expected_outcome': 'Every page states the same value, which removes one '
+                                                        'source of conflicting answers.',
                                     'implementation_detail': 'Decide which value is current for each listed '
                                                              'property, correct the pages that state the other '
                                                              'one, and emit organization and product markup '
@@ -197,14 +199,16 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                 'implementation_detail': 'Trim unnecessary inline payloads and paginate only where useful; '
                                          'retain essential content.',
                 'mechanism': 'Large HTML bodies consume the bounded retrieval budget.'},
- 'homepage-orientation': {'expected_outcome': 'Visitors arriving from an AI answer can orient quickly and '
-                                              'continue to a relevant action',
+ 'homepage-orientation': {'expected_outcome': 'The homepage opens with a short heading that says what the '
+                                              'organization offers; the rendered first screen and visitor '
+                                              'behaviour are not measured here.',
                           'implementation_detail': 'State what the organization offers and for whom in the '
                                                    'first viewport. Use a descriptive H1 and scannable H2 '
                                                    'sections. Place one relevant call to action near the '
                                                    'opening content.',
-                          'mechanism': 'The sampled homepage contains substantial text but no short heading '
-                                       'signal was observed in its first heading entries'},
+                          'mechanism': 'The sampled homepage contains substantial text but none of its first '
+                                       'headings, in source order, is a short statement of what it offers. '
+                                       'Source order does not establish what appears above the fold.'},
  'http-transport': {'expected_outcome': 'Protects transport confidentiality and integrity; ranking gains are '
                                         'not asserted.',
                     'implementation_detail': 'Serve the public site over verified HTTPS; verify the '
@@ -302,12 +306,15 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                      'every important landing page a clear next step.',
                             'mechanism': 'Visitors landing on the sampled pages have no observed internal '
                                          'link path to related content'},
- 'no-jsonld': {'expected_outcome': 'Facts become machine-extractable',
+ 'no-jsonld': {'expected_outcome': 'Key facts are also stated as explicit structured data that parsers can '
+                                    'read without inferring them from layout; no ranking, rich-result or '
+                                    'citation gain is implied.',
                'implementation_detail': 'Identify the type of each key page. Add a matching schema.org '
                                         'JSON-LD block (Organization and WebSite on the home page; Product, '
                                         'Article or Service on inner pages) and validate it.',
-               'mechanism': 'Without JSON-LD, crawlers and assistants must infer names, prices and dates from '
-                            'layout, so explicit facts are missed or attributed wrongly.'},
+               'mechanism': 'Without JSON-LD or other structured markup, consumers must infer names, prices '
+                            'and dates from visible text and layout. Search engines do not require it for '
+                            'indexing, so its absence is an improvement opportunity, not a defect.'},
  'no-llms-txt': {'expected_outcome': 'Offers an optional guide to tools that support this convention; not a '
                                      'search eligibility requirement',
                  'implementation_detail': 'Create /llms.txt. List the key pages and a short site summary.',
@@ -501,7 +508,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                   'anchors meaningful when read out of context.',
                          'mechanism': 'Generic anchor text conveys nothing about the target page to readers '
                                       'or retrieval systems.'},
- 'page-orientation': {'expected_outcome': 'Improves above-the-fold orientation on substantial content pages.',
+ 'page-orientation': {'expected_outcome': 'Substantial content pages open with a short descriptive heading; '
+                                          'the rendered first screen is not measured here.',
                       'implementation_detail': 'Lead each content page with a descriptive short H1 and '
                                                'follow with scannable H2 sections.',
                       'mechanism': 'A substantial page without a clear primary heading gives arriving '
@@ -554,8 +562,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                 'mechanism': 'Crawlers use sitemap lastmod to decide what to recrawl only '
                                              'while it is present and accurate; missing, invalid or '
                                              'build-stamped values are ignored, so updates are found late.'},
- 'kg-link-missing': {'expected_outcome': 'Assistants can tie the brand to one knowledge-graph entity and '
-                                         'tell it apart from same-named entities.',
+ 'kg-link-missing': {'expected_outcome': 'The site names the one knowledge-graph entity that is the brand, '
+                                         'an explicit signal that separates it from same-named entities.',
                      'implementation_detail': 'Add the Wikidata item (and Wikipedia article, if one exists) '
                                               'to Organization sameAs, and make sure the Wikidata item '
                                               'lists this site as its official website (P856).',
@@ -570,8 +578,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                         'mechanism': 'A sameAs link to a knowledge-graph entity whose name or official '
                                      'website disagrees with the site tells assistants the brand is a '
                                      'different organization, which causes mistaken identity.'},
- 'kg-namesake-ambiguity': {'expected_outcome': 'Assistants attribute facts to the right organization when '
-                                               'other entities share its name.',
+ 'kg-namesake-ambiguity': {'expected_outcome': 'The site gives explicit signals that separate the brand from '
+                                               'same-named entities; whether assistants confuse them is not '
+                                               'measured here.',
                            'implementation_detail': 'Declare the brand knowledge-graph entity in '
                                                     'Organization sameAs and state distinguishing facts '
                                                     '(category, location, founding year) on the site.',
@@ -612,11 +621,12 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
  'citation-schema-opportunity': {'expected_outcome': 'Visible questions, steps and ratings are also stated as '
                                                      'explicit structured facts.',
                                  'implementation_detail': 'Add FAQPage, HowTo or AggregateRating markup only '
-                                                          'where the page really shows that content; Google '
-                                                          'limits FAQ and HowTo rich results, so the gain is '
-                                                          'machine readability, not a search feature.',
-                                 'mechanism': 'Question-and-answer pairs, numbered steps and ratings are the '
-                                              'passages assistants quote most; markup states them as explicit '
+                                                          'where the page really shows that content. FAQ rich '
+                                                          'results no longer appear in Google Search and HowTo '
+                                                          'rich results were retired, so the gain is machine '
+                                                          'readability, not a search feature.',
+                                 'mechanism': 'Question-and-answer pairs, numbered steps and ratings are passages '
+                                              'an answer can quote directly; markup states them as explicit '
                                               'structure.'},
  'author-missing': {'expected_outcome': 'Each article has a named author that assistants can credit and '
                                         'check.',
@@ -660,8 +670,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                'mechanism': 'A profile linked as the brand\'s that names neither the brand '
                                             'nor the site can lead assistants to attribute another account\'s '
                                             'content to the brand.'},
- 'review-platform-missing': {'expected_outcome': 'Independent ratings and reviews corroborate the brand in '
-                                                 'assistant answers.',
+ 'review-platform-missing': {'expected_outcome': 'Independent review profiles exist and are linked, so readers '
+                                                 'and assistants can check them; their use in answers is not '
+                                                 'measured here.',
                              'implementation_detail': 'Claim profiles on review and directory platforms that '
                                                       'fit the business, link them from the site and list them '
                                                       'in Organization sameAs.',
@@ -775,7 +786,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                              'mechanism': 'Assistants tailor answers to the asker\'s location using '
                                           'machine-readable addresses and service areas; a location shown only '
                                           'as text or a map is easy to miss.'},
- 'local-business-incomplete': {'expected_outcome': 'The LocalBusiness markup qualifies for local answers.',
+ 'local-business-incomplete': {'expected_outcome': 'The LocalBusiness markup carries the address and location '
+                                                   'properties local consumers read; each platform decides its '
+                                                   'own eligibility.',
                                'implementation_detail': 'Give every LocalBusiness node an address, plus geo for a '
                                                         'storefront or areaServed for a service-area business.',
                                'mechanism': 'Google requires an address on LocalBusiness markup, and without geo '
@@ -786,8 +799,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                        'title and H1, and link those pages from the navigation.',
                               'mechanism': 'Assistants weight answers toward who is asking; without pages for named '
                                            'audiences there is nothing to match that context to.'},
- 'contact-markup-missing': {'expected_outcome': 'Assistants can give the brand\'s own email and phone number '
-                                                'when asked how to reach it.',
+ 'contact-markup-missing': {'expected_outcome': 'The brand\'s own email and phone number are stated as '
+                                                'explicit structured facts.',
                             'implementation_detail': 'Add email, telephone and a contactPoint to the Organization '
                                                      'JSON-LD, matching the contact page.',
                             'mechanism': 'Assistants read contact details from email, telephone and contactPoint '
@@ -798,7 +811,8 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                   'result URLs and a WebSite SearchAction.',
                          'mechanism': 'Visitors arriving from an AI answer often have a follow-up need; on a large '
                                       'site without search they must browse menus or leave.'},
- 'context-retention-missing': {'expected_outcome': 'Returning visitors resume their task where they left it.',
+ 'context-retention-missing': {'expected_outcome': 'The site offers a way to save and resume a task; visitor '
+                                                   'behaviour is not measured here.',
                                'implementation_detail': 'Add save-for-later or wishlist controls and a recently '
                                                         'viewed list that persists across visits.',
                                'mechanism': 'Without saved state each visit starts from zero, so a returning '
@@ -823,11 +837,13 @@ REQUIRED_FIELDS = ("mechanism", "implementation_detail", "expected_outcome")
 # saved by an earlier version still validates when the agent stage is merged in.
 RETIRED_CHECK_IDS = frozenset({"email-summary"})
 
-# Base confidence per check, measured on hand-labelled dev sites with
-# tests/score_benchmark.py --suggest (2026-10-12: 7 dev sites; only checks with at
-# least 5 labelled findings). Each value is the measured precision rounded down to
-# a 0.1 step, at most 0.9. A check not listed keeps the confidence its script
-# states. Holdout sites were not used to set these values.
+# Base confidence per check, proposed by tests/score_benchmark.py --suggest from
+# labelled dev findings (measured precision rounded down to a 0.1 step, at most
+# 0.9). A check not listed keeps the confidence its script states. Holdout sites
+# were not used. The labels were made by an agent and have not been reviewed by a
+# person, and no rule has more than 6 labelled findings (one per site), so every
+# value is a heuristic, not an empirical probability: CALIBRATION_PROVENANCE
+# records the basis of each one.
 CALIBRATED_CONFIDENCE = MappingProxyType({
     "contact-markup-missing": 0.9,
     "cwv-risk": 0.9,
@@ -840,6 +856,43 @@ CALIBRATED_CONFIDENCE = MappingProxyType({
     "social-metadata": 0.9,
     "title-length": 0.8,
 })
+
+
+# Dataset: benchmark_runs/dev/findings.csv (142 labelled dev findings, 7 sites),
+# SHA-256 prefix 97807eaac874f7ea, scored 2026-10-12. evidence_class separates a
+# directly observed local fact (the check reads a value that is or is not there)
+# from a heuristic applicability judgement (a threshold or a page-type guess
+# decides whether the observation matters).
+_CALIBRATION_RUN = {"dataset": "benchmark_runs/dev/findings.csv", "dataset_sha256_prefix": "97807eaac874f7ea",
+                    "scored_on": "2026-10-12", "split": "dev", "labels_reviewed_by_person": False,
+                    "method": "heuristic"}
+
+
+def _basis(labelled, tp, fp, irrelevant, sites, evidence_class):
+    return MappingProxyType(dict(_CALIBRATION_RUN, labelled=labelled, tp=tp, fp=fp, irrelevant=irrelevant,
+                                 sites=sites, evidence_class=evidence_class))
+
+
+CALIBRATION_PROVENANCE = MappingProxyType({
+    "contact-markup-missing": _basis(6, 6, 0, 0, 6, "observed_fact"),
+    "cwv-risk": _basis(5, 5, 0, 0, 5, "heuristic_applicability"),
+    "heading-hierarchy": _basis(5, 5, 0, 0, 5, "observed_fact"),
+    "markup-ratio": _basis(6, 5, 0, 1, 6, "heuristic_applicability"),
+    "missing-description": _basis(6, 6, 0, 0, 6, "observed_fact"),
+    "no-llms-txt": _basis(5, 5, 0, 0, 5, "observed_fact"),
+    "page-type-schema-gap:about": _basis(5, 5, 0, 0, 5, "heuristic_applicability"),
+    "responsive-images": _basis(5, 5, 0, 0, 5, "observed_fact"),
+    "social-metadata": _basis(6, 6, 0, 0, 6, "observed_fact"),
+    "title-length": _basis(6, 5, 0, 1, 6, "heuristic_applicability"),
+})
+
+
+def confidence_basis(check_id):
+    """Where a finding's base confidence comes from: the dev labels behind a
+    tabled value, or the script's own rule."""
+    if check_id in CALIBRATION_PROVENANCE:
+        return dict(CALIBRATION_PROVENANCE[check_id], base_value=CALIBRATED_CONFIDENCE[check_id])
+    return {"method": "script_rule"}
 
 
 def calibrated_confidence(check_id, default):
@@ -863,6 +916,8 @@ def enrich_finding(finding, strict=False):
     finding["mechanism"] = entry["mechanism"]
     finding["implementation_detail"] = entry["implementation_detail"]
     finding["expected_outcome"] = entry["expected_outcome"]
+    # An agent finding states its own heuristic (provenance.confidence_method).
+    finding.setdefault("confidence_basis", confidence_basis(check_id))
     action = dict(finding["suggested_action"])
     action["implementation_detail"] = entry["implementation_detail"]
     action["expected_outcome"] = entry["expected_outcome"]

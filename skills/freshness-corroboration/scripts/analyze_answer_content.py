@@ -71,7 +71,10 @@ def analyze_answer_content(artifacts, entity_identity, deadline):
     identity=entity_identity.get('data',{})
     name=identity.get('canonical_name','')
     identity_pages=[p for p in lexical if p.page_type in ('home','about') and len(p.visible_text)>300]
-    if isinstance(name,str) and len(name.strip())>=3 and identity.get('confidence',0)>=.85 and identity_pages:
+    # A name that is a URL or a bare domain (markup that names the organization
+    # by its address) is not wording a sentence would use: nothing to search for.
+    url_like=isinstance(name,str) and bool(re.match(r'\s*(?:https?://|www\.)|\s*[\w-]+(?:\.[\w-]+)+/?\s*$',name,re.I))
+    if isinstance(name,str) and len(name.strip())>=3 and not url_like and identity.get('confidence',0)>=.85 and identity_pages:
         name_pattern=re.compile(r'(?<!\w)'+re.escape(name)+r'(?!\w)',re.I)
         # Descriptive verbs a one-sentence brand definition uses ("Acme sells...",
         # "Acme runs daily ferries...", "Acme repairs boilers...").

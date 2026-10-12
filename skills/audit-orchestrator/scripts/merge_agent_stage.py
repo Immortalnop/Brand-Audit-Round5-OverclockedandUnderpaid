@@ -1,31 +1,48 @@
 """merge_agent_stage.py -- fold the agent stage (AG-01 to AG-06) into a saved report.
 
-The deterministic audit runs first and writes its report. The calling agent then
-performs the entity-corroboration-agent checks, reading that report, and writes
-its observations to a JSON file. This module merges that file into the saved
-report without crawling again: it makes no request of any kind and reads nothing
-but the two files, so the merge takes well under a second.
+The deterministic audit runs first and writes its report and, with
+--evidence-out, the bounded evidence packet (common/agent_evidence.py). The
+calling agent then performs the entity-corroboration-agent checks from that
+packet and writes one outcome per check (the outcome envelope). This module
+merges the envelope into the saved report without crawling again: it makes no
+request of any kind and reads nothing but the files it is given, so the merge
+takes well under a second.
 
-The merge goes through the same steps as a live audit with AGENT_FINDINGS_PATH
-set: every entry is rebuilt by the shared finding factory (catalog wording and
-Invariant I-1), folded into the finding that already reports it
-(merge_findings.fold_into), and the findings are prioritized, numbered and
-validated again. The recommendations, impact x effort plan, top actions and quick
-wins are rebuilt from the new findings. What the merge cannot rebuild without the
-site snapshot is kept from the saved report: fix snippets on the findings it
-already had, the confidence score (it rates the crawl, which did not change),
-and the passed checks, less any that a merged finding now contradicts.
+Before anything is written the envelope is bound and validated
+(ingest_agent_findings.validate_envelope): its audit_id and snapshot_sha256 must
+match the report and the packet, every evidence reference must name a packet
+record, and each pass or finding must carry the evidence its check needs. Any
+failure raises ReportMergeError and leaves the report as it was.
+
+The merge goes through the same steps as a live audit: every entry is rebuilt by
+the shared finding factory (catalog wording and Invariant I-1), folded into the
+finding that already reports it (merge_findings.fold_into), and the findings are
+prioritized, numbered and validated again. The recommendations, impact x effort
+plan, top actions and quick wins are rebuilt from the new findings. What the
+merge cannot rebuild without the site snapshot is kept from the saved report:
+fix snippets on the findings it already had, the confidence score (it rates the
+crawl, which did not change), and the passed checks, less any that a merged
+finding now contradicts.
+
+Only the limitations of checks the envelope actually assessed are cleared. The
+legacy findings array is still merged, as legacy_partial: it clears none.
 """
 import copy
 from datetime import datetime, timezone
 
-from execution_summary import AGENT_STAGE_LIMITATION_MARKS
+from execution_summary import AG04_NOT_SUPPLIED, AG05_NOT_SUPPLIED, AG06_NOT_SUPPLIED
 from generate_recommendations import generate_recommendations, is_finding_reference
-from ingest_agent_findings import NOT_SUPPLIED_WARNING, build_agent_findings
+from ingest_agent_findings import (NOT_SUPPLIED_WARNING, LEGACY_WARNING, EnvelopeError, build_agent_findings,
+                                   legacy_checks, stage_record, validate_envelope)
+from agent_evidence import AG_CHECKS
 from merge_findings import fold_into
 from prioritize_findings import annotate_action_plan, prioritize_findings, quick_wins, top_actions
 from validate_report import REQUIRED_FINDING_FIELDS, validate_report
 from whats_working import reported_check_ids
+
+# The limitation each agent check lifts once it is actually assessed.
+_LIMITATION_OF_CHECK = {"AG-04": AG04_NOT_SUPPLIED, "AG-05": AG05_NOT_SUPPLIED, "AG-06": AG06_NOT_SUPPLIED}
+_MERGED_STAGES = {"ingested", "legacy_partial", "partial", "complete", "not_run"}
 
 
 class ReportMergeError(ValueError):
@@ -43,7 +60,9 @@ def _check_report(report):
             raise ReportMergeError("the report holds a finding without the fields run_audit.py writes; "
                                    "merge into an unedited report")
     coverage = report["coverage"]
-    if coverage.get("agent_corroboration_stage") == "ingested":
+    submitted = (coverage.get("agent_stage") or {}).get("submission_status") \
+        if isinstance(coverage.get("agent_stage"), dict) else None
+    if submitted in ("legacy", "envelope") or coverage.get("agent_corroboration_stage") in _MERGED_STAGES:
         raise ReportMergeError("agent findings were already merged into this report; merge into the report "
                                "the audit wrote")
     if not coverage.get("pages_analyzed"):
@@ -53,18 +72,31 @@ def _check_report(report):
                                "merged; run the audit again first")
 
 
-def merge_agent_findings(report, items, source=None):
-    """A new report: report with the raw agent entries in items merged in.
-    source names the agent findings file in coverage.agent_corroboration. The
-    input report is not changed. Raises ReportMergeError when the report cannot
-    take agent findings."""
-    _check_report(report)
-    items = list(items or ())
-    report = copy.deepcopy(report)
+def workflow_elapsed(timing, now):
+    """How long the whole host workflow took, from the audit's start to this
+    merge, against its target. Measured, not enforced: the agent stage runs in
+    the host. None when the report has no timing (written before it existed)."""
+    if not isinstance(timing, dict):
+        return None
+    try:
+        started = datetime.fromisoformat(timing["session_started_at"])
+        target = float(timing["workflow_target_s"])
+        agent_deadline = datetime.fromisoformat(timing["agent_deadline_at"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    elapsed = (now - started).total_seconds()
+    return {"workflow_elapsed_s": round(elapsed, 3), "workflow_target_s": target,
+            "within_workflow_target": elapsed <= target,
+            "after_agent_deadline": now > agent_deadline,
+            "core_elapsed_s": timing.get("core_elapsed_s"),
+            "measured": "from the audit start to this merge; the host agent's time is included but not enforced"}
+
+
+def _finish(report, added, record, info, strict_pages=False, warnings=(), limitations=()):
+    """report (a copy, changed in place) with added folded in and every derived
+    section rebuilt; record is the coverage.agent_stage block."""
     coverage = report["coverage"]
-    origin = coverage.get("audited_url") or report.get("site")
-    added = build_agent_findings(items, origin)
-    findings, folded = fold_into(report["findings"], added)
+    findings, folded = fold_into(report["findings"], added, strict_pages=strict_pages)
 
     prioritized = prioritize_findings(findings)
     for index, finding in enumerate(prioritized, 1):
@@ -73,17 +105,23 @@ def merge_agent_findings(report, items, source=None):
                                "pages_analyzed": coverage.get("pages_analyzed", 0),
                                "pages_discovered": coverage.get("pages_discovered", 0)}
 
-    coverage["agent_corroboration_stage"] = "ingested"
-    coverage["agent_corroboration"] = {
-        "merged_from": source, "merged_at": datetime.now(timezone.utc).isoformat(),
-        "findings_supplied": len(items), "findings_ingested": len(added),
-        "findings_folded_into_existing": folded, "findings_added": len(added) - folded,
-    }
+    coverage["agent_corroboration_stage"] = ("legacy_partial" if record["submission_status"] == "legacy"
+                                             else record["assessment_status"])
+    coverage["agent_stage"] = record
+    coverage["agent_checks_assessed"] = list(record["checks_assessed"])
+    now = datetime.now(timezone.utc)
+    coverage["agent_corroboration"] = dict(info, merged_at=now.isoformat(),
+                                           findings_ingested=len(added), findings_folded_into_existing=folded,
+                                           findings_added=len(added) - folded)
+    elapsed = workflow_elapsed(report.get("timing"), now)
+    if elapsed is not None:
+        coverage["agent_corroboration"]["workflow_timing"] = elapsed
     report["findings"] = prioritized
     report["recommendations"] = generate_recommendations([], prioritized)
-    report["warnings"] = [w for w in report.get("warnings") or () if w != NOT_SUPPLIED_WARNING]
+    report["warnings"] = [w for w in report.get("warnings") or () if w != NOT_SUPPLIED_WARNING] + list(warnings)
+    lifted = [_LIMITATION_OF_CHECK[c] for c in record["checks_assessed"] if c in _LIMITATION_OF_CHECK]
     report["limitations"] = [line for line in report.get("limitations") or ()
-                             if not any(mark in str(line) for mark in AGENT_STAGE_LIMITATION_MARKS)]
+                             if not any(mark in str(line) for mark in lifted)] + list(limitations)
     saved = report.get("whats_working")
     passed = [w for w in saved if isinstance(w, dict)] if isinstance(saved, list) else []
     for key in ("top_actions", "quick_wins", "whats_working"):
@@ -99,3 +137,43 @@ def merge_agent_findings(report, items, source=None):
     kept = [w for w in passed if not flagged & set(w.get("check_ids") or ())]
     validated["whats_working"] = [dict(w, id=f"W-{index:03d}") for index, w in enumerate(kept, 1)]
     return validated
+
+
+def merge_agent_findings(report, items, source=None):
+    """A new report: report with the raw legacy agent entries in items merged
+    in, as legacy_partial. source names the agent findings file in
+    coverage.agent_corroboration. The input report is not changed. Raises
+    ReportMergeError when the report cannot take agent findings."""
+    _check_report(report)
+    items = list(items or ())
+    report = copy.deepcopy(report)
+    origin = report["coverage"].get("audited_url") or report.get("site")
+    added = build_agent_findings(items, origin)
+    record = stage_record("legacy", legacy_checks(added))
+    info = {"merged_from": source, "submission": "legacy", "findings_supplied": len(items)}
+    return _finish(report, added, record, info, warnings=[LEGACY_WARNING])
+
+
+def merge_agent_envelope(report, envelope, packet, source=None, packet_source=None):
+    """A new report: report with the outcome envelope merged in. packet is the
+    evidence packet the same audit exported. The input report is not changed.
+    Raises ReportMergeError, with every reason, when the report cannot take it
+    or the envelope fails validation; nothing is merged then."""
+    _check_report(report)
+    try:
+        validated = validate_envelope(envelope, report, packet)
+    except EnvelopeError as exc:
+        raise ReportMergeError("the outcome envelope was rejected: " + "; ".join(exc.reasons)) from exc
+    report = copy.deepcopy(report)
+    checks = validated["checks"]
+    record = stage_record("envelope", checks, capabilities=validated["capabilities"],
+                          audit_id=report.get("audit_id"), snapshot_sha256=report.get("snapshot_sha256"))
+    warnings = [f"Agent check {c}: {r['severity_capped']}" for c, r in checks.items() if r.get("severity_capped")]
+    limitations = [f"Agent check {c} ({AG_CHECKS[c]['name']}) was not assessed: {r['reason']}"
+                   for c, r in checks.items() if r["outcome"] == "not_assessed"]
+    limitations += [f"Agent check {c} ({AG_CHECKS[c]['name']}) reported an error: {r['reason']}"
+                    for c, r in checks.items() if r["outcome"] == "error"]
+    info = {"merged_from": source, "evidence_packet": packet_source, "submission": "envelope",
+            "findings_supplied": sum(r["outcome"] == "finding" for r in checks.values())}
+    return _finish(report, validated["findings"], record, info, strict_pages=True,
+                   warnings=warnings, limitations=limitations)

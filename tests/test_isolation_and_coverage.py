@@ -90,7 +90,8 @@ def test_timeouts_are_counted_distinctly_from_other_failures():
 def test_retries_are_counted():
     base_url, shutdown = start_server(slow_delay_s=2.0)
     try:
-        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=2)
+        # /slow is the start URL: its critical timeout is short here too.
+        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, CRITICAL_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=2)
         deadline = make_deadline(limits)
         instrumentation = Instrumentation()
         acquire_site(base_url + "/slow", deadline, limits, instrumentation, allow_private_targets=True)
@@ -139,7 +140,7 @@ def test_error_pages_are_fetched_but_not_double_counted_as_analyzed():
 def test_timed_out_pages_are_categorized_separately_in_coverage():
     base_url, shutdown = start_server(slow_delay_s=2.0)
     try:
-        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
+        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, CRITICAL_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
         deadline = make_deadline(limits)
         artifacts = acquire_site(base_url + "/slow", deadline, limits, allow_private_targets=True)
         cov = artifacts.acquisition_metadata["coverage"]

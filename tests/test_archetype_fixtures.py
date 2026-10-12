@@ -38,8 +38,9 @@ _OFFLINE_ENV = {"SEARCH_API_URL": "", "SEARCH_API_KEY": "", "PAGESPEED_API_KEY":
 
 # check ID -> pages (paths) it must name; None means "any pages".
 EXPECTED = {
-    "spa": {"render-gap": {"/", "/pricing", "/about"}, "hash-routing": None, "no-jsonld": None,
-            "no-headings": None},
+    # A shell built by JavaScript adds its headings after load, so its raw HTML
+    # cannot show that headings are missing (ROUND5_PLAN T2.2): no no-headings.
+    "spa": {"render-gap": {"/", "/pricing", "/about"}, "hash-routing": None, "no-jsonld": None},
     "shop": {"page-type-schema-gap:product": {"/products/camp-stove"},
              "image-context-missing": {"/products/camp-stove"}},
     "local": {"local-business-incomplete": {"/"}, "location-markup-missing": None,
@@ -55,7 +56,7 @@ EXPECTED = {
 ABSENT = {
     # Pages built by JavaScript are not judged on what the bundle may build.
     "spa": {"site-search-missing", "context-retention-missing", "comparison-table-missing", "spec-list-missing",
-            "audience-segment-missing"},
+            "audience-segment-missing", "no-headings", "dead-ends", "no-internal-navigation"},
     "shop": {"site-search-missing", "spec-list-missing", "comparison-table-missing", "no-jsonld", "render-gap",
              "brand-definition", "page-type-schema-gap:home"},
     "local": {"page-type-schema-gap:home", "render-gap", "no-jsonld", "brand-definition"},

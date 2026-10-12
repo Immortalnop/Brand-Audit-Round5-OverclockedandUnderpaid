@@ -28,7 +28,7 @@ starting with "search", <link rel="search">, a link to /search) count as search.
 """
 import re
 from urllib.parse import urlsplit, parse_qsl
-from check_helpers import (commerce_evidence, eligible_pages, page_share, split_script_dependent,
+from check_helpers import (commerce_evidence, eligible_pages, page_share, site_kind, split_script_dependent,
                            script_dependent_warning)
 from models import make_finding, skill_result
 from structured_data import iter_nodes, types_of
@@ -99,10 +99,11 @@ def analyze_context_retention(artifacts, deadline):
         ))
 
     # A /category/ or /product path alone does not make a shop (a news site files
-    # audio by category); the sampled product and category pages must show
-    # something for sale: Product or Offer markup, a price or a buy control.
-    shop = [p for p in judged if p.page_type in ("product", "category")]
-    if not any(commerce_evidence(p) for p in shop):
+    # audio by category): each product or category page counted must itself show
+    # something for sale (Product or Offer markup, a price or a buy control). One
+    # article that quotes a price does not turn a publisher's pages into a shop.
+    shop = [p for p in judged if p.page_type in ("product", "category") and commerce_evidence(p)]
+    if site_kind(pages) == "publisher":
         shop = []
     def saved_state(p):
         f = p.features or {}

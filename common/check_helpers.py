@@ -12,6 +12,47 @@ def eligible_pages(artifacts):
             and not {'non_html_content', 'response_truncated_at_byte_budget', 'html_parse_incomplete'} & set(p.warnings)]
 
 
+# Page warnings meaning the delivered HTML was not read in full: a prefix can
+# prove that an observed tag exists, never that the page lacks one.
+PARTIAL_OBSERVATION_WARNINGS = frozenset({'response_truncated_at_byte_budget', 'html_parse_incomplete'})
+
+
+def page_observation(page):
+    """What one fetched page's observation can support. Keys:
+      status: 'complete', 'partial', 'non_html', 'http_error' or 'fetch_failed'
+      positive_facts: an observed tag, text or link is evidence (any 2xx HTML)
+      local_absence: the page's own HTML was read in full, so "this page lacks X
+        in its delivered HTML" holds
+      link_graph: local_absence, the link list was not cut at its cap, and the
+        page is not built by JavaScript, so its outgoing links are all known
+      script_dependent: the raw HTML is too thin to stand for the page
+      reasons: why an observation is limited (warning names, 'script_dependent')
+    Unanalyzed pages (login, challenge, waiting room) never reach artifacts.pages."""
+    warnings = set(page.warnings or ())
+    if page.status_code is None:
+        reasons = [w for w in page.warnings if w.startswith('fetch_')] or ['fetch_failed']
+        return {'status': 'fetch_failed', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': reasons}
+    if not 200 <= page.status_code < 300:
+        return {'status': 'http_error', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': [f'http_{page.status_code}']}
+    if 'non_html_content' in warnings:
+        return {'status': 'non_html', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': ['non_html_content']}
+    reasons = sorted(PARTIAL_OBSERVATION_WARNINGS & warnings)
+    complete = not reasons
+    # A snapshot built without HTML features (no parse observation at all) has
+    # no script evidence either way; an acquired page always has features.
+    built = bool(page.features) and script_dependent(page)
+    links_cut = 'link_list_truncated' in warnings
+    if links_cut:
+        reasons.append('link_list_truncated')
+    if built:
+        reasons.append('script_dependent')
+    return {'status': 'complete' if complete else 'partial', 'positive_facts': True, 'local_absence': complete,
+            'link_graph': complete and not links_cut and not built, 'script_dependent': built, 'reasons': reasons}
+
+
 # Visible raw-HTML text below which a page probably builds its content with
 # JavaScript. A single flat threshold would treat a contact page (legitimately
 # short: an address, a phone number, a form) the same as an article page, so it

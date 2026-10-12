@@ -1,10 +1,12 @@
 # Agent-stage checks (AG-01 to AG-06)
 
-These three checks are deliberately not automated. Each requires judging natural
-language, which a fixed threshold cannot do without producing false positives on
-unseen sites. The calling agent performs them and hands findings back; the
-entrypoint ingests them in-process and reconstructs each through the shared finding
-factory, so catalog wording and Invariant I-1 apply exactly as for script findings.
+These checks are deliberately not automated. Each requires judging natural
+language, viewing an image or searching sites that block scripts. The calling
+agent performs them from the audit's evidence packet and hands back one outcome
+per check (the outcome envelope, see SKILL.md); the entrypoint validates the
+evidence each check needs, caps severity at the ceiling below, and rebuilds each
+finding through the shared finding factory, so catalog wording and Invariant I-1
+apply exactly as for script findings. No agent check is critical.
 
 Catalog rule IDs used after ingest: AG-01 maps to about-concreteness, AG-02 to
 no-independent-mention, AG-03 to independent-contradiction, AG-04 to
@@ -18,7 +20,7 @@ facts-in-images, AG-05 to kg-namesake-ambiguity, AG-06 to review-platform-missin
   them nothing quotable, so they paraphrase from elsewhere and the description
   drifts. Register is not a defect; only missing substance fires.
 
-- AG-02 (low, confirmed) No independent mention of the brand found.
+- AG-02 (low, scoped to the searches run) No independent mention of the brand found.
   Fires only when a search actually ran and returned no independent mention.
   Mechanism: corroboration across unrelated sources is what makes a fact safe for
   an assistant to repeat; a brand discussed nowhere but its own site is a single
@@ -26,13 +28,17 @@ facts-in-images, AG-05 to kg-namesake-ambiguity, AG-06 to review-platform-missin
   normal for smaller and younger organizations, and is an opportunity rather than a
   fault.
 
-- AG-03 (high, confirmed) Independent sources contradict the site.
+- AG-03 (high only for a material conflict with an inspected source, else medium;
+  confirmed with two or more inspected source domains, else suspected)
+  Independent sources contradict the site.
   Fires when a specific independent source states something incompatible with the
   site claims: a different category, ownership, location, or a same-named different
   entity dominating results. Mechanism: when sources disagree, retrieval surfaces
   the discrepancy and confidence drops across every fact associated with the
   entity, including the ones that were correct. This is the most damaging of the
   three and the most frequently missed, because the site itself looks healthy.
+  A conflict does not show which source is wrong, so the action is to reconcile
+  it, not to change the site to match the external source.
 
 - AG-04 (medium, confirmed) Facts are drawn inside an image instead of stated in
   text. Fires when the agent views an image and sees a concrete fact (price,
@@ -65,14 +71,14 @@ facts-in-images, AG-05 to kg-namesake-ambiguity, AG-06 to review-platform-missin
   profiles, because review sites block automated clients, so the name search is
   this agent step.
 
-## The three-outcome rule
+## Outcomes
 
-Every corroboration search resolves to exactly one of: agrees (record in notes, no
-finding), absent (AG-02, confirmed), contradicts (AG-03, confirmed). A fourth
-state, could not check, is not one of the three: it is either supplied with status
-insufficient_evidence or not supplied at all, and the stage records not_supplied.
-Invariant I-1 caps any insufficient_evidence entry at low severity and relabels it
-advisory.
+Every check resolves to exactly one outcome: pass (assessed, nothing to report),
+finding (assessed, with the evidence the check needs), not_assessed (the
+capability was missing or the check was not run) or error. Corroboration
+searches map as: agrees (AG-02 and AG-03 pass), absent (AG-02 finding),
+contradicts (AG-03 finding). Could not check is not_assessed, never a pass and
+never absent. A check left out of the envelope is recorded as not_assessed.
 
 Collapsing could not check into absent is the single most common way an audit
 manufactures a false positive, because the search tool availability has nothing to

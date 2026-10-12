@@ -18,7 +18,7 @@ def search(query,max_results,timeout_s):
         headers={}
         if os.environ.get('SEARCH_API_KEY'):headers['Authorization']='Bearer '+os.environ['SEARCH_API_KEY']
         limits=replace(DEFAULT_LIMITS,MAX_TOTAL_BYTES=512_000,MAX_TOTAL_HTTP_REQUESTS=3,PER_FETCH_TIMEOUT_MS=int(timeout_s*1000))
-        tr=Transport(f'{p.scheme}://{p.netloc}',time.monotonic()+timeout_s,limits,Instrumentation())
+        tr=Transport(f'{p.scheme}://{p.netloc}',time.monotonic()+timeout_s,limits,Instrumentation(),pool='external',stage='search_provider')
         resp,status=tr.get(url,robots_exempt=True,headers=headers)
         if status!='ok' or not resp.ok or resp.truncated:raise SearchProviderError('Search response unavailable or incomplete')
         data=json.loads(resp.text)

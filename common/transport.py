@@ -11,6 +11,7 @@ import zlib
 from urllib.parse import urlsplit,urljoin
 from url_safety import classify_url,same_origin
 from tls_context import create_context
+import network_budget
 
 USER_AGENT='BrandAIReadinessAuditBot/2.0 (read-only audit)'
 
@@ -86,8 +87,12 @@ class Response:
     def ok(self):return 200<=self.status_code<300
 
 class Transport:
-    def __init__(self,origin,deadline,limits,instrumentation,allow_private=False):
+    def __init__(self,origin,deadline,limits,instrumentation,allow_private=False,*,budget=None,pool='site',stage='acquisition'):
+        """limits holds this transport's own ceilings. budget is the audit's shared
+        ledger (common/network_budget.py; the active one when not given), charged
+        in pool under the label stage, which a caller may change between requests."""
         self.origin=origin;self.deadline=deadline;self.limits=limits;self.i=instrumentation
+        self.budget=budget if budget is not None else network_budget.active();self.pool=pool;self.stage=stage
         self.allow_private=allow_private;self.bytes=0;self.requests=0;self.last_request=0.
         self.diagnostics=[];self._address_attempts={};self.tls_settings={}
         self.robots=None;self.delay=0. if allow_private else getattr(limits,'REQUEST_DELAY_S',.2)
@@ -105,8 +110,11 @@ class Transport:
         if len(self.diagnostics)<self.limits.MAX_TOTAL_HTTP_REQUESTS:
             self.diagnostics.append(item)
 
-    def get(self,url,*,robots_exempt=False,max_bytes=None,headers=None):
+    def get(self,url,*,robots_exempt=False,max_bytes=None,headers=None,timeout_ms=None):
+        """timeout_ms overrides PER_FETCH_TIMEOUT_MS for this request (robots.txt
+        and the start URL); the transport deadline still caps it."""
         network_elapsed=0.0
+        per_fetch_s=(timeout_ms if timeout_ms is not None else self.limits.PER_FETCH_TIMEOUT_MS)/1000
         for hops in range(6):
             if time.monotonic()>=self.deadline:return None,'deadline'
             if self.bytes>=self.limits.MAX_TOTAL_BYTES or self.requests>=self.limits.MAX_TOTAL_HTTP_REQUESTS:
@@ -129,7 +137,14 @@ class Transport:
             remaining=self.limits.MAX_TOTAL_BYTES-self.bytes
             cap=min(remaining,max_bytes if max_bytes is not None else getattr(self.limits,'MAX_RESPONSE_BYTES',1_500_000))
             if cap<=0:return None,'budget_exhausted'
-            timeout=min(self.limits.PER_FETCH_TIMEOUT_MS/1000,max(.001,self.deadline-time.monotonic()))
+            # The shared ledger reserves the request and its byte cap before anything is sent.
+            granted=0
+            if self.budget is not None:
+                granted=self.budget.reserve(self.pool,self.stage,cap)
+                if granted<=0:
+                    self.i.record_skip('global_request_or_byte_budget');return None,'budget_exhausted'
+                cap=granted
+            timeout=min(per_fetch_s,max(.001,self.deadline-time.monotonic()))
             end=min(self.deadline,time.monotonic()+timeout)
             p=urlsplit(url);port=p.port or (443 if p.scheme=='https' else 80)
             conn=http.client.HTTPConnection(p.hostname,port,timeout=timeout)
@@ -226,6 +241,7 @@ class Transport:
                 self.bytes+=max(wire,size);self.i.record_request(False,max(wire,size),timed_out=category=='timeout');return None,category
             # Connections and sockets are always closed, including failed handshakes.
             finally:
+                if granted:self.budget.settle(self.pool,self.stage,granted,max(wire,size))
                 timer.cancel()
                 timer.join(.1)
                 conn.close()

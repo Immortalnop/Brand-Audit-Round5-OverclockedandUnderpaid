@@ -21,6 +21,10 @@ Writes, in out_dir (default benchmark_runs/):
     findings.csv    one row per finding, with an empty "label" column to fill
                     with tp (a real problem), fp (not a problem) or irrelevant
                     (true but not worth reporting for this kind of site).
+    runs.json       one record per site, failed ones included: when it ran,
+                    measured wall time, execution status, pages analyzed,
+                    requests and bytes from coverage.network_budget, and the
+                    code version. Live sites change, so a rerun may differ.
 Score a labelled file with tests/score_benchmark.py. Tune rules on dev rows
 only; score holdout rows once, at the end.
 """
@@ -29,6 +33,8 @@ import json
 import os
 import re
 import sys
+import time
+from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -72,6 +78,18 @@ def finding_rows(split, report):
     return rows
 
 
+def run_record(split, url, report, started_at, wall_seconds):
+    """What one audit cost and how far it got, for the completion and runtime summary."""
+    coverage = report.get("coverage") or {}
+    budget = coverage.get("network_budget") or {}
+    return {"split": split, "site": url, "started_at": started_at, "wall_seconds": round(wall_seconds, 1),
+            "runtime_seconds": coverage.get("runtime_seconds"),
+            "execution_status": report.get("execution_status"),
+            "pages_analyzed": coverage.get("pages_analyzed", 0),
+            "requests": budget.get("total_requests"), "bytes": budget.get("total_bytes"),
+            "findings": len(report.get("findings") or ()), "code_version": report.get("code_version")}
+
+
 def _file_name(url):
     host = urlsplit(url if "://" in url else "https://" + url).hostname or "site"
     return re.sub(r"[^a-z0-9.-]", "_", host.lower()) + ".json"
@@ -87,17 +105,24 @@ def main(argv):
     out_dir = argv[2] if len(argv) > 2 else os.path.join(_ROOT, "benchmark_runs")
     os.makedirs(out_dir, exist_ok=True)
     from run_audit import run_audit
-    rows = []
+    rows, runs = [], []
     for split, url in read_sites(argv[1]):
         print(f"[benchmark] {split}: auditing {url}", file=sys.stderr)
+        started_at, started = datetime.now(timezone.utc).isoformat(), time.monotonic()
         try:
             report = run_audit(url)
         except Exception as exc:  # one failed site must not stop the batch
             print(f"[benchmark] {url}: audit failed ({type(exc).__name__}: {exc})", file=sys.stderr)
+            runs.append({"split": split, "site": url, "started_at": started_at,
+                         "wall_seconds": round(time.monotonic() - started, 1),
+                         "execution_status": "runner_error", "error": f"{type(exc).__name__}: {exc}"})
             continue
+        runs.append(run_record(split, url, report, started_at, time.monotonic() - started))
         with open(os.path.join(out_dir, _file_name(url)), "w", encoding="utf-8") as handle:
             json.dump(report, handle, indent=2, ensure_ascii=False)
         rows.extend(finding_rows(split, report))
+        with open(os.path.join(out_dir, "runs.json"), "w", encoding="utf-8") as handle:
+            json.dump(runs, handle, indent=2)
     path = os.path.join(out_dir, "findings.csv")
     with open(path, "w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS)

@@ -235,6 +235,7 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
                                                            "rest of the site was not analyzed)"),
             evidence=[{"type": "date", "description": _describe(f), "urls": [f["source"]]}
                       for f in facts_in_category[:5]],
+            affected_pages=sorted({f["source"] for f in facts_in_category if f.get("source")}),
             suggested_action={
                 "summary": f"Review and refresh outdated {label}",
                 "steps": [f"Audit pages with old {label}", "Update or remove stale references"],

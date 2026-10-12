@@ -45,6 +45,7 @@ _FINDING_STATUS_TEXT = {
     "not_applicable": "not applicable",
     "analysis_failed": "analysis failed",
 }
+_TYPE_TEXT = {"defect": "Defect", "proactive_improvement": "Improvement opportunity"}
 _SNIPPET_LANG = {"json-ld": "html", "jsonld": "html", "json": "json", "html": "html", "markdown": "markdown",
                  "text": "text", "txt": "text"}
 # Characters with a meaning inside a line of Markdown: emphasis, code, links,
@@ -150,8 +151,21 @@ def _header(report):
         lines.append(f"- **Login pages left out:** {text(cov['pages_out_of_scope'])}")
     if cov.get("pages_challenged"):
         lines.append(f"- **Pages that answered with a bot challenge:** {text(cov['pages_challenged'])}")
+    if cov.get("pages_partially_observed"):
+        lines.append(f"- **Pages read only in part:** {text(cov['pages_partially_observed'])} (checks that need the "
+                     "whole page skip them)")
     if isinstance(cov.get("runtime_seconds"), (int, float)):
         lines.append(f"- **Run time:** {_num(cov['runtime_seconds'], 1)} seconds")
+    timing = _dict(report.get("timing"))
+    if isinstance(timing.get("core_limit_s"), (int, float)):
+        lines.append(f"- **Time limits:** audit worker stopped at {_num(timing['core_limit_s'], 0)} seconds "
+                     f"(enforced); {_num(timing.get('agent_time_left_s', 0), 0)} seconds left for the "
+                     f"optional agent stage (not enforced by the audit)")
+    budget = _dict(cov.get("network_budget"))
+    site_pool = _dict(_dict(budget.get("pools")).get("site"))
+    if isinstance(site_pool.get("requests"), int):
+        lines.append(f"- **Requests to the site:** {text(site_pool['requests'])} of at most "
+                     f"{text(site_pool.get('max_requests'))}")
     lines.append("")
     lines.append("This report checks a sample of pages from outside, the way an AI assistant or crawler sees "
                  "the site. It changes nothing on the site.")
@@ -205,15 +219,17 @@ def _plan(report):
     top = [t for t in _list(report.get("top_actions")) if isinstance(t, dict)]
     wins = [w for w in _list(report.get("quick_wins")) if isinstance(w, dict)]
     lines = []
-    if top:
-        start = next((t for t in top if t.get("start_here")), top[0])
+    # Start here is shown only when the report marks one: a confirmed defect.
+    start = next((t for t in top if t.get("start_here")), None)
+    if start:
         lines += ["## Start here", "",
                   f"**{text(start.get('finding_id'), 20)}: {text(start.get('title'), 300)}**", ""]
         if start.get("summary"):
             lines += [para(start["summary"], 600), ""]
         lines += [f"Impact {text(start.get('impact', 'n/a'))}, effort {text(start.get('effort', 'n/a'))}. "
                   f"Details are under {text(start.get('finding_id'), 20)} below.", ""]
-        lines += ["## Top actions", "", "| # | Finding | Action | Priority | Impact | Effort | Quick win |",
+    if top:
+        lines += ["## Top actions", "", "Defects only; improvement opportunities are listed with the findings.", "", "| # | Finding | Action | Priority | Impact | Effort | Quick win |",
                   "| --- | --- | --- | --- | --- | --- | --- |"]
         for n, t in enumerate(top, 1):
             lines.append(f"| {n} | {_cell(t.get('finding_id'), 20)}: {_cell(t.get('title'))} | "
@@ -232,9 +248,11 @@ def _plan(report):
 def _findings_table(findings):
     if not findings:
         return []
-    lines = ["## All findings", "", "| ID | Severity | Status | Finding | Pages |", "| --- | --- | --- | --- | --- |"]
+    lines = ["## All findings", "", "| ID | Type | Severity | Status | Finding | Pages |",
+             "| --- | --- | --- | --- | --- | --- |"]
     for f in findings:
-        lines.append(f"| {_cell(f.get('id'), 20)} | {_cell(f.get('severity'))} | "
+        lines.append(f"| {_cell(f.get('id'), 20)} | {_cell(_TYPE_TEXT.get(f.get('finding_type'), f.get('finding_type')))} | "
+                     f"{_cell(f.get('severity'))} | "
                      f"{_cell(_FINDING_STATUS_TEXT.get(f.get('status'), f.get('status')))} | {_cell(f.get('title'), 300)} | "
                      f"{len(_list(f.get('affected_pages')))} |")
     lines.append("")
@@ -311,7 +329,8 @@ def _action(action):
 
 def _finding_detail(f):
     lines = [f"### {text(f.get('id'), 20)}: {text(f.get('title'), 300)}", ""]
-    facts = [f"Severity: {text(f.get('severity'), 20)}",
+    facts = [f"Type: {text(_TYPE_TEXT.get(f.get('finding_type'), f.get('finding_type')), 40)}",
+             f"Severity: {text(f.get('severity'), 20)}",
              f"Status: {text(_FINDING_STATUS_TEXT.get(f.get('status'), f.get('status')), 60)}",
              f"Confidence: {_num(f.get('confidence'))}"]
     if f.get("check_id"):
@@ -358,6 +377,37 @@ def _whats_working(report):
     return lines + [""]
 
 
+# Names of the agent checks (common/agent_evidence.AG_CHECKS), kept here so the
+# renderer imports only the standard library.
+_AG_NAMES = {"AG-01": "About-page concreteness", "AG-02": "Independent mentions",
+             "AG-03": "Independent contradiction", "AG-04": "Facts drawn inside images",
+             "AG-05": "Namesake ambiguity", "AG-06": "Review and profile opportunity"}
+_OUTCOME_TEXT = {"pass": "passed", "finding": "finding reported", "not_assessed": "not assessed",
+                 "error": "error"}
+_SUBMISSION_TEXT = {"not_supplied": "not supplied", "legacy": "legacy findings list (assesses no check)",
+                    "envelope": "outcome envelope"}
+
+
+def _agent_stage(report):
+    """What the optional agent stage received and assessed, check by check."""
+    stage = _dict(_dict(report.get("coverage")).get("agent_stage"))
+    checks = _dict(stage.get("checks"))
+    if not stage or not checks:
+        return []
+    lines = ["## Agent checks", "",
+             f"Received: {text(_SUBMISSION_TEXT.get(stage.get('submission_status'), stage.get('submission_status')), 80)}. "
+             f"Assessed: {text(stage.get('assessed_count', 0))} of {text(len(checks))} "
+             f"({text(stage.get('assessment_status') or 'not_run', 40)}). A check that was not assessed is not a pass.",
+             "", "| Check | Outcome | Reason |", "| --- | --- | --- |"]
+    for check_id in sorted(checks):
+        record = _dict(checks[check_id])
+        name = _AG_NAMES.get(check_id)
+        label = f"{check_id} {name}" if name else check_id
+        lines.append(f"| {_cell(label, 80)} | {_cell(_OUTCOME_TEXT.get(record.get('outcome'), record.get('outcome')))} | "
+                     f"{_cell(record.get('reason'), 400)} |")
+    return lines + [""]
+
+
 def _not_checked(report):
     cov = _dict(report.get("coverage"))
     limitations = [x for x in _list(report.get("limitations")) if x]
@@ -388,7 +438,7 @@ def render(report):
         lines += ["## Finding details", ""]
         for f in findings:
             lines += _finding_detail(f)
-    lines += _recommendations(report, findings) + _whats_working(report) + _not_checked(report)
+    lines += _recommendations(report, findings) + _whats_working(report) + _agent_stage(report) + _not_checked(report)
     lines += ["---", "", "Generated from the JSON audit report by common/report_markdown.py. Findings describe the "
                          "sampled pages; the JSON report holds every detail."]
     out = "\n".join(lines)

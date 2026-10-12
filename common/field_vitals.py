@@ -87,7 +87,8 @@ def parse_response(data):
 def _api_transport(origin, deadline_monotonic, limits):
     bounded = replace(limits, MAX_TOTAL_HTTP_REQUESTS=3, MAX_TOTAL_BYTES=ROBOTS_MAX_BYTES + _MAX_BYTES,
                       MAX_RESPONSE_BYTES=_MAX_BYTES, PER_FETCH_TIMEOUT_MS=int(_BUDGET_S * 1000))
-    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False)
+    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False,
+                     pool="external", stage="pagespeed_api")
 
 
 def fetch_field_vitals(url, deadline_monotonic, limits, instrumentation=None, transport_factory=None):

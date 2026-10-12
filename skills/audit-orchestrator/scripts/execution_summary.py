@@ -39,6 +39,17 @@ AG06_NOT_SUPPLIED = "the agent stage (AG-06) was not supplied"
 AGENT_STAGE_LIMITATION_MARKS = (AG04_NOT_SUPPLIED, AG05_NOT_SUPPLIED, AG06_NOT_SUPPLIED)
 
 
+def agent_check_assessed(coverage: dict, check: str) -> bool:
+    """True when the agent stage actually assessed check (a pass or a finding
+    under the outcome envelope's evidence contract). A legacy findings array
+    assesses nothing. Reports written before per-check outcomes recorded only
+    agent_corroboration_stage "ingested", which is read as before."""
+    assessed = coverage.get("agent_checks_assessed")
+    if isinstance(assessed, list):
+        return check in assessed
+    return coverage.get("agent_corroboration_stage") == "ingested"
+
+
 def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_status: str) -> list:
     """Plain-English limitations. Each line is gated on a real signal from this
     run -- nothing here is boilerplate that runs regardless of what happened, and
@@ -50,6 +61,29 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     if isinstance(failure, dict) and failure.get("detail"):
         # Leads the list: it explains everything else in the report.
         out.append(failure["detail"] + " " + _FAILURE_ADVICE.get(failure.get("reason"), _FAILURE_ADVICE_DEFAULT))
+
+    if coverage.get("pages_waiting_room", 0) > 0 and not failure:
+        out.append(
+            f"{coverage['pages_waiting_room']} page(s) answered with a waiting-room or queue page instead of content "
+            f"(see coverage.waiting_room_pages); they were not analyzed, and the audit does not retry, wait out or get "
+            f"around queues."
+            + (" The crawl stopped there." if coverage.get("crawl_stopped_by_waiting_room") else "")
+        )
+
+    if coverage.get("pages_partially_observed", 0) > 0:
+        out.append(
+            f"{coverage['pages_partially_observed']} analyzed page(s) were not read in full (the response was cut by "
+            f"the byte budget or the HTML could not be parsed to the end); what was observed on them counts, but no "
+            f"check concludes from them that something is missing."
+        )
+
+    if coverage.get("discovery_reliable") == "unknown" and coverage.get("pages_analyzed"):
+        out.append(
+            "How many pages the site has is unknown: "
+            + ("no sitemap was available, so " if coverage.get("sitemap_status") not in ("ok",) else "")
+            + "URLs were found by following links from the pages fetched. Findings speak for the "
+            + f"{coverage.get('pages_discovered', 0)} discovered URL(s), not for pages the crawl did not find."
+        )
 
     if coverage.get("pages_challenged", 0) > 0 and not failure:
         out.append(
@@ -121,7 +155,7 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
     media = coverage.get("non_text_media") or {}
     unread_raster = [e for e in (getattr(artifacts, "media_data", None) or {}).get("images", ())
                      if e.get("keywords") and e.get("svg_status") != "ok"]
-    if unread_raster and coverage.get("agent_corroboration_stage") != "ingested":
+    if unread_raster and not agent_check_assessed(coverage, "AG-04"):
         out.append(
             f"{len(unread_raster)} image(s) whose file name or alt text suggests prices, hours or "
             f"specifications were not read: the scripts never interpret raster pixels, and {AG04_NOT_SUPPLIED}, "
@@ -142,7 +176,7 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
             f"(lookup {kg['lookup']}; see coverage.knowledge_graph), so a mismatch with the brand was not "
             "ruled out."
         )
-    if kg.get("organization_pages") and coverage.get("agent_corroboration_stage") != "ingested":
+    if kg.get("organization_pages") and not agent_check_assessed(coverage, "AG-05"):
         out.append(
             "No search for same-named knowledge-graph entities was run: robots.txt for Wikidata and "
             "Wikipedia disallows their search endpoints, so " + AG05_NOT_SUPPLIED + "; namesake ambiguity is "
@@ -163,7 +197,7 @@ def derive_limitations(artifacts, capabilities: dict, coverage: dict, execution_
         )
     if off_site.get("review_platform_search") == "not_run" and not off_site.get("review_platforms_linked") \
             and off_site.get("business_kind") != "public" \
-            and coverage.get("agent_corroboration_stage") != "ingested":
+            and not agent_check_assessed(coverage, "AG-06"):
         out.append(
             "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not "
             "searched for the brand: they block automated clients, no search provider was configured, and "
@@ -240,6 +274,8 @@ _FAILURE_ADVICE_DEFAULT = ("Only checks that read robots.txt, llms.txt, the site
 _FAILURE_ADVICE = {
     "blocked_by_challenge": "Bot protection decides which clients may read the site; AI crawlers that are "
                             "challenged the same way cannot read it either. " + _FAILURE_ADVICE_DEFAULT,
+    "waiting_room": "The site was serving a queue page, usually during high traffic; run the audit again later. "
+                    "The audit never waits out or gets around a queue. " + _FAILURE_ADVICE_DEFAULT,
     "robots_disallowed": "The audit obeys robots.txt and fetched nothing it disallows. " + _FAILURE_ADVICE_DEFAULT,
     "cross_origin_redirect": "Run the audit on the URL the site redirects to. " + _FAILURE_ADVICE_DEFAULT,
     "login_page": "Audit a public page such as the home page. " + _FAILURE_ADVICE_DEFAULT,
@@ -266,11 +302,18 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
             sample_size (pages analyzed / min(pages discovered, 30)).
         Without section counts (an older or partial coverage block) it is
         crawl_completeness alone.
+        It is capped at _UNRELIABLE_DISCOVERY_CAP unless discovery_reliable is
+        true (discovery_state): a sample cannot speak for the whole site at 1.0
+        when the site's size is unknown.
+      - observation_completeness: the pages the audit tried to read that it read
+        in full (observation_completeness). A truncated or challenged page never
+        yields full assurance.
       - an execution penalty: 1.0 normally, 0.7 if the run completed with
         timeouts or was degraded, 0.4 if the deadline was reached before
         finishing
-    take the minimum, not an average, because either one being poor should pull
-    overall confidence down.
+    take the minimum, not an average, because any one being poor should pull
+    overall confidence down. The score is a heuristic, not a calibrated
+    probability.
 
     Brand identity is reported beside the score (components and reasons), not
     inside it. A site with no Organization markup gets that as a finding; it does
@@ -298,6 +341,12 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
         sample_size = min(1.0, analyzed / max(1, min(discovered, _ADEQUATE_SAMPLE_PAGES)))
         representativeness = max(crawl_completeness, min(section_coverage, sample_size))
         components.update(section_coverage=round(section_coverage, 2), sample_size=round(sample_size, 2))
+    # Discovered URLs are a full list of the site only when discovery is known to
+    # be reliable; otherwise the sample cannot speak for the whole site at 1.0.
+    discovery = coverage.get("discovery_reliable", True)
+    if discovery is not True:
+        representativeness = min(representativeness, _UNRELIABLE_DISCOVERY_CAP)
+    observation = observation_completeness(coverage)
     identity_confidence = coverage.get("identity_confidence", 0.0)
     execution_penalty = {
         "completed": 1.0, "completed_with_timeouts": 0.7,
@@ -306,28 +355,35 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
         "insufficient_evidence": 0.0,
     }.get(execution_status, 0.5)
 
-    score = min(representativeness, execution_penalty)
+    score = min(representativeness, observation, execution_penalty)
     components.update(sample_representativeness=round(representativeness, 2),
+                      observation_completeness=round(observation, 2),
                       identity_confidence=round(identity_confidence, 2),
                       execution_penalty=round(execution_penalty, 2))
     parts = {"execution_penalty": execution_penalty,
+             "observation_completeness": observation,
              "sample_representativeness": representativeness}
     reasons = {
         "sample_representativeness": _sample_reason(coverage, representativeness),
+        "observation_completeness": _observation_reason(coverage, observation),
         "identity_confidence": _identity_reason(coverage, identity_confidence),
         "execution_penalty": _execution_reason(execution_status, coverage),
     }
     # The part that sets the score. On a tie the more basic cause is named first:
-    # an unfinished run, then a thin sample.
+    # an unfinished run, then pages not read in full, then a thin sample.
     limiting = min(parts, key=lambda name: (parts[name], _PART_ORDER.index(name)))
     return {
         "score": round(score, 2),
         "level": confidence_level(score),
-        "method": "min(sample_representativeness, execution_penalty), where "
-                  "sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)) and "
-                  "crawl_completeness = pages_analyzed / pages_discovered; a weak link caps the score rather than "
-                  "being averaged out. identity_confidence is reported beside the score, not in it: it gates only "
-                  "the checks that depend on the brand's identity",
+        "method": "min(sample_representativeness, observation_completeness, execution_penalty), where "
+                  "sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)), capped "
+                  f"at {_UNRELIABLE_DISCOVERY_CAP} unless discovery_reliable is true, and crawl_completeness = "
+                  "pages_analyzed / pages_discovered; observation_completeness = (pages read in full + half of pages "
+                  "read in part) / (pages analyzed + challenged, waiting-room, timed-out and failed fetches). A weak "
+                  "link caps the score rather than being averaged out. identity_confidence is reported beside the "
+                  "score, not in it: it gates only the checks that depend on the brand's identity",
+        "interpretation": "A heuristic rating of how far the report speaks for the whole site, not a calibrated "
+                          "probability. Each finding states its own confidence.",
         "components": components,
         "limiting_factor": limiting,
         "reasons": reasons,
@@ -338,11 +394,71 @@ def overall_confidence(coverage: dict, execution_status: str) -> dict:
 
 # Pages enough to see each repeated template more than once on a typical site.
 _ADEQUATE_SAMPLE_PAGES = 30
+# Highest sample_representativeness when the discovered URLs are not known to
+# list the site (no or partial sitemap, URLs left unfetched). A heuristic bound.
+_UNRELIABLE_DISCOVERY_CAP = 0.9
+# Weight of a page read only in part (cut by the byte budget or the parser):
+# what was observed on it counts, absences on it do not.
+_PARTIAL_PAGE_WEIGHT = 0.5
+
+
+def discovery_state(coverage):
+    """{discovery_reliable, coverage_scope} for a coverage block.
+
+    discovery_reliable is False when the crawl is known to have missed URLs (some
+    were left unfetched, a crawl limit was reached, the sitemap was cut by its
+    read limit, could not be read or parsed, or a challenge or waiting room
+    stopped the crawl); True only when a fully read sitemap and the crawl agree
+    and every discovered URL was fetched and read in full; "unknown" otherwise
+    (for example no sitemap, so the site's size is unknown even when every known
+    URL was fetched). A readable sitemap alone never makes it True.
+
+    coverage_scope says what the findings speak for: "none" (no page analyzed),
+    "all_discovered_urls" (every discovered URL fetched and read in full) or
+    "sample"."""
+    analyzed = coverage.get("pages_analyzed", 0)
+    never = coverage.get("pages_never_attempted", 0)
+    unread = (coverage.get("pages_partially_observed", 0) + coverage.get("pages_challenged", 0)
+              + coverage.get("pages_waiting_room", 0) + coverage.get("pages_timed_out", 0)
+              + coverage.get("pages_failed_other", 0))
+    stopped = coverage.get("crawl_stopped_by_challenge") or coverage.get("crawl_stopped_by_waiting_room")
+    sitemap = coverage.get("sitemap_status")
+    if never > 0 or coverage.get("crawl_limit_reached") or coverage.get("sitemap_partial") or stopped \
+            or sitemap in ("malformed", "inaccessible", "blocked", "timeout"):
+        reliable = False
+    elif sitemap == "ok" and not unread:
+        reliable = True
+    else:
+        reliable = "unknown"
+    if not analyzed:
+        scope = "none"
+    elif never == 0 and not unread and not stopped:
+        scope = "all_discovered_urls"
+    else:
+        scope = "sample"
+    return {"discovery_reliable": reliable, "coverage_scope": scope}
+
+
+def observation_completeness(coverage):
+    """Share of the pages the audit tried to read that it read in full: pages
+    read in part count half, and challenged, waiting-room, timed-out and failed
+    fetches count as unread. 1.0 when nothing was attempted (the sample part of
+    the score covers that case)."""
+    analyzed = coverage.get("pages_analyzed", 0)
+    partial = min(analyzed, coverage.get("pages_partially_observed", 0))
+    unread = (coverage.get("pages_challenged", 0) + coverage.get("pages_waiting_room", 0)
+              + coverage.get("pages_timed_out", 0) + coverage.get("pages_failed_other", 0))
+    attempted = analyzed + unread
+    if attempted <= 0:
+        return 1.0
+    return round(((analyzed - partial) + _PARTIAL_PAGE_WEIGHT * partial) / attempted, 3)
+
 
 # A part at or above this value does not need explaining as a weakness.
 _STRONG_PART = 0.8
-_PART_ORDER = ("execution_penalty", "sample_representativeness", "identity_confidence")
+_PART_ORDER = ("execution_penalty", "observation_completeness", "sample_representativeness", "identity_confidence")
 _PART_LABELS = {"execution_penalty": "the audit run", "sample_representativeness": "the page sample",
+                "observation_completeness": "how fully the pages were read",
                 "identity_confidence": "the brand identity"}
 
 _IDENTITY_REASONS = {
@@ -400,9 +516,29 @@ def _sample_reason(coverage, value):
     if coverage.get("sections_discovered"):
         detail += (f" and reached {coverage.get('sections_analyzed', 0)} of {coverage['sections_discovered']} "
                    f"site section(s)")
+    discovery = coverage.get("discovery_reliable", True)
+    if discovery == "unknown":
+        detail += "; how many pages the site has is unknown, so the discovered URLs may not be all of it"
+    elif discovery is False:
+        detail += "; the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched)"
     if value >= _STRONG_PART:
         return "The page sample stands for the site well: " + detail + "."
     return "The page sample is small or one-sided: " + detail + "."
+
+
+def _observation_reason(coverage, value):
+    partial = coverage.get("pages_partially_observed", 0)
+    unread = (coverage.get("pages_challenged", 0) + coverage.get("pages_waiting_room", 0)
+              + coverage.get("pages_timed_out", 0) + coverage.get("pages_failed_other", 0))
+    if not partial and not unread:
+        return "Every page the audit tried to read was read in full."
+    parts = []
+    if partial:
+        parts.append(f"{partial} analyzed page(s) were read only in part")
+    if unread:
+        parts.append(f"{unread} fetch(es) returned no readable content (a challenge, waiting room, timeout or "
+                     f"failure)")
+    return "Not every page was read in full: " + "; ".join(parts) + "."
 
 
 def _identity_reason(coverage, value):
@@ -437,9 +573,9 @@ def _weak_parts(parts, coverage):
 def _explanation(score, limiting, weak, reasons, identity_confidence=None):
     text = f"Confidence is {confidence_level(score)} ({score:.2f})."
     if score >= _STRONG_PART and not weak:
-        text += " The page sample and the audit run both hold up."
+        text += " The page sample, the page reads and the audit run all hold up."
     else:
-        text += (f" The weaker of its two parts sets the score, here {_PART_LABELS[limiting]}. "
+        text += (f" The weakest of its parts sets the score, here {_PART_LABELS[limiting]}. "
                  f"{reasons[limiting]}")
         others = [reasons[name] for name in _PART_ORDER if name != limiting and name in weak]
         if others:

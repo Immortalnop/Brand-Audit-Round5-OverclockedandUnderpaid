@@ -85,7 +85,12 @@ def test_suggested_base_confidence_never_exceeds_measured_precision():
     suggested = score_benchmark.suggest_base_confidence(rows)
     assert suggested["a"] == (0.7, 0.7, 10)
     assert "b" not in suggested  # too few labelled rows
-    assert suggested["c"] == (0.5, 0.0, 5) and suggested["d"] == (0.9, 1.0, 5)
+    # Below 0.5 precision a rule is flagged for repair or suppression, never floored at 0.5.
+    assert suggested["c"] == (None, 0.0, 5) and suggested["d"] == (0.9, 1.0, 5)
+    basis = score_benchmark.rule_basis(rows)
+    assert basis["c"]["repair_or_suppress"] and basis["c"]["fp"] == 5
+    assert basis["a"] == {"labelled": 10, "tp": 7, "fp": 3, "irrelevant": 0, "sites": 0, "suggested": 0.7,
+                          "repair_or_suppress": False}
 
 
 def test_fixture_recall_is_complete():
