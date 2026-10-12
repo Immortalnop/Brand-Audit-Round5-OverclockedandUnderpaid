@@ -1115,3 +1115,68 @@ def test_a12_documentation_scopes_the_stages_that_make_requests():
     assert "reserves from what is left" in skill
     policy = (ROOT / "skills/audit-orchestrator/references/execution-policy.md").read_text()
     assert "never as a confirmed" in policy
+
+
+# ---------------------------------------------- A13 benchmark export and scope
+def test_a13_export_covers_every_user_visible_item():
+    """The CSV writer iterated report.findings only, so anything the scorer moved
+    into the hygiene appendix was never labelled and never counted -- which lets
+    a headline precision figure improve by reclassifying a questionable output
+    instead of fixing it."""
+    import live_benchmark
+    report = {"site": SITE,
+              "findings": [{"id": "F-001", "check_id": "h1", "severity": "low", "status": "suspected",
+                            "confidence": 0.7, "finding_type": "proactive_improvement", "tier": "core",
+                            "affected_pages": [SITE + "x"], "title": "core item", "evidence_text": "E"}],
+              "hygiene_findings": [{"id": "H-001", "check_id": "title-length", "severity": "low",
+                                    "status": "confirmed", "confidence": 0.8, "tier": "hygiene",
+                                    "finding_type": "proactive_improvement", "affected_pages": [],
+                                    "title": "hygiene item", "evidence_text": "E"}],
+              "recommendations": [{"id": "R-001", "check_id": "baseline:engagement", "severity": "low",
+                                   "status": "suspected", "confidence": 0.5, "finding_type": "proactive_improvement",
+                                   "affected_pages": [], "title": "rec item", "evidence_text": "E"}]}
+    rows = live_benchmark.finding_rows("holdout", report)
+    assert [r["section"] for r in rows] == ["core", "hygiene", "recommendation"]
+    assert [r["title"] for r in rows] == ["core item", "hygiene item", "rec item"]
+    assert all(r["label"] == "" for r in rows)
+    assert {"section", "tier"} <= set(live_benchmark.FIELDS)
+    assert all(set(r) == set(live_benchmark.FIELDS) for r in rows)
+
+
+def test_a13_precision_is_named_and_scoped_by_section(tmp_path):
+    import csv
+    import live_benchmark
+    import score_benchmark
+    rows = [
+        {"split": "dev", "section": "core", "check_ids": "a", "severity": "high", "confidence": 0.9, "label": "tp"},
+        {"split": "dev", "section": "core", "check_ids": "a", "severity": "low", "confidence": 0.6, "label": "fp"},
+        {"split": "dev", "section": "hygiene", "check_ids": "b", "severity": "low", "confidence": 0.6, "label": "fp"},
+        {"split": "dev", "section": "hygiene", "check_ids": "b", "severity": "low", "confidence": 0.6, "label": "fp"},
+        {"split": "dev", "section": "recommendation", "check_ids": "c", "severity": "low", "confidence": 0.5,
+         "label": "tp"},
+    ]
+    path = tmp_path / "findings.csv"
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=live_benchmark.FIELDS)
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({k: r.get(k, "") for k in live_benchmark.FIELDS})
+    result = score_benchmark.score(score_benchmark.load_rows(str(path), "dev"))
+    # The headline covers core AND hygiene: 1 tp out of 4 findings.
+    assert result["scope"] == "core findings + hygiene appendix"
+    assert result["labelled"] == 4 and result["precision"] == 0.25
+    assert result["core_precision"] == 0.5 and result["hygiene_precision"] == 0.0
+    # Recommendations are scored apart and never inflate the defect figure.
+    assert result["recommendations_labelled"] == 1 and result["recommendations_precision"] == 1.0
+    assert result["sections_present"] == ["core", "hygiene", "recommendation"]
+    # Per-check precision and ECE cover the findings, not the recommendations.
+    assert [cid for cid, _, _ in result["per_check"]] == ["b", "a"]
+
+
+def test_a13_rows_without_a_section_column_are_scored_as_core():
+    import score_benchmark
+    result = score_benchmark.score([
+        {"check_ids": "a", "severity": "low", "confidence": 0.6, "label": "tp"},
+        {"check_ids": "a", "severity": "low", "confidence": 0.6, "label": "fp"}])
+    assert result["labelled"] == 2 and result["core_labelled"] == 2
+    assert result["sections_present"] == ["core"]

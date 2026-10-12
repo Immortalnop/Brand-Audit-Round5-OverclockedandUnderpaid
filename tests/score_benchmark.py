@@ -7,9 +7,18 @@ findings.csv is the file tests/live_benchmark.py writes, with its label column
 filled in: tp (a real problem), fp (not a problem) or irrelevant (true but not
 worth reporting for this kind of site). Unlabelled rows are ignored.
 
-Reports, for the chosen split:
-  - precision: tp / labelled findings (fp and irrelevant both count against it);
-  - high-severity precision: the same over high and critical findings only;
+Reports, for the chosen split, with the SCOPE of each number named -- a
+precision figure is only meaningful next to the set it was measured over:
+  - precision (all findings): tp / labelled rows in the core findings list AND
+    the hygiene appendix. Both are user-visible, so both count. Reporting only
+    the core list would let a headline improve by moving a questionable output
+    into an unscored appendix rather than by fixing it.
+  - precision (core findings) and precision (hygiene appendix), separately, so
+    the split is visible rather than averaged away;
+  - recommendations, scored separately: they are beyond-defect suggestions, not
+    claims that something is wrong, so they do not belong in a defect-precision
+    figure either way;
+  - high-severity precision: over high and critical findings only;
   - per-check precision, worst first, to show which rule to fix next;
   - expected calibration error (ECE): the weighted gap between stated
     confidence and observed precision, over confidence bins of width 0.1.
@@ -21,8 +30,13 @@ expectations in tests/test_archetype_fixtures.py) and reports the share of plant
 defects found, plus the number of trap check IDs wrongly raised. That part makes
 no request outside 127.0.0.1 and needs pytest installed.
 
-Working targets: precision >= 0.95 and zero false high or critical findings on
-holdout, recall 1.0 and zero trap hits on the fixtures, ECE <= 0.1.
+Working targets: precision (all findings) >= 0.95 and zero false high or
+critical findings on holdout, recall 1.0 and zero trap hits on the fixtures,
+ECE <= 0.1.
+
+Rows written by an older live_benchmark.py have no `section` column; they are
+treated as core, and the report says so, so an old CSV is not silently scored as
+if it covered the appendix.
 """
 import csv
 import os
@@ -85,19 +99,41 @@ def suggest_base_confidence(rows, min_rows=5):
     return out
 
 
+def _section(row):
+    """The report section a row came from. Rows from an older export have no
+    section column; they are core findings, and the caller reports that."""
+    return (row.get("section") or "core").strip().lower() or "core"
+
+
 def score(rows):
-    """Metrics for labelled rows."""
-    high = [r for r in rows if r.get("severity") in _HIGH]
+    """Metrics for labelled rows, scoped by report section.
+
+    Findings (core + hygiene) are what the audit claims is wrong, so they share
+    one precision figure and are also reported apart. Recommendations are
+    beyond-defect suggestions and are scored on their own."""
+    findings = [r for r in rows if _section(r) in ("core", "hygiene")]
+    core = [r for r in findings if _section(r) == "core"]
+    hygiene = [r for r in findings if _section(r) == "hygiene"]
+    recommendations = [r for r in rows if _section(r) == "recommendation"]
+    high = [r for r in findings if r.get("severity") in _HIGH]
     by_check = {}
-    for r in rows:
+    for r in findings:
         for check_id in (r.get("check_ids") or "?").split():
             by_check.setdefault(check_id, []).append(r)
     per_check = sorted(((cid, _precision(rs), len(rs)) for cid, rs in by_check.items()),
                        key=lambda item: (item[1], -item[2], item[0]))
-    return {"labelled": len(rows), "precision": _precision(rows),
+    return {"labelled": len(findings),
+            # Named and scoped: every user-visible finding, core and appendix.
+            "scope": "core findings + hygiene appendix",
+            "precision": _precision(findings),
+            "core_labelled": len(core), "core_precision": _precision(core),
+            "hygiene_labelled": len(hygiene), "hygiene_precision": _precision(hygiene),
+            "recommendations_labelled": len(recommendations),
+            "recommendations_precision": _precision(recommendations),
+            "sections_present": sorted({_section(r) for r in rows}),
             "high_severity": len(high), "high_severity_precision": _precision(high),
             "false_high_severity": sum(r["label"] != "tp" for r in high),
-            "ece": expected_calibration_error(rows), "per_check": per_check}
+            "ece": expected_calibration_error(findings), "per_check": per_check}
 
 
 def fixture_recall():
@@ -143,9 +179,17 @@ def main(argv):
     split = "all"
     if "--split" in argv:
         split = argv[argv.index("--split") + 1]
-    result = score(load_rows(argv[1], split))
-    print(f"split: {split}; labelled findings: {result['labelled']}")
-    print(f"precision: {result['precision']}")
+    rows = load_rows(argv[1], split)
+    result = score(rows)
+    print(f"split: {split}; labelled findings: {result['labelled']} ({result['scope']})")
+    if "section" not in (rows[0] if rows else {}):
+        print("note: this CSV has no 'section' column (written by an older live_benchmark.py); "
+              "every row is scored as a core finding.")
+    print(f"precision, {result['scope']}: {result['precision']}")
+    print(f"  core findings    : {result['core_precision']} ({result['core_labelled']} labelled)")
+    print(f"  hygiene appendix : {result['hygiene_precision']} ({result['hygiene_labelled']} labelled)")
+    print(f"recommendations (scored separately, not defect claims): "
+          f"{result['recommendations_precision']} ({result['recommendations_labelled']} labelled)")
     print(f"high/critical findings: {result['high_severity']}, precision {result['high_severity_precision']}, "
           f"false {result['false_high_severity']}")
     print(f"expected calibration error: {result['ece']}")
