@@ -42,6 +42,7 @@ from models import (skill_result, make_finding, insufficient_evidence_result,
 from check_catalog import get_entry
 from url_safety import same_origin
 from agent_evidence import AG_CHECKS, evidence_ids
+from json_boundary import read_json, validate_tree
 
 # Environment variable naming the agent's findings file. Kept as an env var (not a
 # fixed workdir path) so nothing about this stage assumes the donor's subprocess
@@ -211,7 +212,7 @@ class EnvelopeError(AgentFindingsError):
     """The outcome envelope fails validation; reasons lists every problem."""
 
     def __init__(self, reasons):
-        self.reasons = list(reasons)
+        self.reasons = [str(reason)[:500] for reason in list(reasons)[:40]]
         super().__init__("; ".join(self.reasons))
 
 
@@ -223,17 +224,11 @@ def read_agent_input(path):
     if not path or not os.path.isfile(path):
         raise AgentFindingsError(f"no such file: {path}")
     try:
-        if os.path.getsize(path) > MAX_FILE_BYTES:
-            raise AgentFindingsError(f"{path} is larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
-        with open(path, "rb") as handle:
-            raw = handle.read()
+        return read_json(path, MAX_FILE_BYTES, max_string=_MAX_TEXT, max_members=100)
     except OSError as exc:
         raise AgentFindingsError(f"cannot read {path}: {exc}") from exc
-    try:
-        text = raw.decode("utf-16") if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else raw.decode("utf-8-sig")
-        return json.loads(text)
     except (UnicodeDecodeError, ValueError, RecursionError) as exc:
-        raise AgentFindingsError(f"{path} is not valid JSON ({exc})") from exc
+        raise AgentFindingsError(f"agent input is not valid bounded JSON ({str(exc)[:300]})") from exc
 
 
 def is_envelope(data):
@@ -273,7 +268,10 @@ def _text(value, limit):
 def _is_url(value):
     if not isinstance(value, str) or len(value) > _MAX_URL_CHARS:
         return False
-    parts = urlsplit(value.strip())
+    try:
+        parts = urlsplit(value.strip())
+    except ValueError:
+        return False
     return parts.scheme.lower() in ("http", "https") and bool(parts.netloc) and not any(c.isspace() for c in value.strip())
 
 
@@ -492,7 +490,7 @@ def _sources(raw, errors):
         if not _is_url(url):
             errors.append(f"invalid source URL {str(url)[:80]!r}")
             continue
-        if kind not in _SOURCE_KINDS:
+        if not isinstance(kind, str) or kind not in _SOURCE_KINDS:
             errors.append(f"source kind {str(kind)[:40]!r} is not one of {sorted(_SOURCE_KINDS)}")
             continue
         out.append({"url": url.strip(), "kind": kind, "quote": _text(item.get("quote"), _MAX_TEXT),
@@ -587,7 +585,7 @@ def _validate_check(check, outcome, raw, ids, have, origin):
         passage = _text(observation.get("passage"), _MAX_TEXT)
         if not page_refs:
             errors.append("an AG-01 finding needs the packet page it read (an E... reference)")
-        if not isinstance(unanswered, list) or not unanswered or not set(unanswered) <= _UNANSWERED:
+        if not isinstance(unanswered, list) or not unanswered or any(not isinstance(v, str) for v in unanswered) or not set(unanswered) <= _UNANSWERED:
             errors.append("an AG-01 finding needs observation.unanswered: which of who, offering and category "
                           "the passage leaves unanswered")
             unanswered = []
@@ -734,6 +732,74 @@ def _validate_check(check, outcome, raw, ids, have, origin):
     return record, finding, errors
 
 
+def _validate_envelope_types(envelope):
+    """Check shapes before any semantic member is hashed or compared."""
+    errors = []
+    def text_fields(obj, keys, where):
+        for key in keys:
+            if key in obj and not isinstance(obj[key], str):
+                errors.append(f'{where}.{key} must be a string')
+    text_fields(envelope, ('schema_version', 'audit_id', 'snapshot_sha256', 'packet_sha256'), 'envelope')
+    caps = envelope.get('capabilities', {})
+    if not isinstance(caps, dict) or any(not isinstance(v, bool) for v in caps.values()):
+        errors.append('capabilities must be an object of booleans')
+    checks = envelope.get('checks')
+    if not isinstance(checks, list):
+        errors.append('checks must be a list')
+    else:
+        for index, raw in enumerate(checks):
+            where = f'checks[{index}]'
+            if not isinstance(raw, dict):
+                errors.append(where + ' must be an object')
+                continue
+            text_fields(raw, ('check', 'outcome', 'reason', 'severity', 'status', 'title'), where)
+            for key, cap in (('source_refs', _MAX_REFS), ('affected_pages', _MAX_URLS)):
+                if key in raw and (not isinstance(raw[key], list) or len(raw[key]) > cap or
+                                   any(not isinstance(v, str) for v in raw[key])):
+                    errors.append(f'{where}.{key} must be a bounded list of strings')
+            for key, cap, fields in (('sources', _MAX_SOURCES, ('url', 'kind', 'quote', 'title', 'accessed_at')),
+                                     ('queries', _MAX_QUERIES, ('query', 'platform', 'executed_at'))):
+                items = raw.get(key, [])
+                if not isinstance(items, list) or len(items) > cap:
+                    errors.append(f'{where}.{key} must be a bounded list')
+                    continue
+                for item in items:
+                    if not isinstance(item, dict):
+                        errors.append(f'{where}.{key} members must be objects')
+                    else:
+                        text_fields(item, fields, where + '.' + key)
+            obs = raw.get('observation', {})
+            if not isinstance(obs, dict):
+                errors.append(where + '.observation must be an object')
+                continue
+            text_fields(obs, ('passage', 'identity', 'site_claim', 'site_quote', 'same_entity', 'context',
+                             'transcription', 'text_comparison', 'business_applicability', 'independence',
+                             'conflict_explanation', 'comparison_scope'), where + '.observation')
+            for key in ('unanswered', 'platforms_missing', 'compared_page_refs'):
+                if key in obs and (not isinstance(obs[key], list) or len(obs[key]) > _MAX_REFS or
+                                   any(not isinstance(v, str) for v in obs[key])):
+                    errors.append(f'{where}.observation.{key} must be a bounded list of strings')
+            for key in ('material', 'image_viewed'):
+                if key in obs and not isinstance(obs[key], bool):
+                    errors.append(f'{where}.observation.{key} must be a boolean')
+            if 'competing_entities' in obs:
+                entities = obs['competing_entities']
+                if not isinstance(entities, list) or len(entities) > _MAX_ENTITIES:
+                    errors.append(where + '.observation.competing_entities must be a bounded list')
+                else:
+                    for item in entities:
+                        if not isinstance(item, dict):
+                            errors.append('competing entity must be an object')
+                        else:
+                            text_fields(item, ('name', 'distinguishing', 'url'), 'competing entity')
+            for key in ('confidence',):
+                if key in raw and (isinstance(raw[key], bool) or not isinstance(raw[key], (int, float)) or
+                                   not 0 <= raw[key] <= 1):
+                    errors.append(where + '.' + key + ' must be a finite number from 0 to 1')
+    if errors:
+        raise EnvelopeError(errors)
+
+
 def validate_envelope(envelope, report, packet):
     """{'checks': {AG: record}, 'findings': [...], 'capabilities': {...}} for an
     outcome envelope bound to report and packet. Raises EnvelopeError listing
@@ -744,6 +810,16 @@ def validate_envelope(envelope, report, packet):
     recorded. No URL is fetched. Omitted checks become not_assessed."""
     if not isinstance(envelope, dict):
         raise EnvelopeError(["the outcome envelope is not a JSON object"])
+    try:
+        validate_tree(envelope, max_string=_MAX_TEXT, max_members=100)
+        validate_tree(report)
+        if packet is not None:
+            validate_tree(packet)
+    except ValueError as exc:
+        raise EnvelopeError([str(exc)]) from exc
+    if not isinstance(report, dict) or not isinstance(report.get('coverage', {}), dict):
+        raise EnvelopeError(['report and report.coverage must be objects'])
+    _validate_envelope_types(envelope)
     errors = []
     if envelope.get("schema_version") != ENVELOPE_SCHEMA_VERSION:
         errors.append(f"schema_version must be {ENVELOPE_SCHEMA_VERSION!r}")
@@ -762,7 +838,10 @@ def validate_envelope(envelope, report, packet):
     else:
         if packet.get("audit_id") != audit_id or packet.get("snapshot_sha256") != snapshot:
             errors.append("the evidence packet belongs to a different audit or snapshot")
-        ids = evidence_ids(packet)
+        try:
+            ids = evidence_ids(packet)
+        except ValueError as exc:
+            raise EnvelopeError([str(exc)]) from exc
     caps = envelope.get("capabilities") if isinstance(envelope.get("capabilities"), dict) else {}
     have = {"local_reading": caps.get("local_reading", True) is not False,
             "search": caps.get("search") is True, "vision": caps.get("vision") is True}
@@ -779,7 +858,7 @@ def validate_envelope(envelope, report, packet):
         if not isinstance(raw, dict):
             errors.append(f"{where} is not an object")
             continue
-        check = str(raw.get("check") or "").strip().upper()
+        check = raw.get("check", "").strip().upper()
         if check not in _AG_RULES:
             errors.append(f"{where}: unknown check {str(raw.get('check'))[:40]!r}")
             continue

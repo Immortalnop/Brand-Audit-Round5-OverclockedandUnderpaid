@@ -22,6 +22,7 @@ import os
 import re
 import sys
 from urllib.parse import quote, urlsplit
+from json_boundary import read_json, validate_report_shape, atomic_write_text
 
 # Reports are a few hundred kilobytes; this only stops a wrong file being read whole.
 MAX_INPUT_BYTES = 50 * 1024 * 1024
@@ -431,6 +432,13 @@ def render(report):
     """The Markdown text for one JSON audit report (a dict)."""
     if not isinstance(report, dict):
         raise ValueError("the report must be a JSON object")
+    validate_report_shape(report)
+    for key in ('coverage', 'summary', 'confidence'):
+        if key in report and not isinstance(report[key], dict):
+            raise ValueError(f"report.{key} must be an object")
+    for key in ('findings', 'recommendations', 'top_actions', 'quick_wins', 'whats_working'):
+        if key in report and (not isinstance(report[key], list) or any(not isinstance(v, dict) for v in report[key])):
+            raise ValueError(f"report.{key} must be a list of objects")
     findings = [f for f in _list(report.get("findings")) if isinstance(f, dict)]
     lines = _header(report) + [""] + _confidence(report) + _summary(report) + _plan(report)
     lines += _findings_table(findings)
@@ -449,17 +457,12 @@ def render(report):
 # Command line
 # ---------------------------------------------------------------------------
 
-def read_report(path):
+def read_report(path, limit=MAX_INPUT_BYTES):
     """Load a JSON report written as UTF-8, UTF-8 with a BOM, or UTF-16."""
-    if os.path.getsize(path) > MAX_INPUT_BYTES:
-        raise ValueError(f"{path} is larger than {MAX_INPUT_BYTES // (1024 * 1024)} MB; is it an audit report?")
-    with open(path, "rb") as fh:
-        raw = fh.read()
-    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
-        decoded = raw.decode("utf-16")
-    else:
-        decoded = raw.decode("utf-8-sig")
-    return json.loads(decoded)
+    result = read_json(path, limit)
+    if not isinstance(result, dict):
+        raise ValueError("the report/packet must be a JSON object")
+    return result
 
 
 def main(argv=None):
@@ -479,10 +482,12 @@ def main(argv=None):
         sys.stdout.write(markdown)
         return 0
     output = args.output or os.path.splitext(args.report)[0] + ".md"
-    if os.path.abspath(output) == os.path.abspath(args.report):
+    if os.path.realpath(output) == os.path.realpath(args.report):
         parser.exit(2, "report_markdown: the output would overwrite the JSON report\n")
-    with open(output, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(markdown)
+    try:
+        atomic_write_text(output, markdown)
+    except OSError as exc:
+        parser.exit(2, f"report_markdown: cannot write output ({str(exc)[:300]})\n")
     sys.stderr.write(f"Wrote {output}\n")
     return 0
 

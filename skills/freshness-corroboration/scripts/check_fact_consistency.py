@@ -26,6 +26,7 @@ with pages in the same language, since a regional page may list a regional
 number or currency.
 """
 import re
+from money import markup_money, visible_money
 
 from check_helpers import contact_details, eligible_pages, page_share, script_dependent
 from models import make_finding, skill_result
@@ -72,31 +73,16 @@ def postal_key(value):
 
 def parse_price(value):
     """A price as a float: '1,299.00', '1.299,00', '49', 49.5. None when unreadable."""
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if not isinstance(value, str):
-        return None
-    text = re.sub(r"[^\d.,]", "", value)
-    if not text or not re.search(r"\d", text):
-        return None
-    if "," in text and "." in text:
-        decimal = "," if text.rfind(",") > text.rfind(".") else "."
-        text = text.replace("." if decimal == "," else ",", "").replace(",", ".")
-    elif "," in text:
-        text = text.replace(",", ".") if re.fullmatch(r"\d+,\d{2}", text) else text.replace(",", "")
-    elif text.count(".") > 1:
-        text = text.replace(".", "")
-    try:
-        return float(text)
-    except ValueError:
-        return None
+    number = visible_money(value)
+    return float(number) if number is not None else None
 
 
 def price_shown(price, text):
     """True when the visible text writes the price in any common way."""
-    whole = int(price) if price == int(price) else None
+    parsed = markup_money(price)
+    if parsed is None:
+        return False
+    whole = int(parsed) if parsed == int(parsed) else None
     forms = {f"{price:.2f}", f"{price:,.2f}", f"{price:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")}
     if whole is not None:
         forms |= {str(whole), f"{whole:,}", f"{whole:,}".replace(",", ".")}
@@ -179,8 +165,8 @@ def _page_prices(page):
     prices = set()
     for node in iter_nodes(page.jsonld_blocks):
         if "Offer" in types_of(node):
-            price = parse_price(node.get("price"))
-            if price:
+            price = markup_money(node.get("price"))
+            if price is not None:
                 prices.add(((_strings(node.get("priceCurrency")) or [""])[0].upper(), price))
     return prices
 
@@ -316,8 +302,8 @@ def _entity_facts(node):
         facts += [("postalCode", postal_key(v), v) for v in _postal_codes(node)]
     if types_of(node) & _PRODUCT_TYPES:
         for offer in _offers(node):
-            price = parse_price(offer.get("price"))
-            if price:
+            price = markup_money(offer.get("price"))
+            if price is not None:
                 currency = (_strings(offer.get("priceCurrency")) or [""])[0].upper()
                 facts.append(("price " + currency if currency else "price", f"{price:.2f}", f"{price:g}"))
     return [f for f in facts if f[1]]

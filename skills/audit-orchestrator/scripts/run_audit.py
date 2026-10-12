@@ -45,6 +45,7 @@ for _rel in (
 
 from constants import DEFAULT_LIMITS
 from models import make_deadline, _jsonable
+from json_boundary import validate_tree
 from instrumentation import Instrumentation
 from capabilities import detect_capabilities, capability_report
 from field_vitals import start_field_lookup
@@ -610,7 +611,8 @@ def write_report(report, path):
     handle, temp = tempfile.mkstemp(prefix=".report-", suffix=".tmp", dir=folder)
     try:
         with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as out:
-            out.write(json.dumps(report, indent=2, default=str) + "\n")
+            validate_tree(report)
+            out.write(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
         os.replace(temp, path)
     except BaseException:
         try:
@@ -671,7 +673,7 @@ def _emit(report, out):
             # The finished audit is never lost: it goes to stdout instead.
             print(f"[audit] could not write {out} ({exc}); printing the report instead", file=sys.stderr)
     if written is None:
-        print(json.dumps(report, indent=2, default=str))
+        print(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False))
 
 
 def _merge_main(parser, parsed):
@@ -705,7 +707,8 @@ def _merge_main(parser, parsed):
             parser.error("--agent-findings holds an outcome envelope; pass the evidence packet the audit wrote "
                          "with --evidence PATH")
         try:
-            packet = read_report(parsed.evidence)
+            from agent_evidence import MAX_PACKET_BYTES
+            packet = read_report(parsed.evidence, limit=MAX_PACKET_BYTES)
         except OSError as exc:
             parser.error(f"--evidence: cannot read {parsed.evidence} ({exc})")
         except (UnicodeDecodeError, ValueError, RecursionError) as exc:

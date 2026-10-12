@@ -110,10 +110,15 @@ def test_unfinished_audit_report_renders():
     assert "The audit worker did not return a complete report." in md
 
 
-def test_missing_or_odd_fields_do_not_crash():
-    md = render({"findings": [None, "x", {"id": "F-001"}], "top_actions": "nope", "coverage": [],
-                 "confidence": None, "limitations": None, "recommendations": [{}]})
+def test_missing_fields_render_and_wrong_shapes_are_controlled_errors():
+    md = render({"findings": [{"id": "F-001"}], "recommendations": [{}]})
     assert md.endswith("\n") and "### F-001:" in md
+    with pytest.raises(ValueError, match='list of objects'):
+        render({"findings": [None, "x", {"id": "F-001"}]})
+    with pytest.raises(ValueError, match='must be an object'):
+        render({"coverage": []})
+    with pytest.raises(ValueError, match='list of objects'):
+        render({"top_actions": "nope"})
     with pytest.raises(ValueError):
         render(["not", "a", "report"])
 
@@ -248,7 +253,12 @@ def test_renderer_imports_only_the_standard_library_and_no_network():
             imported |= {a.name for a in node.names}
         elif isinstance(node, ast.ImportFrom):
             imported.add(node.module)
-    assert imported <= {"html", "json", "os", "re", "sys", "urllib.parse", "argparse"}, imported
+    # The shared boundary is also standard-library-only and has no transport.
+    assert imported <= {"html", "json", "os", "re", "sys", "urllib.parse", "argparse", "json_boundary"}, imported
+    boundary = ast.parse(open(os.path.join(_ROOT, 'common', 'json_boundary.py'), encoding='utf-8').read())
+    dependencies = {a.name for n in ast.walk(boundary) if isinstance(n, ast.Import) for a in n.names}
+    dependencies |= {n.module for n in ast.walk(boundary) if isinstance(n, ast.ImportFrom)}
+    assert dependencies <= {'json', 'math', 'os', 'tempfile', 'decimal'}
 
 
 # ---------------------------------------------------------------------------

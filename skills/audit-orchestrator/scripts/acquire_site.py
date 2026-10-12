@@ -21,6 +21,7 @@ from auth_pages import login_page_signals
 from bot_challenge import challenge_signals,waiting_room_signals,visible_digest
 from ai_crawlers import AI_CRAWLER_NAMES
 from check_helpers import page_observation,PARTIAL_OBSERVATION_WARNINGS
+from json_boundary import loads as bounded_json_loads, JSONLimitError, JSONAmbiguityError
 
 _normalize_schema_type=normalize_type
 _iter_jsonld_nodes=iter_nodes
@@ -101,9 +102,14 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     doc=Document();warnings=[]
     try:doc.feed(html);doc.close()
     except (ValueError,RecursionError):warnings.append('html_parse_incomplete')
-    blocks=[];jsonld_errors=[]
+    blocks=[];jsonld_errors=[];jsonld_limits=[]
     for index,raw in enumerate(doc.jsonld,1):
-        try:blocks.append(json.loads(raw))
+        try:blocks.append(bounded_json_loads(raw))
+        except (JSONLimitError,JSONAmbiguityError) as exc:
+            kind='ambiguous' if isinstance(exc,JSONAmbiguityError) else 'unsupported'
+            warning='jsonld_'+kind+'_block'
+            if warning not in warnings:warnings.append(warning)
+            if len(jsonld_limits)<_MAX_JSONLD_ERRORS:jsonld_limits.append(dict(_jsonld_error(index,raw,exc),state=kind))
         except (ValueError,RecursionError) as exc:
             if 'malformed_jsonld_block' not in warnings:warnings.append('malformed_jsonld_block')
             if len(jsonld_errors)<_MAX_JSONLD_ERRORS:jsonld_errors.append(_jsonld_error(index,raw,exc))
@@ -130,6 +136,10 @@ def _extract_page(url,resp,fetch_ms,limits,fetch_status='ok'):
     features['network_duration_ms']=getattr(resp,'network_duration_ms',None) if resp else None
     features['redirect_hops']=resp.redirect_hops if resp else 0
     features['jsonld_block_count']=len(doc.jsonld)
+    features['jsonld_usable_block_count']=len(blocks)
+    features['jsonld_limitations']=jsonld_limits
+    features['jsonld_extraction_state']=('usable' if blocks else 'absent' if not doc.jsonld else
+        'malformed' if jsonld_errors else 'ambiguous' if any(e['state']=='ambiguous' for e in jsonld_limits) else 'unsupported')
     # A JSON-LD block cut by the byte budget is a transport limit, not malformed
     # source JSON; the flag lets checks tell the two apart.
     features['jsonld_errors']=[dict(e,response_truncated=bool(resp and resp.truncated)) for e in jsonld_errors]

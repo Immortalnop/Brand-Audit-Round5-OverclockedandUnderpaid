@@ -28,6 +28,7 @@ Only the limitations of checks the envelope actually assessed are cleared. The
 legacy findings array is still merged, as legacy_partial: it clears none.
 """
 import copy
+import math
 from datetime import datetime, timezone
 
 from execution_summary import AG04_NOT_SUPPLIED, AG05_NOT_SUPPLIED, AG06_NOT_SUPPLIED
@@ -39,6 +40,7 @@ from merge_findings import fold_into
 from prioritize_findings import annotate_action_plan, prioritize_findings, quick_wins, top_actions
 from validate_report import REQUIRED_FINDING_FIELDS, validate_report
 from whats_working import reported_check_ids
+from json_boundary import validate_report_shape
 
 # The limitation each agent check lifts once it is actually assessed.
 _LIMITATION_OF_CHECK = {"AG-04": AG04_NOT_SUPPLIED, "AG-05": AG05_NOT_SUPPLIED, "AG-06": AG06_NOT_SUPPLIED}
@@ -52,6 +54,10 @@ class ReportMergeError(ValueError):
 def _check_report(report):
     """Raise ReportMergeError unless report is a complete audit report that
     analyzed at least one page and has no agent findings merged yet."""
+    try:
+        validate_report_shape(report)
+    except ValueError as exc:
+        raise ReportMergeError(str(exc)) from exc
     if not isinstance(report, dict) or not isinstance(report.get("coverage"), dict) \
             or not isinstance(report.get("findings"), list) or not isinstance(report.get("recommendations"), list):
         raise ReportMergeError("the file is not an audit report written by run_audit.py")
@@ -59,10 +65,25 @@ def _check_report(report):
         if not isinstance(finding, dict) or REQUIRED_FINDING_FIELDS - finding.keys():
             raise ReportMergeError("the report holds a finding without the fields run_audit.py writes; "
                                    "merge into an unedited report")
+        for key in ('affected_pages', 'check_ids'):
+            if key in finding and (not isinstance(finding[key], list) or
+                                   any(not isinstance(v, str) for v in finding[key])):
+                raise ReportMergeError(f'finding.{key} must be a list of strings')
+        if not isinstance(finding.get('suggested_action'), dict) or not isinstance(finding.get('provenance'), dict):
+            raise ReportMergeError('finding action/provenance must be objects')
+    for key in ('warnings', 'limitations'):
+        if key in report and (not isinstance(report[key], list) or any(not isinstance(v, str) for v in report[key])):
+            raise ReportMergeError(f'report.{key} must be a list of strings')
     coverage = report["coverage"]
     submitted = (coverage.get("agent_stage") or {}).get("submission_status") \
         if isinstance(coverage.get("agent_stage"), dict) else None
-    if submitted in ("legacy", "envelope") or coverage.get("agent_corroboration_stage") in _MERGED_STAGES:
+    stage = coverage.get('agent_corroboration_stage')
+    if stage is not None and not isinstance(stage, str):
+        raise ReportMergeError('agent_corroboration_stage must be a string')
+    count = coverage.get('pages_analyzed')
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        raise ReportMergeError('pages_analyzed must be a nonnegative integer')
+    if submitted in ("legacy", "envelope") or stage in _MERGED_STAGES:
         raise ReportMergeError("agent findings were already merged into this report; merge into the report "
                                "the audit wrote")
     if not coverage.get("pages_analyzed"):
@@ -80,8 +101,12 @@ def workflow_elapsed(timing, now):
         return None
     try:
         started = datetime.fromisoformat(timing["session_started_at"])
+        if isinstance(timing['workflow_target_s'], bool):
+            return None
         target = float(timing["workflow_target_s"])
         agent_deadline = datetime.fromisoformat(timing["agent_deadline_at"])
+        if not math.isfinite(target) or target <= 0 or started.tzinfo is None or agent_deadline.tzinfo is None:
+            return None
     except (KeyError, TypeError, ValueError):
         return None
     elapsed = (now - started).total_seconds()

@@ -327,6 +327,33 @@ def _fit(packet):
 
 def evidence_ids(packet):
     """{evidence ID: record} for every page, claim and image in packet."""
+    from json_boundary import validate_tree
+    validate_tree(packet)
+    if not isinstance(packet, dict):
+        raise ValueError('packet must be an object')
+    ids = {}
+    for collection, field, cap in (('pages', 'evidence_id', MAX_PACKET_PAGES),
+                                   ('claims', 'claim_id', MAX_PACKET_CLAIMS),
+                                   ('image_candidates', 'image_id', MAX_IMAGE_CANDIDATES)):
+        records = packet.get(collection, [])
+        if not isinstance(records, list) or len(records) > cap:
+            raise ValueError(f'packet.{collection} must be a bounded list')
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get(field), str):
+                raise ValueError(f'packet.{collection} member needs a string {field}')
+            ref = record[field]
+            if ref in ids:
+                raise ValueError('duplicate evidence ID: ' + ref[:40])
+            ids[ref] = record
+            for key in ('text', 'title', 'requested_url', 'final_url', 'source_url', 'url', 'value', 'subject', 'predicate'):
+                if key in record and record[key] is not None and not isinstance(record[key], str):
+                    raise ValueError(f'packet record {key} must be a string')
+            for key in ('pages', 'page_evidence_ids', 'observation_reasons', 'fact_keywords'):
+                if key in record and (not isinstance(record[key], list) or any(not isinstance(v, str) for v in record[key])):
+                    raise ValueError(f'packet record {key} must be a list of strings')
+            for key in ('text_truncated', 'is_about_page'):
+                if key in record and not isinstance(record[key], bool):
+                    raise ValueError(f'packet record {key} must be boolean')
     ids = {}
     for page in packet.get("pages") or ():
         if isinstance(page, dict) and page.get("evidence_id"):

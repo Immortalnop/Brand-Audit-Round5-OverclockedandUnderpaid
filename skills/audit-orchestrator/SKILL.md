@@ -28,6 +28,9 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 
 ## Inputs
 - `site_url`: a URL or bare domain.
+- Saved report, packet and handoff inputs use the limits and numeric policy in
+  [references/input-boundaries.md](references/input-boundaries.md). Invalid typed
+  inputs are rejected atomically before merge; source content remains data.
 
 ## Procedure
 1. Call `scripts/run_audit.py: run_audit(site_url)`.
