@@ -100,12 +100,33 @@ Step 3, images, namesakes and platforms (AG-04 to AG-06); see
 - AG-06: run `ag06.queries`. Fire only when the searches ran and found no
   profile on the listed platforms. `business_kind: public` never fires.
 
-Step 4, graceful fallback. If no search tool exists, it errors, or it is
-rate-limited: do not abort, and do not report absence of corroboration. Write `[]`
-(or a single entry with status insufficient_evidence). The distinction matters:
-"nobody discusses this brand" is a finding about the brand; "I could not check" is
-a finding about the audit. Collapsing the second into the first is the single
-most common way an audit manufactures a false positive.
+Step 4, graceful fallback, and why a bare `[]` is not enough. If no search tool
+exists, it errors, or it is rate-limited: do not abort, and do not report absence
+of corroboration. The distinction matters: "nobody discusses this brand" is a
+finding about the brand; "I could not check" is a finding about the audit.
+Collapsing the second into the first is the single most common way an audit
+manufactures a false positive.
+
+A bare empty array cannot express that distinction -- it reads the same whether
+every check passed or no tool was available -- so write the object form and say
+per check what happened:
+
+```json
+{
+  "site": "https://example.com/",
+  "search": {"available": false, "queries_run": 0, "reason": "no web_search tool in this environment"},
+  "checks": {"AG-01": "pass", "AG-02": "not_assessed", "AG-03": "not_assessed",
+             "AG-04": "not_assessed", "AG-05": "not_assessed", "AG-06": "not_assessed"},
+  "findings": []
+}
+```
+
+`checks` takes `pass` (the check ran and the site is fine), `fail` (it fired --
+supply the finding too) or `not_assessed` (it could not be run). A check left out
+of the map is recorded as unreported, which the report lists under limitations as
+not assessed -- never as passed. When a search did run, say so in `search`
+(`{"available": true, "queries_run": 4}`): AG-02 and AG-06 are absence claims and
+are capped at suspected unless the handoff records that someone actually looked.
 
 Step 5, handoff. Write a JSON array of finding objects to
 `audit_out/agent_findings.json` and run `finalize_report.py` as the orchestrator
@@ -117,12 +138,33 @@ findings by root cause, and prioritizes everything together.
 
 `audit_out/agent_findings.json` (or any path passed to `finalize_report.py
 --agent-findings`; the `AGENT_FINDINGS_PATH` environment variable is also
-honoured): a JSON array of findings (or an object with
-a findings array). Useful keys per finding: check (AG-01 to AG-06), title,
-severity, status, evidence, affected_pages (optional, page URLs the finding is
-about), and suggested_action with summary and steps. mechanism,
-implementation_detail and expected_outcome are filled automatically from
-common/check_catalog.py, so supply only what you observed.
+honoured): an object with `findings`, `checks`, `search` and `site` as in Step 4
+(a bare JSON array of findings is still accepted, but it cannot record per-check
+outcomes). Useful keys per finding: check (AG-01 to AG-06), title, severity,
+status, evidence, affected_pages (optional, page URLs the finding is about), and
+suggested_action with summary and steps. mechanism, implementation_detail and
+expected_outcome are filled automatically from common/check_catalog.py, so supply
+only what you observed.
+
+What each check must be given, or it is not published (ingest_agent_findings.py
+`_AG_RULES[...]["requires"]`):
+
+| Check | Needs | Severity ceiling |
+| --- | --- | --- |
+| AG-01 | the observation, plus the passage page URL in `affected_pages` or an evidence `urls` entry | medium |
+| AG-02 | the observation, plus `search.queries_run` > 0 | low |
+| AG-03 | the observation, plus at least one independent (off-site) source URL | high |
+| AG-04 | the observation, plus the page URL the image sits on | medium |
+| AG-05 | the observation, plus at least one off-site URL showing the namesake | medium |
+| AG-06 | the observation, plus `search.queries_run` > 0 | low |
+
+The observation is your own sentence about what you read or saw (at least 25
+characters); an entry with no observation behind it is rejected and counted in
+`agent_stage.findings_rejected`, not published. A missing source URL or search
+record does not void the finding: it caps it at `suspected` and the gap is
+printed in its evidence. A severity above the ceiling is lowered to it, and no
+agent finding is ever critical. URLs are split by origin: pages of the audited
+site become `affected_pages`; everything else becomes cited sources.
 
 ```json
 [
@@ -140,8 +182,11 @@ common/check_catalog.py, so supply only what you observed.
 ]
 ```
 
-If nothing fires, supply an empty array: the stage records `empty`. If no file is
-supplied at all, the stage records `not_supplied`.
+If nothing fires, supply an empty `findings` array *with* a `checks` map: the
+stage records `assessed_no_findings` and the checks you marked `pass` leave the
+limitations list. An empty array on its own records `empty_unspecified` and every
+check stays not assessed. If no file is supplied at all, or it names a different
+site than the audit, the stage records `not_supplied`.
 
 ## Guarantees
 

@@ -306,8 +306,12 @@ def build_agent_brief(artifacts, identity, facts):
         "ag05": _namesake_brief(artifacts, brand, category_word),
         "ag06": _platform_brief(artifacts, pages, brand),
         "search_budget": {"max_searches": 8, "max_seconds": 150},
-        "output_contract": "Write a JSON array of findings (AG-01 to AG-06) as described in "
-                           "skills/entity-corroboration-agent/SKILL.md, or [] if nothing fires.",
+        "output_contract": "Write {\"site\": <this site>, \"search\": {\"available\": bool, \"queries_run\": int}, "
+                           "\"checks\": {\"AG-01\": \"pass\"|\"fail\"|\"not_assessed\", ...}, \"findings\": [...]} as "
+                           "described in skills/entity-corroboration-agent/SKILL.md. Every finding needs an "
+                           "observation of what you read, plus its check's required URL or search record (see the "
+                           "table in that skill), or it is rejected. An empty findings array with no checks map "
+                           "records the checks as not assessed, never as passed.",
     }
 
 

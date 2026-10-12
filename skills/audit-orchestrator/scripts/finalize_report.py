@@ -35,7 +35,7 @@ from ingest_agent_findings import load_agent_findings  # noqa: E402
 def finalize(report, agent_findings_path):
     from run_audit import finalize_findings
     report = dict(report)
-    result, stage = load_agent_findings(agent_findings_path)
+    result, stage = load_agent_findings(agent_findings_path, report.get("site"))
     ctx = ScoringContext.from_dict(report.get("scoring_context") or {})
     existing = list(report.get("findings", [])) + list(report.get("hygiene_findings", []))
     # Drop any agent findings from a previous finalize so re-running is idempotent.
@@ -57,16 +57,31 @@ def finalize(report, agent_findings_path):
     stage_info = dict(report.get("agent_stage") or {})
     stage_info["status"] = stage
     stage_info["findings_ingested"] = result["metrics"].get("findings_ingested", 0)
+    stage_info["findings_rejected"] = result["metrics"].get("findings_rejected", 0)
+    stage_info["check_outcomes"] = result["metrics"].get("check_outcomes", {})
     report["agent_stage"] = stage_info
     cov = dict(report.get("coverage") or {})
     cov["agent_corroboration_stage"] = stage
     report["coverage"] = cov
     if stage != "not_supplied":
         report["warnings"] = [w for w in report.get("warnings", []) if "Agent corroboration stage not supplied" not in w]
+    report["warnings"] = list(dict.fromkeys(list(report.get("warnings", [])) + list(result.get("warnings", []))))
     report["limitations"] = [l for l in report.get("limitations", []) if "agent corroboration" not in l.lower()]
     if stage == "not_supplied":
         report["limitations"].append("The agent corroboration stage did not run; cross-web agreement and About-page "
                                      "concreteness were not checked (not the same as \"no problem found\").")
+    elif stage == "empty_unspecified":
+        # An empty findings array is not an all-pass: it covers both "nothing
+        # fired" and "the search tool was unavailable". Without explicit per-check
+        # outcomes the agent checks stay unassessed.
+        report["limitations"].append("The agent corroboration stage returned no findings and declared no per-check "
+                                     "outcomes, so AG-01 to AG-06 are recorded as not assessed rather than passed.")
+    else:
+        unassessed = sorted(c for c, v in (stage_info.get("check_outcomes") or {}).items()
+                            if v not in ("pass", "fail"))
+        if unassessed:
+            report["limitations"].append("The agent corroboration stage did not report an outcome for "
+                                         + ", ".join(unassessed) + "; those checks are not assessed, not passed.")
     return validate_report(report, strict_catalog=True)
 
 

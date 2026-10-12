@@ -137,8 +137,14 @@ def test_finalize_merges_agent_findings_idempotently(tmp_path):
     assert report['agent_stage']['status'] == 'not_supplied'
     assert report['agent_stage']['brief']['brand_name'] == 'Northwind Analytics'
     ag = tmp_path / 'ag.json'
-    ag.write_text(json.dumps([{'check': 'AG-03', 'status': 'confirmed', 'severity': 'high',
-                               'evidence': 'Two directories list it as a freight broker.'}]))
+    # An AG-03 contradiction has to cite the independent source it was seen in
+    # (ingest_agent_findings._AG_RULES), or it is capped at suspected.
+    ag.write_text(json.dumps({'site': url + '/', 'search': {'available': True, 'queries_run': 3},
+                              'checks': {'AG-03': 'fail'},
+                              'findings': [{'check': 'AG-03', 'status': 'confirmed', 'severity': 'high',
+                                            'evidence': [{'description': 'Two directories list it as a freight '
+                                                                         'broker; the site says analytics.',
+                                                          'urls': ['https://dir.example/northwind']}]}]}))
     once = finalize(report, str(ag))
     twice = finalize(once, str(ag))
     ids = lambda r: [(f['id'], f['check_id'], f['severity']) for f in r['findings']]
@@ -147,7 +153,12 @@ def test_finalize_merges_agent_findings_idempotently(tmp_path):
     assert any(f['check_id'] == 'independent-contradiction' and f['severity'] == 'high' for f in once['findings'])
     empty = tmp_path / 'empty.json'
     empty.write_text('[]')
-    assert finalize(report, str(empty))['agent_stage']['status'] == 'empty'
+    # A bare empty array cannot claim the checks passed, so it is empty_unspecified.
+    assert finalize(report, str(empty))['agent_stage']['status'] == 'empty_unspecified'
+    assessed = tmp_path / 'assessed.json'
+    assessed.write_text(json.dumps({'findings': [], 'checks': {c: 'pass' for c in
+                                                               ('AG-01', 'AG-02', 'AG-03', 'AG-04', 'AG-05', 'AG-06')}}))
+    assert finalize(report, str(assessed))['agent_stage']['status'] == 'assessed_no_findings'
     assert finalize(report, str(tmp_path / 'missing.json'))['agent_stage']['status'] == 'not_supplied'
 
 
