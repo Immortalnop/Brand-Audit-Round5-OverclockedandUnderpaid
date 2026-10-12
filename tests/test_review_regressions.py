@@ -820,3 +820,118 @@ def test_a8_complete_small_site_is_a_census_not_a_thin_sample():
     unknown = overall_confidence({"pages_analyzed": 4, "pages_fetched_attempted": 5, "pages_out_of_scope": 1,
                                   "templates_sampled": 2}, "completed")
     assert unknown["sample_basis"] == "size_heuristic"
+
+
+# ------------------------------------------------- A9 structured-data semantics
+def test_a9_relative_iri_is_valid_jsonld_not_a_malformed_value():
+    """JSON-LD 1.1 resolves a relative IRI against the base IRI, so "url": "/"
+    and "logo": "/logo.png" are well-formed markup. They used to be reported as
+    confirmed malformed values."""
+    from schema_rules import invalid_values, consumer_gaps, rule_for
+    node = {"@type": "Organization", "name": "X", "url": "/", "logo": "/logo.png", "sameAs": ["/about"]}
+    assert invalid_values(node) == []
+    # The absolute-URL preference survives, as a named consumer requirement.
+    gaps = consumer_gaps(node, rule_for({"Organization"})[1])
+    props = {p for p, _, _ in gaps}
+    assert {"url", "logo", "sameAs"} <= props
+    assert all(consumer and why for _, consumer, why in gaps)
+
+
+def test_a9_values_that_are_not_web_addresses_are_still_malformed():
+    from schema_rules import invalid_values
+    bad = {prop for prop, _, _ in invalid_values(
+        {"@type": "Organization", "name": "X", "url": "javascript:alert(1)", "logo": "a b.png",
+         "image": "data:image/png;base64,AAA", "price": "1,299", "priceCurrency": "rupees",
+         "datePublished": "12/10/2026"})}
+    assert {"url", "logo", "image", "price", "priceCurrency", "datePublished"} <= bad
+
+
+def test_a9_rule_selection_is_deterministic_across_hash_seeds():
+    """rule_for iterated a set, so for an Organization + LocalBusiness node the
+    selected rule -- and with it the address and url requirements -- changed with
+    the process hash seed."""
+    import subprocess
+    script = (
+        "import sys; sys.path.insert(0, 'common');"
+        "from schema_rules import rule_for;"
+        "t, r = rule_for({'Organization', 'LocalBusiness', 'Store'});"
+        "print(t, sorted(r['required']), sorted(r['matched_types']))"
+    )
+    outputs = {subprocess.run([sys.executable, "-c", script], cwd=str(ROOT), capture_output=True,
+                              text=True, env={**os.environ, "PYTHONHASHSEED": str(seed)}).stdout.strip()
+               for seed in range(1, 8)}
+    assert len(outputs) == 1, outputs
+    # Both declared types are held to their requirements, deduplicated.
+    only = outputs.pop()
+    assert only.startswith("LocalBusiness")
+    assert "'address'" in only and "'name'" in only
+
+
+def test_a9_rich_result_eligibility_is_not_a_validity_requirement():
+    """"required properties" mixed generic validity with Google's Product rich
+    result wanting an offer, rating or review."""
+    from schema_rules import rule_for, missing, consumer_gaps
+    _, rule = rule_for({"Product"})
+    node = {"@type": "Product", "name": "Chisel", "description": "A bench chisel."}
+    required, _ = missing(node, rule)
+    assert required == []  # the node carries its fact: it is a named product
+    gaps = consumer_gaps(node, rule)
+    assert [p for p, _, _ in gaps] == ["offers or aggregateRating or review"]
+    assert gaps[0][1] == "Google Product rich result"
+
+
+def test_a9_consumer_requirements_are_reported_as_recommendations():
+    from constants import Limits
+    from models import make_deadline
+    from validate_structured_data import validate_structured_data
+    html = ('<html><title>Acme</title><script type="application/ld+json">'
+            '{"@context":"https://schema.org","@type":"Organization","name":"Acme","url":"/",'
+            '"logo":"/logo.png"}</script><h1>Acme</h1><p>' + "word " * 80 + '</p></html>')
+    result = validate_structured_data(_snapshot([_page(html, SITE)]), make_deadline(Limits()))
+    ids = {f["check_id"] for f in result["findings"]}
+    assert "schema-invalid-value" not in ids, [f["root_cause"] for f in result["findings"]]
+    rec = [f for f in result["findings"] if f["check_id"] == "schema-missing-recommended"]
+    assert rec and "Google structured-data consumers" in " ".join(
+        e["description"] for f in rec for e in f["evidence"])
+
+
+def test_a9_price_mismatch_respects_truncation_and_variant_context():
+    from dataclasses import replace
+    from constants import Limits
+    from models import make_deadline, AuditArtifacts, freeze_value
+    from transport import Response
+    from acquire_site import _extract_page
+    from validate_structured_data import validate_structured_data
+
+    def offer_page(limits, body, offers):
+        blocks = "".join('<script type="application/ld+json">%s</script>' % o for o in offers)
+        html = f'<html><title>Chisel</title>{blocks}<h1>Chisel</h1><p>{body}</p></html>'
+        r = Response(200, {"Content-Type": "text/html"}, html.encode(), SITE + "product")
+        r.network_duration_ms = 10
+        return _extract_page(SITE + "product", r, 10, limits)
+
+    one = '{"@context":"https://schema.org","@type":"Offer","price":"999","priceCurrency":"INR"}'
+    # Complete text, one price context, price nowhere on the page: a contradiction.
+    page = offer_page(Limits(), "Our price is Rs 1299 including tax. " * 5, [one])
+    result = validate_structured_data(_snapshot([page]), make_deadline(Limits()))
+    mism = [f for f in result["findings"] if f["check_id"] == "schema-visible-mismatch"]
+    assert mism and mism[0]["status"] == "confirmed"
+
+    # Same markup, but the page text was truncated at the capture limit: a price
+    # absent from the text we could read is not proof the page omits it.
+    tiny = replace(Limits(), VISIBLE_TEXT_MAX_CHARS=120)
+    page = offer_page(tiny, "Our price is Rs 1299 including tax. " * 30, [one])
+    assert page.features["visible_text_complete"] is False
+    result = validate_structured_data(_snapshot([page]), make_deadline(Limits()))
+    mism = [f for f in result["findings"] if f["check_id"] == "schema-visible-mismatch"]
+    assert mism and mism[0]["status"] == "suspected"
+    assert "truncated" in mism[0]["evidence"][0]["description"]
+
+    # Several declared prices: the odd one out may be a variant the page does not show.
+    two = ['{"@context":"https://schema.org","@type":"Offer","price":"999","priceCurrency":"INR"}',
+           '{"@context":"https://schema.org","@type":"Offer","price":"1299","priceCurrency":"INR"}']
+    page = offer_page(Limits(), "Our price is Rs 1299 including tax. " * 5, two)
+    result = validate_structured_data(_snapshot([page]), make_deadline(Limits()))
+    mism = [f for f in result["findings"] if f["check_id"] == "schema-visible-mismatch"]
+    assert mism and mism[0]["status"] == "suspected"
+    assert "variant" in mism[0]["evidence"][0]["description"]

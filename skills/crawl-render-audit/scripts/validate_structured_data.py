@@ -4,24 +4,37 @@ and consistent with the visible page?
 analyze_machine_readability.py answers "is the right @type present?". This script
 answers the next three questions for every typed node on every content page:
 
-  schema-missing-required     required properties absent (an Offer without price);
-                              the node cannot be used for the fact it carries
-  schema-invalid-value        clearly malformed values (non-numeric price, non-ISO
-                              currency/date, relative URL)
+  schema-missing-required     the node cannot carry the fact it exists to carry
+                              (an Offer without a price). Consumer-independent.
+  schema-invalid-value        clearly malformed values: a non-numeric price, a
+                              non-ISO currency or date, a url/logo/image field
+                              that is not a usable web address. A RELATIVE
+                              reference is not malformed -- JSON-LD resolves it
+                              against the page.
   schema-visible-mismatch     the markup states a different fact than the page:
-                              Offer price not shown anywhere on the page, or the
-                              Organization name absent from title and text
+                              an Offer price shown nowhere on the page, or the
+                              Organization name absent from title and text.
+                              Confirmed only when the page text was read in full
+                              and the page carries one unambiguous price context;
+                              otherwise suspected, because a price missing from
+                              truncated text is not proof of a contradiction.
   schema-missing-recommended  freshness/identity properties absent (dateModified,
-                              sameAs, logo ...): hygiene tier unless the property
-                              is in schema_rules.CORE_RECOMMENDED
+                              sameAs, logo ...), and named consumer requirements
+                              such as Google's Product rich result wanting an
+                              offer, rating or review, or an absolute logo URL:
+                              hygiene tier unless the property is in
+                              schema_rules.CORE_RECOMMENDED
 
-Rules and validators live in common/schema_rules.py.
+The three claims -- malformed syntax, inadequate application data, and a named
+consumer's requirement -- are kept apart on purpose; see the module docstring of
+common/schema_rules.py, where the rules and validators live.
 """
 from collections import defaultdict
 from models import skill_result, make_finding
 from check_helpers import content_pages
 from structured_data import iter_nodes, types_of
-from schema_rules import rule_for, missing, invalid_values, price_numbers, norm_price, CORE_RECOMMENDED
+from schema_rules import (rule_for, missing, consumer_gaps, invalid_values, price_numbers, norm_price,
+                          CORE_RECOMMENDED)
 
 _HIGH_REQUIRED = {"Product", "Offer", "AggregateOffer", "LocalBusiness"}
 _NESTED_VALIDATED = {"Offer", "AggregateOffer"}
@@ -50,11 +63,24 @@ def validate_structured_data(artifacts, deadline):
     req = defaultdict(list)       # (type, prop) -> urls
     rec = defaultdict(list)
     bad = defaultdict(list)       # (prop, expected) -> [(url, value)]
-    mismatch = []                 # (url, description)
+    mismatch = []                 # (url, description, confirmed)
     nodes_checked = 0
     for p in pages:
         visible = ((p.visible_text or "") + " " + (p.title or "")).lower()
         page_prices = price_numbers(p.visible_text or "")
+        # Whether the page's visible text was captured in full. A price absent
+        # from text that stopped at the capture cap is not evidence that the page
+        # does not show it.
+        text_complete = bool((p.features or {}).get("visible_text_complete", True))
+        # How many distinct prices the markup itself declares for this page. With
+        # more than one (a variant list, a product grid) a markup price that is
+        # not in the visible text may simply belong to a variant the page does not
+        # display, so the contradiction cannot be confirmed from outside.
+        markup_prices = {norm_price(n.get("price") or n.get("lowPrice"))
+                         for n in _validated_nodes(p.jsonld_blocks)
+                         if (types_of(n) & {"Offer", "AggregateOffer"})}
+        markup_prices.discard(None)
+        single_price_context = len(markup_prices) <= 1
         for node in _validated_nodes(p.jsonld_blocks):
             if set(node.keys()) <= {"@type", "@id"}:
                 continue  # a reference stub; the full node is validated where it is defined
@@ -67,19 +93,34 @@ def validate_structured_data(artifacts, deadline):
                 req[(rule_type, prop)].append(p.url)
             for prop in c:
                 rec[(rule_type, prop)].append(p.url)
+            # A named consumer's requirement is true and worth doing, but it is
+            # not a validity error, so it joins the recommendations with the
+            # consumer and the purpose spelled out.
+            for prop, consumer, why in consumer_gaps(node, rule):
+                rec[(rule_type, f"{prop} ({consumer}: {why})")].append(p.url)
             for prop, value, expected in invalid_values(node):
                 bad[(prop, expected)].append((p.url, value))
             if rule_type in ("Offer", "AggregateOffer") and page_prices and (p.visible_text or "").strip():
                 price = norm_price(node.get("price") or node.get("lowPrice"))
                 if price and price not in page_prices and price != "0":
+                    confirmed = text_complete and single_price_context
+                    caveat = ("" if confirmed else
+                              (" -- not confirmed: the page's visible text was truncated at the capture limit"
+                               if not text_complete else
+                               f" -- not confirmed: the markup declares {len(markup_prices)} prices for this page, "
+                               "so this one may belong to a variant the page does not display"))
                     mismatch.append((p.url, f"markup price {node.get('price') or node.get('lowPrice')} "
-                                            f"{node.get('priceCurrency', '')} not shown on the page "
-                                            f"(visible prices: {', '.join(sorted(page_prices)[:5])})"))
+                                            f"{node.get('priceCurrency', '')} not shown in the page text "
+                                            f"(visible prices: {', '.join(sorted(page_prices)[:5])}){caveat}",
+                                     confirmed))
             if rule_type == "Organization" and p.page_type == "home":
                 name = str(node.get("name") or "").strip().lower()
                 if len(name) >= 3 and name not in visible and len(visible) > 300:
                     mismatch.append((p.url, f"Organization name '{node.get('name')}' does not appear in the page "
-                                            "title or visible text"))
+                                            "title or visible text"
+                                            + ("" if text_complete else " -- not confirmed: the page's visible "
+                                                                        "text was truncated at the capture limit"),
+                                     text_complete))
 
     findings = []
     if req:
@@ -122,17 +163,26 @@ def validate_structured_data(artifacts, deadline):
             provenance={"skill": "crawl-render-audit", "script": "validate_structured_data.py",
                         "rule_id": "schema-invalid-value"}))
     if mismatch:
+        # Confirmed only where the page text was read in full and the page has one
+        # unambiguous price context; otherwise this is a discrepancy to check, not
+        # an established contradiction.
+        any_confirmed = any(ok for *_, ok in mismatch)
         findings.append(make_finding(
-            category="corroboration", finding_type="defect", severity="high", status="confirmed", confidence=0.85,
-            title="Structured data contradicts the visible page",
-            root_cause="The markup states facts that the visible page does not: " + "; ".join(d for _, d in mismatch[:2]),
-            evidence=[{"type": "fact_consistency", "description": d, "urls": [u]} for u, d in mismatch[:8]],
-            affected_pages=sorted({u for u, _ in mismatch}),
+            category="corroboration", finding_type="defect", severity="high" if any_confirmed else "medium",
+            status="confirmed" if any_confirmed else "suspected", confidence=0.85 if any_confirmed else 0.5,
+            title=("Structured data contradicts the visible page" if any_confirmed
+                   else "Structured data may contradict the visible page"),
+            root_cause=("The markup states facts that the visible page does not: "
+                        if any_confirmed else
+                        "The markup states facts that were not found in the page text that could be read: ")
+                       + "; ".join(d for _, d, _ in mismatch[:2]),
+            evidence=[{"type": "fact_consistency", "description": d, "urls": [u]} for u, d, _ in mismatch[:8]],
+            affected_pages=sorted({u for u, _, _ in mismatch}),
             suggested_action={
                 "summary": "Make the markup and the visible page state the same fact",
                 "steps": ["Find which of the two values is current",
                           "Generate the JSON-LD from the same data source as the visible value"],
-                "priority": "high", "effort": "medium",
+                "priority": "high" if any_confirmed else "medium", "effort": "medium",
                 "expected_benefit": "Assistants cannot pick up a stale or wrong value from the markup",
                 "verification": "Markup values appear verbatim on the page"},
             provenance={"skill": "crawl-render-audit", "script": "validate_structured_data.py",
