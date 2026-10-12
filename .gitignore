@@ -39,3 +39,6 @@ temp/
 benchmark_runs/
 audit_out/
 urls.txt
+
+# Local change notes (not shipped)
+CHANGES.md

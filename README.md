@@ -107,7 +107,7 @@ The marketplace is installed as a unit: the skills share one library (`common/`)
 ```
 Brand-AI-Readiness-Audit/
   marketplace.json           manifest: lists all skills, marks the entrypoint
-  README.md, CHANGES.md      (what changed and why)
+  README.md
   common/                    shared library
     access_guard.py          bot-challenge / WAF interstitial detection
     auth_pages.py            login pages kept out of scope
