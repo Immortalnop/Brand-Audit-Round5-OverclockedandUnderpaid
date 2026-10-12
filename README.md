@@ -41,9 +41,12 @@ URL
  v
 audit-orchestrator  pass 1: run_audit.py --out-dir audit_out
  |  1. validate URL
- |  2. acquire once: robots (RFC 9309) -> sitemap -> llms.txt -> priority crawl
- |     (home, nav/footer, key intents; <= 3 pages per URL template; bot-challenge
- |     aware; login pages kept out of scope)
+ |  2. acquire once: robots (fail-closed; see acquire_site.py ROBOTS_POLICY) ->
+ |     sitemap -> llms.txt -> priority crawl (home always first, then nav/footer,
+ |     then key intents; <= 3 pages per URL template from the sitemap/body-link
+ |     frontier, with key-intent and site-wide links exempt up to an absolute
+ |     ceiling of 6 and every exemption counted in coverage; bot-challenge aware;
+ |     login pages kept out of scope)
  |  3. independent batch (parallel): crawl-render-audit checks, claims, identity,
  |     sitemap dates, entity links, site graph
  |  4. important facts (sequential)

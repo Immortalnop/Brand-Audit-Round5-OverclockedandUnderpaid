@@ -27,8 +27,12 @@ class Limits:
     PER_FETCH_TIMEOUT_MS: int = 3500
     MAX_EXTERNAL_CONCURRENCY: int = 4
     MAX_TOTAL_HTTP_REQUESTS: int = 90
-    # Representative sampling: at most this many pages per URL template.
+    # Representative sampling: at most this many pages per URL template from
+    # the sitemap/body-link frontier. Key-intent and site-wide navigation URLs
+    # are exempt from this soft cap (see acquire_site.py), so a second,
+    # absolute ceiling bounds every template regardless of exemption.
     MAX_PER_TEMPLATE: int = 3
+    MAX_PER_TEMPLATE_HARD: int = 6
     # Courtesy stop: stop crawling after this many consecutive challenge
     # or rate-limit responses -- repeating them adds load and no evidence.
     MAX_CONSECUTIVE_CHALLENGES: int = 3

@@ -167,6 +167,70 @@ def _probe_https(host,tr,limits,i,allow_private_targets):
             'requests_used':used}
 
 
+def _canonical_variant(origin,dest):
+    """The canonical origin `dest` names for `origin`, or None.
+
+    Only a scheme upgrade and/or a www prefix change is accepted -- the two ways
+    a site states "this is my canonical origin" for the same site. Anything else
+    (a different host, a different port, a downgrade to http) is a genuine
+    cross-origin redirect and stays refused: a re-anchor must never widen the
+    audit's scope to a host the caller did not ask for."""
+    a,b=urlsplit(origin),urlsplit(dest)
+    if b.scheme not in ('http','https') or not b.hostname:return None
+    if b.port not in (None,443 if b.scheme=='https' else 80):return None
+    if a.port not in (None,443 if a.scheme=='https' else 80):return None
+    if a.scheme=='https' and b.scheme!='https':return None  # never downgrade
+    strip=lambda h:(h or '').lower().removeprefix('www.')
+    if strip(a.hostname)!=strip(b.hostname):return None
+    new=f'{b.scheme}://{b.netloc.lower()}'
+    return None if new==origin else new
+
+
+def _resolve_robots(site_url,origin,tr_factory,limits,i):
+    """Fetch /robots.txt, re-anchoring once to the canonical origin the site
+    redirects it to.
+
+    A site that answers http://example.com/robots.txt with a 301 to
+    https://www.example.com/robots.txt has not become unreachable -- it has told
+    us where it lives. Refusing the cross-origin redirect and stopping there
+    analyses zero pages of a perfectly healthy site. So the destination is
+    checked (_canonical_variant: same site, same port, no downgrade), the
+    transport is re-anchored to it, and robots.txt is read there. At most one
+    re-anchor, and the move is recorded in robots_data.canonical_origin.
+
+    Returns (site_url, origin, transport, response, status, attempts, anchor)."""
+    anchor={'reanchored':False};spent_requests=spent_bytes=0
+    for attempt in range(2):
+        tr=tr_factory(origin)
+        # The re-anchored transport continues the one shared allowance; the
+        # refused first request is not forgiven just because we moved origin.
+        tr.requests=spent_requests;tr.bytes=spent_bytes
+        robots_url=urljoin(origin,'/robots.txt')
+        resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
+        attempts=[status]
+        retryable={'tls_certificate_error','tls_handshake_error','tls_protocol_error','connection_error','dns_error','timeout','failed'}
+        if status in retryable and limits.MAX_FETCH_RETRIES>0 and monotonic()<tr.deadline:
+            i.record_retry()
+            resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
+            attempts.append(status)
+        if attempt==0 and status=='cross_origin_redirect_blocked' and tr.blocked_redirects:
+            dest=tr.blocked_redirects[-1]['to']
+            new_origin=_canonical_variant(origin,dest)
+            if new_origin and classify_url(new_origin+'/',allow_private=tr.allow_private).safe:
+                anchor={'reanchored':True,'from':origin,'to':new_origin,'via':dest,
+                        'requests_used':tr.requests}
+                path=urlsplit(site_url).path or '/'
+                query=urlsplit(site_url).query
+                site_url=new_origin+path+(('?'+query) if query else '')
+                origin=new_origin
+                spent_requests,spent_bytes=tr.requests,tr.bytes
+                continue
+            anchor={'reanchored':False,'refused_redirect':dest,
+                    'reason':'not a scheme or www variant of the requested origin'}
+        return site_url,origin,tr,resp,status,attempts,anchor
+    return site_url,origin,tr,resp,status,attempts,anchor
+
+
 def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_targets=False,seed_urls=None):
     """seed_urls (targeted mode): audit exactly these same-origin pages plus the
     homepage, without sampling the sitemap or following links."""
@@ -176,14 +240,13 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     if not check.safe and check.reason not in ('dns_resolution_failed','dns_resolution_error'):
         i.record_safety_block(site_url,check.reason);i.end_stage('acquisition')
         return AuditArtifacts(site_url,origin,(),freeze_value({'allowed_general':False,'status':'not_checked','ai_crawler_directives':{}}),freeze_value({'present':False,'status':'not_checked'}),freeze_value({'discovered':False,'status':'not_checked','urls':[]}),freeze_value({'pages_crawled':0,'total_bytes':0,'total_requests':0}),('initial_url_blocked:'+check.reason,))
-    tr=Transport(origin,min(deadline.deadline_monotonic,deadline.stage_deadlines['acquisition']),limits,i,allow_private_targets)
-    warnings=[];probe_failures=[];challenged_probes=[];robots_url=urljoin(origin,'/robots.txt');resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
-    robots_attempts=[status]
+    warnings=[];probe_failures=[];challenged_probes=[]
     retryable={'tls_certificate_error','tls_handshake_error','tls_protocol_error','connection_error','dns_error','timeout','failed'}
-    if status in retryable and limits.MAX_FETCH_RETRIES>0 and monotonic()<tr.deadline:
-        i.record_retry()
-        resp,status=tr.get(robots_url,robots_exempt=True,max_bytes=512_000)
-        robots_attempts.append(status)
+    _factory=lambda o:Transport(o,min(deadline.deadline_monotonic,deadline.stage_deadlines['acquisition']),limits,i,allow_private_targets)
+    site_url,origin,tr,resp,status,robots_attempts,canonical=_resolve_robots(site_url,origin,_factory,limits,i)
+    robots_url=urljoin(origin,'/robots.txt')
+    if canonical.get('reanchored'):
+        warnings.append('canonical_origin_reanchored:'+canonical['to'])
     if status!='ok':probe_failures.append({'url':robots_url,'reason':'tls_certificate_error' if 'tls_certificate_error' in robots_attempts else status,'final_outcome':status,'attempt_outcomes':robots_attempts})
     elif resp.status_code not in (200,404,410):probe_failures.append({'url':robots_url,'reason':'http_error','http_status':resp.status_code})
     robots_access={'kind':'ok','vendor':None,'signals':[]}
@@ -275,22 +338,38 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
             valid=not r.truncated and 'html' not in r.headers.get('Content-Type','').lower() and not r.text.lstrip().lower().startswith(('<html','<!doctype')) and len(r.text.strip())>=10 and urlsplit(r.final_url).path=='/llms.txt'
             llms={'present':valid,'status':'ok' if valid else 'malformed'}
     requests_after_discovery=tr.requests
-    # Representative sampling. A priority frontier replaces the FIFO queue:
-    # home first, then site-wide navigation/footer links, then key-intent pages,
-    # then sitemap and body links -- and no URL template may take more than
-    # MAX_PER_TEMPLATE pages, so one template (product versions, tag archives,
-    # paginated lists) can never consume the whole page budget.
+    # Representative sampling. A priority frontier replaces the FIFO queue, with
+    # the homepage pinned ahead of everything else: it carries the site's identity
+    # and its indexing controls, and an About page that happens to be in the
+    # sitemap must not displace it when the page budget is small. Order is
+    #   home, then site-wide navigation/footer/region links, then key-intent
+    #   pages (About first among them), then sitemap and body links.
+    #
+    # TEMPLATE CAP, stated as it is enforced: a URL template takes at most
+    # MAX_PER_TEMPLATE pages from the *sitemap and body-link* frontier, so one
+    # template (product versions, tag archives, paginated lists) cannot consume
+    # the page budget. Two kinds of URL are exempt from that soft cap, because
+    # their value does not come from template diversity: a recognized key intent
+    # (about, contact, pricing, products ...) and a site-wide navigation or
+    # region link. Many product, blog and docs paths do match a key intent, so
+    # the exemption is not rare -- which is why MAX_PER_TEMPLATE_HARD is an
+    # absolute ceiling nothing is exempt from, and every exemption used is
+    # counted in coverage.template_cap_exemptions.
     heap=[];seq=[0];visited=set();discovered={visit_key(site_url)};pages=[];blocked=set();template_counts=Counter()
     cap=getattr(limits,'MAX_PER_TEMPLATE',3)
+    hard_cap=max(cap,getattr(limits,'MAX_PER_TEMPLATE_HARD',cap*2))
+    home_key=visit_key(site_url);exemptions=Counter()
     def push(url,depth,source_rank):
         key=visit_key(url)
         if key in visited:return
         intent=intent_of(url)
         seq[0]+=1
         # The About page is the passage the AG-01 quotability check judges; once a
-        # link to it is seen it is fetched next, ahead of the rest of the frontier.
+        # link to it is seen it is fetched next, ahead of the rest of the frontier
+        # -- but never ahead of the homepage, which is rank 0 of its own.
         if intent in ('about','about-us','company','team'):source_rank=0
-        heapq.heappush(heap,(1 if template_counts[template_key(url)]>=cap else 0,source_rank,0 if intent else 1,depth,url,seq[0],depth,source_rank,intent))
+        heapq.heappush(heap,(0 if key==home_key else 1,1 if template_counts[template_key(url)]>=cap else 0,
+                             source_rank,0 if intent else 1,depth,url,seq[0],depth,source_rank,intent))
     push(site_url,0,0)
     sitemap_urls=[]
     for raw in sitemap['urls']:
@@ -316,13 +395,20 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
     # robots-exempt homepage GET when the server refused or throttled robots.txt.
     homepage_only=robots_status in ('challenged','rate_limited','unavailable_4xx')
     while heap and monotonic()<tr.deadline and len(pages)<limits.MAX_PAGES_CRAWLED:
-        _,_,_,_,url,_,depth,source_rank,intent=heapq.heappop(heap)
+        _,_,_,_,_,url,_,depth,source_rank,intent=heapq.heappop(heap)
         key=visit_key(url)
         if key in visited:i.record_deduplicated();continue
         visited.add(key)
         if depth>limits.MAX_CRAWL_DEPTH:i.record_skip('max_crawl_depth_exceeded');continue
         tkey=template_key(url)
-        if template_counts[tkey]>=cap and source_rank>1 and not intent:i.record_skip('template_cap_reached');continue
+        if template_counts[tkey]>=hard_cap:
+            # The absolute ceiling: nothing is exempt from this one.
+            i.record_skip('template_hard_cap_reached');continue
+        if template_counts[tkey]>=cap:
+            if source_rank>1 and not intent:i.record_skip('template_cap_reached');continue
+            # Exempt, and recorded as such so the cap is never described as
+            # absolute when it is not.
+            exemptions['key_intent' if intent else 'site_wide_link']+=1
         if conservative and not (homepage_only and url==site_url):i.record_skip('robots_permission_unknown');continue
         if not conservative and not rp.can_fetch(USER_AGENT,url):blocked.add(url);i.record_skip('robots_disallowed');continue
         if re.search(r'/(?:logout|signout|admin|wp-admin|checkout|cart|account)(?:/|$)',urlsplit(url).path,re.I):i.record_skip('sensitive_route');continue
@@ -407,6 +493,8 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
          'pages_per_template':dict(Counter(template_key(p.url) for p in analyzed).most_common(10)),
          'key_intents_found':sorted({intent_of(p.url) for p in analyzed if intent_of(p.url)}),
          'asset_links_found':len(asset_links),'challenge_stop':challenge_stop,
+         'template_cap':cap,'template_cap_hard':hard_cap,'template_cap_exemptions':dict(exemptions),
+         'home_fetched_first':bool(pages) and pages[0].url==site_url,
          'urls_out_of_scope':len(login),
          'out_of_scope_pages':[{'url':p.url,'reason':'login_page','signals':list((p.features or {}).get('login_signals',()))} for p in login][:20]}
     # Where every request of the shared allowance went. Robots reads, sitemap and
@@ -426,6 +514,7 @@ def acquire_site(site_url,deadline,limits,instrumentation=None,allow_private_tar
         # The one documented exception to fail-closed, so no reader has to infer it.
         'homepage_diagnostic':bool(conservative and homepage_only and any(p.url==site_url for p in pages)),
         'homepage_diagnostic_allowed':bool(conservative and homepage_only),
+        'canonical_origin':canonical,
         'general_disallow':general_disallow,'ai_crawler_directives':directives,'ai_crawler_paths':ai_paths,'fetch_outcome':status,'attempt_outcomes':robots_attempts,
         'access':robots_access,'http_status':resp.status_code if resp else None}),
         freeze_value(llms),freeze_value(sitemap),freeze_value({'transport_diagnostics':tr.diagnostics,'transport_environment':environment_summary(),'probe_failures':probe_failures,'challenged_probes':challenged_probes,'https_probe':https_probe,

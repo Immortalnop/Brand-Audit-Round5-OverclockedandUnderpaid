@@ -460,3 +460,118 @@ def test_a5_report_accounts_for_every_stage_that_makes_requests():
     assert acct["allowance"] == Limits().MAX_TOTAL_HTTP_REQUESTS
     assert acct["on_site_requests"] == acct["acquisition"]["total"] + acct["headless_rendering"]["requests"]
     assert "external_search_queries" in acct
+
+
+# ------------------------------- A6 canonical origin and homepage-first sampling
+def test_a6_canonical_variant_never_widens_scope():
+    from acquire_site import _canonical_variant
+    assert _canonical_variant("http://ex.com", "https://www.ex.com/robots.txt") == "https://www.ex.com"
+    assert _canonical_variant("http://ex.com", "https://ex.com/robots.txt") == "https://ex.com"
+    assert _canonical_variant("https://www.ex.com", "https://ex.com/robots.txt") == "https://ex.com"
+    # Anything that is not a scheme/www variant of the requested origin stays refused.
+    for origin, dest in (("https://ex.com", "http://ex.com/robots.txt"),        # downgrade
+                         ("https://ex.com", "https://evil.com/robots.txt"),     # other host
+                         ("https://ex.com", "https://sub.ex.com/robots.txt"),   # subdomain
+                         ("https://ex.com", "https://ex.com:8443/robots.txt"),  # other port
+                         ("https://ex.com", "https://ex.com/robots.txt")):      # no move
+        assert _canonical_variant(origin, dest) is None, (origin, dest)
+
+
+def test_a6_robots_redirect_to_canonical_origin_is_followed_once(monkeypatch):
+    """The checked re-anchor: a site whose /robots.txt 301s to its canonical
+    origin is not unreachable. Without it the audit made no target request and
+    analysed zero pages of a healthy site."""
+    import acquire_site as acq
+    from constants import Limits
+    from models import make_deadline
+    from fixtures_server import start_server
+
+    canonical, stop_canonical = start_server(sitemap_mode="ok")
+    routes = {"/robots.txt": (301, "", {"Location": canonical + "/robots.txt", "Content-Type": "text/plain"}),
+              "/": (301, "", {"Location": canonical + "/", "Content-Type": "text/html"})}
+    bare, stop_bare = start_server(routes=routes)
+    # Two loopback ports are a different origin by any correct rule, so the
+    # variant test is widened for this fixture only; _resolve_robots and the rest
+    # of acquisition are the real code under test.
+    real_variant = acq._canonical_variant
+    monkeypatch.setattr(acq, "_canonical_variant",
+                        lambda origin, dest: canonical if dest.startswith(canonical) else real_variant(origin, dest))
+    try:
+        limits = Limits()
+        artifacts = acq.acquire_site(bare + "/", make_deadline(limits), limits, allow_private_targets=True)
+    finally:
+        stop_bare()
+        stop_canonical()
+    anchor = dict(artifacts.robots_data["canonical_origin"])
+    assert anchor["reanchored"] is True and anchor["to"] == canonical
+    assert artifacts.robots_data["status"] == "ok"
+    assert not artifacts.robots_data["conservative_fail_closed"]
+    assert artifacts.pages and artifacts.pages[0].url == canonical + "/"
+    assert any("canonical_origin_reanchored" in w for w in artifacts.warnings)
+    # The refused first request is still charged to the shared allowance.
+    assert artifacts.acquisition_metadata["total_requests"] >= 2
+
+
+def test_a6_non_canonical_redirect_is_refused_with_its_reason():
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from fixtures_server import start_server
+    other, stop_other = start_server()
+    routes = {"/robots.txt": (301, "", {"Location": other + "/robots.txt", "Content-Type": "text/plain"})}
+    bare, stop_bare = start_server(routes=routes)
+    try:
+        limits = Limits()
+        artifacts = acquire_site(bare + "/", make_deadline(limits), limits, allow_private_targets=True)
+    finally:
+        stop_bare()
+        stop_other()
+    anchor = dict(artifacts.robots_data["canonical_origin"])
+    assert anchor["reanchored"] is False and anchor["refused_redirect"].startswith(other)
+    assert artifacts.robots_data["conservative_fail_closed"] is True
+
+
+def test_a6_homepage_is_always_the_first_content_request():
+    """The priority frontier used to rank an About page ahead of the homepage, so
+    a one-page budget fetched /about and missed the site's identity and its
+    indexing controls entirely."""
+    from dataclasses import replace
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from fixtures_server import start_server
+    for page_cap in (1, 2, 3):
+        url, stop = start_server(sitemap_mode="ok")
+        try:
+            limits = replace(Limits(), MAX_PAGES_CRAWLED=page_cap)
+            artifacts = acquire_site(url + "/", make_deadline(limits), limits, allow_private_targets=True)
+        finally:
+            stop()
+        assert artifacts.pages[0].url == url + "/", (page_cap, [p.url for p in artifacts.pages])
+        assert artifacts.acquisition_metadata["coverage"]["home_fetched_first"] is True
+        if page_cap >= 2:
+            # Home first, then the About page the AG-01 passage comes from.
+            assert artifacts.pages[1].url == url + "/about"
+
+
+def test_a6_template_cap_exemptions_are_bounded_and_counted():
+    """"Never more than three pages per template" was stronger than the
+    enforcement: key intents and site-wide links are exempt from the soft cap.
+    The exemption is now bounded by a hard ceiling and reported."""
+    from constants import Limits
+    from models import make_deadline
+    from acquire_site import acquire_site
+    from fixtures_server import start_server
+    limits = Limits()
+    assert limits.MAX_PER_TEMPLATE_HARD >= limits.MAX_PER_TEMPLATE
+    url, stop = start_server(sitemap_mode="ok")
+    try:
+        artifacts = acquire_site(url + "/", make_deadline(limits), limits, allow_private_targets=True)
+    finally:
+        stop()
+    cov = artifacts.acquisition_metadata["coverage"]
+    assert cov["template_cap"] == limits.MAX_PER_TEMPLATE
+    assert cov["template_cap_hard"] == limits.MAX_PER_TEMPLATE_HARD
+    assert isinstance(dict(cov["template_cap_exemptions"]), dict)
+    # No template may exceed the hard ceiling, exempt or not.
+    assert all(n <= limits.MAX_PER_TEMPLATE_HARD for n in dict(cov["pages_per_template"]).values())

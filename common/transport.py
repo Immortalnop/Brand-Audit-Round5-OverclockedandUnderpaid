@@ -57,6 +57,11 @@ class Transport:
         self.origin=origin;self.deadline=deadline;self.limits=limits;self.i=instrumentation
         self.allow_private=allow_private;self.bytes=0;self.requests=0;self.last_request=0.
         self.diagnostics=[];self._address_attempts={};self.tls_settings={}
+        # Cross-origin redirects are refused (scope and SSRF policy), but the
+        # destination is recorded: a site whose /robots.txt redirects to its
+        # canonical origin is a configuration fact the caller needs in order to
+        # re-anchor deliberately instead of reporting an unreachable site.
+        self.blocked_redirects=[]
         self.robots=None;self.delay=0. if allow_private else getattr(limits,'REQUEST_DELAY_S',.2)
     def _diagnostic(self,url,category,exc=None,**details):
         item={'url':url,'category':category,**details}
@@ -139,6 +144,7 @@ class Transport:
                     self.i.record_request(True);counted=True
                     dest=urljoin(url,hdr['Location'])
                     if not same_origin(dest,self.origin):
+                        if len(self.blocked_redirects)<8:self.blocked_redirects.append({'from':url,'to':dest,'status':status})
                         self.i.record_skip('cross_origin_redirect_blocked');return None,'cross_origin_redirect_blocked'
                     network_elapsed+=time.monotonic()-network_started
                     self.i.record_redirect();url=dest;continue
