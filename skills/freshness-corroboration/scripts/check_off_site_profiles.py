@@ -49,6 +49,7 @@ from platforms import google_maps_link, host_of, review_platform
 from resolve_entity_identity import ORG_TYPES, _normalize_org_name
 from search_provider import SearchProviderError, is_configured, search
 from structured_data import iter_nodes, types_of
+from schema_values import iter_schema_nodes, resolve_iri_value
 from transport import Transport
 
 LOOKUP_ENV = "OFF_SITE_LOOKUP"
@@ -103,15 +104,31 @@ def _handle(url):
     return candidates[0] if candidates else ""
 
 
-def _organization(artifacts):
+def _organization(artifacts, limitations=None):
     """(pages with Organization markup, brand names, sameAs URLs, business kind)."""
     pages, names, same_as, all_types = [], [], [], set()
     for page in artifacts.pages:
+        contexts = {id(node): (ctx, types) for node, ctx, types in iter_schema_nodes(page.jsonld_blocks, page.final_url or page.url)}
         found = False
         for node in iter_nodes(page.jsonld_blocks):
             if not isinstance(node, Mapping):
                 continue
             types = types_of(node)
+            context, recognized = contexts.get(id(node), ({}, set()))
+            has_context = bool(context.get('vocab') or context.get('terms') or context.get('schema_context'))
+            if context.get('supported') is False or (has_context and not recognized):
+                if limitations is not None:
+                    limitations.append('Profile context/type not interpreted on ' + page.url)
+                continue
+            if has_context:
+                types = recognized
+            elif recognized:
+                types = recognized
+            else:
+                raw_types = node.get('@type', ())
+                raw_types = raw_types if isinstance(raw_types, (list, tuple)) else [raw_types]
+                if any(isinstance(t, str) and ':' in t for t in raw_types):
+                    continue
             all_types |= types
             if not types & ORG_TYPES and not types & _LOCAL_TYPES:
                 continue
@@ -120,14 +137,30 @@ def _organization(artifacts):
                 value = node.get(key)
                 names.extend(value if isinstance(value, (list, tuple)) else [value])
             value = node.get("sameAs")
-            same_as.extend(value if isinstance(value, (list, tuple)) else [value])
+            values = value if isinstance(value, (list, tuple)) else [value]
+            if has_context:
+                for value in values:
+                    if value is None:
+                        continue
+                    resolved, state = resolve_iri_value(value, context, 'sameAs')
+                    if state == 'valid':
+                        # Interpretation and profile consumer eligibility differ:
+                        # non-HTTP identifiers are not malformed JSON-LD.
+                        if resolved.startswith(('https://','http://')):
+                            same_as.append(resolved)
+                        elif limitations is not None:
+                            limitations.append('Non-HTTP sameAs identifier is not fetched as a web profile on ' + page.url)
+                    elif limitations is not None:
+                        limitations.append('Profile IRI form/context not interpreted on ' + page.url)
+            else:
+                same_as.extend(v for v in values if isinstance(v, str))
         if found:
             pages.append(page.url)
     kind = "local" if all_types & _LOCAL_TYPES else "software" if (
         all_types & _SOFTWARE_TYPES or any(p.page_type == "software" for p in artifacts.pages)) else (
         "public" if all_types & _PUBLIC_TYPES or _PUBLIC_HOST.search(host_of(artifacts.site_url)) else "general")
-    names = [n for n in dict.fromkeys(names) if isinstance(n, str) and n.strip()]
-    same_as = [u.strip() for u in dict.fromkeys(same_as) if isinstance(u, str) and u.strip()]
+    names = list(dict.fromkeys(n for n in names if isinstance(n, str) and n.strip()))
+    same_as = list(dict.fromkeys(u.strip() for u in same_as if isinstance(u, str) and u.strip()))
     return pages, names, same_as, kind
 
 
@@ -298,12 +331,13 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
     if deadline is not None and deadline.expired():
         return skill_result("freshness-corroboration", status="insufficient_evidence",
                             warnings=["Off-site profile checks skipped: deadline reached."])
-    org_pages, names, same_as, kind = _organization(artifacts)
+    interpretation_limits = []
+    org_pages, names, same_as, kind = _organization(artifacts, interpretation_limits)
     identity_data = identity.get("data", {}) if isinstance(identity, Mapping) else {}
     if isinstance(identity_data.get("canonical_name"), str):
         names = [identity_data["canonical_name"]] + [n for n in names if n != identity_data["canonical_name"]]
     site_host = host_of(artifacts.site_url) or host_of(artifacts.normalized_origin)
-    warnings, findings = [], []
+    warnings, findings = sorted(set(interpretation_limits))[:10], []
 
     # --- sameAs profiles ---------------------------------------------------
     profiles, invalid = [], []
@@ -373,7 +407,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
     if broken:
         confirmed = any(t["verdict"] == "broken" for t in broken)
         severity = "medium" if confirmed else "low"
-        pages = org_pages[:10] or [artifacts.site_url]
+        pages = org_pages or [artifacts.site_url]
         findings.append(make_finding(
             category="off_site_presence", finding_type="defect", severity=severity,
             status="confirmed" if confirmed else "suspected", confidence=0.9 if confirmed else 0.6,
@@ -381,7 +415,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
             root_cause="A sameAs or profile link that is invalid or leads to a missing page breaks the chain "
                        "assistants follow to confirm who the brand is",
             evidence=[{"type": "off_site_profile", "description": _broken_text(t),
-                       "urls": pages if t["source"] == "sameAs" else [t["source"]]}
+                       "urls": pages[:10] if t["source"] == "sameAs" else [t["source"]]}
                       for t in broken[:10]],
             affected_pages=sorted({u for t in broken for u in (pages if t["source"] == "sameAs" else [t["source"]])}),
             suggested_action=_action(
@@ -396,7 +430,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
 
     mismatched = [t for t in profiles if t.get("verdict") == "mismatch"]
     if mismatched:
-        pages = org_pages[:10] or [artifacts.site_url]
+        pages = org_pages or [artifacts.site_url]
         findings.append(make_finding(
             category="off_site_presence", finding_type="defect", severity="medium",
             status="suspected", confidence=0.6,
@@ -404,7 +438,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
             root_cause="A profile linked as the brand's names neither the brand nor the site, so assistants "
                        "may attribute another account's content to the brand",
             evidence=[{"type": "off_site_profile", "description": f"{t['url']}: {t['detail']}",
-                       "urls": pages if t["source"] == "sameAs" else [t["source"]]}
+                       "urls": pages[:10] if t["source"] == "sameAs" else [t["source"]]}
                       for t in mismatched[:10]],
             affected_pages=sorted({u for t in mismatched for u in (pages if t["source"] == "sameAs" else [t["source"]])}),
             suggested_action=_action(
@@ -435,7 +469,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
             warnings.append(f"Review-platform search not completed ({search_note}).")
     metrics["review_platform_search"] = ("not_run" if searched is None else sorted(searched))
     if not linked and not exempt and html_pages:
-        pages = [p.url for p in html_pages][:10]
+        pages = [p.url for p in html_pages]
         if searched:
             description = ("Search found the brand on " + ", ".join(sorted(searched)) +
                            ", but no crawled page or sameAs link points to those profiles")
@@ -454,7 +488,7 @@ def check_off_site_profiles(artifacts, identity, deadline, limits, instrumentati
             root_cause="Assistants answer 'is this brand any good?' from review and directory platforms; "
                        "a brand with no linked review profile leaves them nothing to corroborate it with",
             evidence=[{"type": "review_platforms", "description": description, "urls": pages[:3]}],
-            affected_pages=pages[:3],
+            affected_pages=pages,
             suggested_action=_action(
                 f"Claim and link review profiles that fit the business, such as {_SUGGESTED[kind]}",
                 [f"Claim or create profiles on review platforms that fit the business ({_SUGGESTED[kind]})",

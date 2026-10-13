@@ -189,3 +189,23 @@ requires frozen host rehearsals, extracted-package verification and a quality
 review record. Independent human labels and an actual presentation recording
 cannot be replaced with synthetic outcomes or test counts. No independent
 precision, calibration, business uplift or complete-plan claim is made yet.
+
+## Final native profile correction
+
+Review of the first frozen six-site batch found that native off-site profile
+advice used its three-page display sample as affected reach. All supported pages
+now survive in JSON; broken/mismatched profile groups also retain full source
+reach. The native profile interpreter now resolves supported external-base and
+`@id` forms, skips unsupported/non-HTTP forms with limitations, and filters names
+before deduplication so structured values cannot cause an unhashable-member crash.
+Regression controls cover twelve supported pages and actual resolved profile URLs.
+
+Final candidate suite after this correction: **1,293 passed in 109.19s**;
+`verification/phase7-final-candidate-suite.txt`. No confidence rescore was applied.
+The first frozen review set is now development evidence, not untouched holdout.
+A fresh candidate, new review set and final rehearsals will retain their own hashes.
+
+The packaging review also restored the three documented public localhost TLS test
+fixtures to an explicit allowlist; unrelated private keys remain excluded. The
+extracted first-frozen package passed **1,287 tests, one skipped build-tool module**
+in 110.57s, including the real TLS controls. The final extraction is checked again.

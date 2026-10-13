@@ -60,5 +60,6 @@ def test_committed_build_excludes_existing_user_assets_without_reset(tmp_path):
     assert record['uncommitted_changes'] is False
     assert not any(name.endswith(('.zip','.sqlite','.pdf')) or name.startswith(('Plan','final_version_plan','benchmark_runs')) for name in files)
     assert 'common/schema_values.py' in files
+    assert package._PUBLIC_TLS_FIXTURES <= set(files)
     with zipfile.ZipFile(path) as archive:
         assert 'RELEASE.json' in archive.namelist() and archive.testzip() is None

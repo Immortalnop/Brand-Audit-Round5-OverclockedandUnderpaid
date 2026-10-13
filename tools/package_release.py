@@ -35,6 +35,9 @@ INCLUDE_DIRS = ("skills", "common", "examples", "tests")
 _SKIP_DIRS = {"__pycache__", ".pytest_cache", "benchmark_runs", ".git", '.venv', '.mypy_cache', '.ruff_cache', 'node_modules'}
 _SKIP_FILE = re.compile(r"\.(?:pyc|pyo|pdf|sqlite3?|db)(?:-(?:wal|shm|journal))?$|^\.env(?:\..*)?$|\.(?:pem|key)$|^id_(?:rsa|ed25519)$", re.I)
 _SECRET = re.compile(rb"(?:PAGESPEED_API_KEY|SEARCH_API_KEY)\s*=\s*['\"]?[A-Za-z0-9_\-]{16,}")
+# Public, committed localhost test material documented in this fixture folder.
+# It authenticates no production service and is needed for TLS safety controls.
+_PUBLIC_TLS_FIXTURES = {'tests/tls-fixtures/ca.pem', 'tests/tls-fixtures/server.pem', 'tests/tls-fixtures/server-key.pem'}
 
 
 def _git(*args):
@@ -53,11 +56,12 @@ def release_files(root=None):
         for folder, dirs, names in os.walk(os.path.join(root, top)):
             dirs[:] = sorted(d for d in dirs if d not in _SKIP_DIRS)
             for name in sorted(names):
-                if not _SKIP_FILE.search(name):
-                    path = os.path.join(folder, name)
+                path = os.path.join(folder, name)
+                rel = os.path.relpath(path, root).replace(os.sep, '/')
+                if not _SKIP_FILE.search(name) or rel in _PUBLIC_TLS_FIXTURES:
                     if os.path.islink(path):
                         raise SystemExit('refusing to package symbolic link: ' + path)
-                    files.append(os.path.relpath(path, root).replace(os.sep, "/"))
+                    files.append(rel)
     return sorted(files)
 
 

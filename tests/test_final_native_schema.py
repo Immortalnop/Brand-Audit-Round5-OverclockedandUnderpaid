@@ -193,3 +193,27 @@ def test_differently_dated_entity_facts_are_not_assumed_simultaneously_current()
     a={'@type':'Organization','name':'Acme','telephone':'+1 555 010 0100','validFrom':'2020-01-01'}
     b=dict(a,telephone='+1 555 010 0199',validFrom='2026-01-01')
     assert not facts(page('/old',head=jsonld(a)),page('/new',head=jsonld(b)))['findings']
+
+
+def test_native_profiles_resolve_external_base_and_id_objects_without_false_invalid(monkeypatch):
+    from check_off_site_profiles import check_off_site_profiles
+    from constants import Limits
+    monkeypatch.setenv('OFF_SITE_LOOKUP','0');monkeypatch.delenv('SEARCH_API_URL',raising=False)
+    context={'@base':'https://profile.example/company/','@vocab':'https://schema.org/',
+             'sameAs':{'@id':'https://schema.org/sameAs','@type':'@id'}}
+    p=page(head=jsonld({'@context':context,'@type':'Organization','name':'Acme','sameAs':[{'@id':'acme'},'acme']}))
+    result=check_off_site_profiles(snapshot(p),{'data':{}},deadline(),Limits())
+    assert 'profile-link-broken' not in ids(result)
+    assert result['metrics']['same_as_links'] == 1
+    assert result['metrics']['profiles'][0]['url'] == 'https://profile.example/company/acme'
+
+
+def test_profile_opportunity_preserves_all_twelve_supported_pages(monkeypatch):
+    from check_off_site_profiles import check_off_site_profiles
+    from constants import Limits
+    monkeypatch.setenv('OFF_SITE_LOOKUP','0');monkeypatch.delenv('SEARCH_API_URL',raising=False)
+    pages=[page('/p'+str(i)) for i in range(12)]
+    result=check_off_site_profiles(snapshot(*pages),{'data':{}},deadline(),Limits())
+    finding=next(f for f in result['findings'] if f['check_id']=='review-platform-missing')
+    assert len(finding['affected_pages'])==12
+    assert len(finding['evidence'][0]['urls'])==3
