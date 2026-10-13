@@ -105,17 +105,23 @@ A muted autoplay video with no controls is a background and is not judged.
 HowTo, Review or AggregateRating markup is incomplete or contradicts the page
 (questions without answers or not shown on the page, HowTo without steps,
 ratings without a value or count, outside their scale or attached to nothing),
-and `citation-schema-opportunity` when a page shows question headings, numbered
-"how to" steps or rating text without matching markup.
+and optional `citation-schema-opportunity` for structured export of existing
+steps or ratings. Q&A without FAQPage markup creates no missing-markup finding.
+Google FAQ rich results ended on 7 May 2026; useful Q&A and FAQPage remain valid
+content, without that retired display feature.
 
 ## llms.txt
 
 Acquisition parses llms.txt (`common/llms_txt.py`), checks the pages it lists
 (crawled pages reuse the crawl result; at most 8 others get a same-origin,
 robots-checked GET) and probes `/llms-full.txt`. `check_llms_txt.py` reports
-`llms-txt-invalid` (no H1 title, no links, bare URLs, no sections, or an HTML
+`llms-txt-invalid` (no H1 title, duplicate H1 titles, or an HTML
 page served as llms-full.txt) and `llms-txt-broken-links` (listed pages that
-answer 404 or 410). Links on other domains are listed, never requested.
+answer 404 or 410). These defects concern the supplied artifact for its configured
+readers. Absence is observation only. Google Search ignores llms.txt, including
+its generative Search features; presence is no proof of ranking or citation gain.
+Links on other domains are listed, never requested. See
+[policy scope](references/search-policy.md).
 
 ## Core Web Vitals
 

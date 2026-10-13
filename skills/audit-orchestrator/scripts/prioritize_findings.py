@@ -96,7 +96,7 @@ def quadrant_of(impact: str, effort: str) -> str:
 
 def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
     """Add impact, effort, quadrant and quick_win to each item's suggested_action."""
-    for item in items:
+    for rank, item in enumerate(items, 1):
         action = dict(item.get("suggested_action") or {})
         effort = action.get("effort") if action.get("effort") in ("low", "medium", "high") else "medium"
         impact = impact_of(item, pages_analyzed)
@@ -104,6 +104,21 @@ def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
         action.update(effort=effort, impact=impact, quadrant=quadrant, quadrant_label=_QUADRANT_LABELS[quadrant],
                       quick_win=quadrant == "quick_win")
         item["suggested_action"] = action
+        assessed = (item.get('coverage') or {}).get('pages_assessed')
+        assessed = assessed if type(assessed) is int and assessed >= 0 else None
+        item['priority_basis'] = {
+            'rank': rank if str(item.get('id', '')).startswith('F-') else None,
+            'order': ['severity descending', 'status descending', 'confidence descending',
+                      'supported page count descending', 'lower effort first',
+                      'title, affected URLs, root cause, then stable ID ascending'],
+            'severity': item.get('severity'), 'status': item.get('status'),
+            'confidence': item.get('confidence'), 'confidence_basis': item.get('confidence_basis'),
+            'supported_page_count': len(set(item.get('affected_pages') or ())),
+            'assessed_page_denominator': assessed,
+            'sample_pages_analyzed': pages_analyzed,
+            'effort': effort, 'stable_id': item.get('id'),
+            'provenance': item.get('provenance'),
+            'note': 'Provenance explains confidence; it is not an additional score. The sample is not the whole site.'}
 
 
 def top_actions(findings: list, limit: int = 5) -> list:
@@ -119,6 +134,7 @@ def top_actions(findings: list, limit: int = 5) -> list:
                      "priority": action.get("priority"), "impact": action.get("impact"),
                      "effort": action.get("effort"), "quadrant": action.get("quadrant"),
                      "quick_win": bool(action.get("quick_win")), "start_here": False,
+                     "owner_roles": list(action.get('owner_roles') or ()), "priority_basis": f.get('priority_basis'),
                      "status": f.get("status")})
     confirmed = [r for r in rows if r["status"] == "confirmed"]
     first = next((r for r in confirmed if r["quick_win"]), confirmed[0] if confirmed else None)
@@ -135,7 +151,8 @@ def quick_wins(findings: list, recommendations: list, limit: int = 5) -> list:
         action = item.get("suggested_action") or {}
         if action.get("quick_win") and not any(o["summary"] == action.get("summary") for o in out):
             out.append({"id": item["id"], "title": item.get("title"), "summary": action.get("summary"),
-                        "impact": action.get("impact"), "effort": action.get("effort")})
+                        "impact": action.get("impact"), "effort": action.get("effort"),
+                        "owner_roles": list(action.get('owner_roles') or ()), "priority_basis": item.get('priority_basis')})
         if len(out) >= limit:
             break
     return out
@@ -161,5 +178,5 @@ def prioritize_findings(findings: list) -> list:
     # from the first pass -- the full ordering is therefore always exactly
     # reproducible for the same set of findings, regardless of dict/set iteration
     # order upstream (e.g. in merge_findings' bucket dict).
-    by_id = sorted(findings, key=lambda f: (f.get("title", ""), tuple(sorted(f.get("affected_pages", []))), f.get("root_cause", "")))
+    by_id = sorted(findings, key=lambda f: (f.get("title", ""), tuple(sorted(f.get("affected_pages", []))), f.get("root_cause", ""), _id_sort_key(f.get('id'))))
     return sorted(by_id, key=_score, reverse=True)

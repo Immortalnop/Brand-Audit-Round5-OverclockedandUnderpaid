@@ -256,3 +256,12 @@ association and identity/focus source reference resolves after fitting.
 Old schema 1.0 assessments require regenerated export/assessment. Legacy arrays
 remain partial and clear no missing-capability limits. Per-check semantic fields
 and scope are described in entity-corroboration-agent/SKILL.md.
+
+Release 8.4.0 action metadata adds optional `owner_roles` and `priority_basis`.
+Roles merge as a sorted union and survive top_actions/quick_wins. Priority basis
+reflects the existing order: severity, status, confidence, supported page count,
+effort, then title/URLs/cause/stable ID. Provenance explains confidence, without
+an additional score. `assessed_page_denominator` is null when not recorded;
+`sample_pages_analyzed` is context, not a site-wide or per-rule denominator.
+Git metadata wins only for this checkout; otherwise a validated RELEASE.json
+supplies portable version/commit. Dirty and unknown states remain explicit.

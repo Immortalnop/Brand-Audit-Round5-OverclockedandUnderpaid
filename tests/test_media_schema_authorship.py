@@ -274,7 +274,8 @@ def test_citation_schema_opportunities():
     (finding,) = by_id(run(analyze_citation_schema, faq_page, how_to, rated), "citation-schema-opportunity")
     assert finding["status"] == "suspected" and finding["severity"] == "low"
     text = finding["evidence_text"]
-    assert "3 question-shaped H2/H3 headings with no FAQPage markup" in text
+    assert faq_page.url not in finding["affected_pages"]
+    assert not run(analyze_citation_schema, faq_page)["findings"]
     assert "a 'How to' page with numbered steps and no HowTo markup" in text
     assert "visible rating text ('4.7 out of 5')" in text
 

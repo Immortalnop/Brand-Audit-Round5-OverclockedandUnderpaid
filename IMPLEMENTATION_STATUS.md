@@ -30,7 +30,7 @@ are preserved outside the release package.
 | 3 focused About | Targeted checks passed | Acquired body opening, exact fragments, aliases, unread targets and labeled fallback |
 | 4 semantic AG validation | Targeted checks passed | Actual acquired quotations, eligible page scope and explicit search/vision support |
 | 5 native/schema | Targeted checks passed | 43 new native/schema controls; 297 combined regressions passed |
-| 6 reporting/policy/docs | Pending | Roles, explanations, Google policy, portable version |
+| 6 reporting/policy/docs | Implemented; example/integration gates pending | 262 reporting/policy regressions passed |
 | 7 integration/release | Pending | Full suite, host workflow, extraction and evaluation limits |
 
 ## Defect dispositions
@@ -135,3 +135,25 @@ combined native, schema, handoff, merge and boundary modules **297 passed in
 6.74s**. Positive same-product/contact conflicts remain covered, alongside traps.
 Adapted old conflict fixtures now state the subject explicitly; the old legacy
 AG-04 fixture correctly remains suspected. Full integration remains pending.
+
+## Phase 6 implementation checkpoint
+
+Actions now carry suggested semantic owner roles, merged deterministically and
+propagated to top actions/quick wins. Priority explanations reflect the actual
+ordering and confidence provenance without a new score. Unknown per-rule assessed
+denominators remain unavailable. New fields use the existing safe Markdown renderer.
+
+Release version is 8.4.0 and packet/outcome version 1.1. A16 now uses valid Git
+metadata for this checkout or validated RELEASE.json outside Git, with dirty and
+unknown states explicit. Five frontmatter names/descriptions satisfy the official
+format (description lengths 372–1013; one manifest entrypoint).
+
+Google policy controls remove automatic no-llms publication tasks, keep supplied
+artifact defects scoped, and do not infer Google gains from presence. Missing
+FAQPage creates no Q&A markup finding. Existing useful Q&A and generic malformed
+JSON diagnoses remain. Primary policy sources were checked on 2026-10-13; the
+llms.txt proposal also confirms file lists and H2 sections are optional.
+
+Targeted reporting/policy/compatibility command: 262 passed in 10.17s. The old
+schema 1.0 examples are deliberately not hand-edited; regeneration from this
+candidate, complete suite and host workflow are the next required checks.

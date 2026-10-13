@@ -318,7 +318,7 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                'mechanism': 'Without JSON-LD or other structured markup, consumers must infer names, prices '
                             'and dates from visible text and layout. Search engines do not require it for '
                             'indexing, so its absence is an improvement opportunity, not a defect.'},
- 'no-llms-txt': {'expected_outcome': 'Offers an optional guide to tools that support this convention; not a '
+ 'no-llms-txt': {'expected_outcome': 'Legacy optional artifact advice; Google Search ignores llms.txt; not a '
                                      'search eligibility requirement',
                  'implementation_detail': 'Create /llms.txt. List the key pages and a short site summary.',
                  'mechanism': 'Site does not publish an llms.txt guidance file'},
@@ -624,10 +624,10 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
  'citation-schema-opportunity': {'expected_outcome': 'Visible questions, steps and ratings are also stated as '
                                                      'explicit structured facts.',
                                  'implementation_detail': 'Add FAQPage, HowTo or AggregateRating markup only '
-                                                          'where the page really shows that content. FAQ rich '
+                                                          'for an identified structured-content export consumer. FAQ rich '
                                                           'results no longer appear in Google Search and HowTo '
                                                           'rich results were retired, so the gain is machine '
-                                                          'readability, not a search feature.',
+                                                          'readability for that workflow, not a promised search feature.',
                                  'mechanism': 'Question-and-answer pairs, numbered steps and ratings are passages '
                                               'an answer can quote directly; markup states them as explicit '
                                               'structure.'},
@@ -646,14 +646,13 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                              'mechanism': 'An author given only as a plain name or as the organization, '
                                           'without a profile or credentials, cannot be connected to real '
                                           'expertise.'},
- 'llms-txt-invalid': {'expected_outcome': 'Tools that support llms.txt can follow it to the key pages.',
-                      'implementation_detail': 'Start llms.txt with one H1 title, add a short summary, list '
-                                               'key pages as Markdown links under H2 sections, and serve '
+ 'llms-txt-invalid': {'expected_outcome': 'Configured readers of the supplied artifact can follow its links; Google Search ignores it.',
+                      'implementation_detail': 'Start the supplied llms.txt with one H1 title. Summary, file '
+                                               'lists and H2 sections are optional. Serve supplied '
                                                'llms-full.txt as plain text or not at all.',
-                      'mechanism': 'Tools that read llms.txt expect its Markdown structure; a file without a '
-                                   'title or links, or an HTML page served as llms-full.txt, cannot be '
-                                   'followed.'},
- 'llms-txt-broken-links': {'expected_outcome': 'Every page llms.txt lists can be read.',
+                      'mechanism': 'The supplied optional artifact has no project title or serves HTML in '
+                                   'place of text; its configured readers cannot use it as intended.'},
+ 'llms-txt-broken-links': {'expected_outcome': 'The supplied artifact no longer points its configured readers to known dead links; gains are unmeasured.',
                            'implementation_detail': 'Update or remove each llms.txt entry that answers 404 or '
                                                     '410, and regenerate the file when pages move.',
                            'mechanism': 'llms.txt is a map for assistants; entries that lead to missing pages '
@@ -834,11 +833,27 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                    'zoom.',
           'mechanism': 'A restrictive viewport declaration can impede user zoom.'}} .items()})
 
+# Suggested semantic roles, never assignments to particular teammates. This
+# metadata enriches actions only; it does not affect severity or ordering.
+def _owner_roles(check):
+    infrastructure = ('robots', 'crawler', 'fetch', 'http-', 'https', 'tls', 'sitemap', 'redirect', 'crawl', 'response', 'broken-link')
+    content = ('about', 'brand-definition', 'author', 'answer', 'stale', 'expired', 'independent', 'mention', 'review-platform', 'namesake', 'audience', 'contact-', 'location-', 'fact-', 'facts-in-', 'pdf-only', 'question-')
+    if any(part in check for part in infrastructure):
+        return ('infrastructure', 'seo')
+    if check.startswith(('baseline:off_site', 'baseline:corroboration')):
+        return ('content', 'seo')
+    if any(part in check for part in content):
+        return ('content', 'developer', 'seo')
+    return ('developer', 'seo')
+
+CATALOG = MappingProxyType({key: MappingProxyType(dict(value, owner_roles=_owner_roles(key)))
+                           for key, value in CATALOG.items()})
+
 REQUIRED_FIELDS = ("mechanism", "implementation_detail", "expected_outcome")
 
 # Check IDs that no script emits any more. Their entries stay so that a report
 # saved by an earlier version still validates when the agent stage is merged in.
-RETIRED_CHECK_IDS = frozenset({"email-summary"})
+RETIRED_CHECK_IDS = frozenset({"email-summary", "no-llms-txt", "llms-txt-unchecked"})
 
 # Base confidence per check, proposed by tests/score_benchmark.py --suggest from
 # labelled dev findings (measured precision rounded down to a 0.1 step, at most
@@ -853,7 +868,6 @@ CALIBRATED_CONFIDENCE = MappingProxyType({
     "heading-hierarchy": 0.9,
     "markup-ratio": 0.8,
     "missing-description": 0.9,
-    "no-llms-txt": 0.9,
     "page-type-schema-gap:about": 0.9,
     "responsive-images": 0.9,
     "social-metadata": 0.9,
@@ -882,7 +896,6 @@ CALIBRATION_PROVENANCE = MappingProxyType({
     "heading-hierarchy": _basis(5, 5, 0, 0, 5, "observed_fact"),
     "markup-ratio": _basis(6, 5, 0, 1, 6, "heuristic_applicability"),
     "missing-description": _basis(6, 6, 0, 0, 6, "observed_fact"),
-    "no-llms-txt": _basis(5, 5, 0, 0, 5, "observed_fact"),
     "page-type-schema-gap:about": _basis(5, 5, 0, 0, 5, "heuristic_applicability"),
     "responsive-images": _basis(5, 5, 0, 0, 5, "observed_fact"),
     "social-metadata": _basis(6, 6, 0, 0, 6, "observed_fact"),
@@ -924,5 +937,10 @@ def enrich_finding(finding, strict=False):
     action = dict(finding["suggested_action"])
     action["implementation_detail"] = entry["implementation_detail"]
     action["expected_outcome"] = entry["expected_outcome"]
+    roles = {r for r in action.get("owner_roles", ()) if r in {"developer", "infrastructure", "content", "seo"}}
+    for cid in {check_id, *finding.get("check_ids", ())}:
+        if cid in CATALOG:
+            roles.update(CATALOG[cid]["owner_roles"])
+    action["owner_roles"] = sorted(roles)
     finding["suggested_action"] = action
     return finding

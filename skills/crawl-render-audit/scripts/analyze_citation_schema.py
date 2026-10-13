@@ -15,8 +15,7 @@ numbers. This check reads the acquisition snapshot only (no requests):
     content (question headings, numbered steps, star ratings or review counts)
     but no matching markup.
 
-Google limits FAQ rich results to a few site types and no longer shows HowTo rich
-results; the value reported here is machine-readable structure, not a promised
+Google FAQ rich results ended on 7 May 2026; HowTo rich results are also retired; the value reported here is machine-readable structure, not a promised
 search feature.
 """
 import re
@@ -222,8 +221,7 @@ def _opportunities(page, found):
     # link to another page repeats (common/html_features.py).
     answered = sum(1 for qa in features.get("question_answers") or ()
                    if (qa.get("answer") or "").strip() and not qa.get("teaser"))
-    if "FAQPage" not in found and answered >= 3:
-        out.append(f"{answered} question-shaped H2/H3 headings with no FAQPage markup")
+    # Useful Q&A needs no FAQPage markup. Absence alone is observation only.
     headings = list(page.headings or ())
     steps = sum(1 for h in headings if _STEP_HEADING.match(h or ""))
     how_to = english and (_HOW_TO_TITLE.match(page.title or "") or any(_HOW_TO_TITLE.match(h or "")
@@ -260,7 +258,7 @@ def analyze_citation_schema(artifacts, deadline):
             status="confirmed", confidence=0.85,
             title="FAQ, HowTo or review markup is incomplete or inconsistent",
             root_cause="FAQPage, HowTo, Review or AggregateRating markup is missing required parts or "
-                       "contradicts the page, so parsers discard it",
+                       "contradicts the page under the documented content checks",
             affected_pages=[p.url for p, _ in invalid],
             evidence=[{"type": "structured_data", "description": "; ".join(problems[:5]), "urls": [page.url]}
                       for page, problems in invalid[:10]],
@@ -282,20 +280,19 @@ def analyze_citation_schema(artifacts, deadline):
         findings.append(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
             status="suspected", confidence=0.6,
-            title="Pages show questions, steps or ratings without matching markup",
-            root_cause="Questions, numbered steps and ratings are visible on the page but are not stated "
-                       "as FAQPage, HowTo or AggregateRating markup",
+            title="Consider structured exports for existing steps or ratings",
+            root_cause="Numbered steps or ratings are visible; optional structured exports may suit an identified content reuse workflow",
             affected_pages=[p.url for p, _ in opportunities],
             evidence=[{"type": "structured_data", "description": "; ".join(gaps), "urls": [page.url]}
                       for page, gaps in opportunities[:10]],
             suggested_action={
-                "summary": "Mark up visible questions, steps and ratings where the content really is that",
-                "steps": ["Add FAQPage markup only for genuine question-and-answer sections shown on the page",
+                "summary": "Evaluate structured exports only for a consumer and content workflow you actually use",
+                "steps": ["Identify the intended structured-content consumer before adding optional markup",
                           "Add HowTo markup for real step-by-step instructions",
                           "Add AggregateRating to Product or Service markup only when the ratings shown are "
                           "real customer ratings"],
                 "priority": "low", "effort": "low",
-                "expected_benefit": "Assistants can lift answers, steps and ratings as explicit facts",
+                "expected_benefit": "Optional structured facts support the identified export/reuse workflow; no ranking or citation gain is measured",
                 "verification": "Validate the pages with a schema.org validator and re-run the audit"},
             provenance={"skill": "crawl-render-audit", "script": "analyze_citation_schema.py",
                         "rule_id": "citation-schema-opportunity"},

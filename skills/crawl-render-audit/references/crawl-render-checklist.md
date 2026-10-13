@@ -64,8 +64,7 @@
     rating or an author, ratings outside their bestRating/worstRating scale,
     AggregateRating without a count or with zero ratings, and a top-level
     Review or AggregateRating attached to no item.
-  - `citation-schema-opportunity` (low, suspected): three or more question
-    headings without FAQPage, a "How to" page with numbered steps without
+  - `citation-schema-opportunity` (low, suspected): optional structured-content export for a "How to" page with numbered steps without
     HowTo, or rating text on a product, service or software page without
     AggregateRating.
 - Core Web Vitals (`analyze_web_vitals.py`):
@@ -139,3 +138,5 @@
     link names an audience ("for students", /industries/, /use-cases/). Pages
     built by JavaScript are not counted toward the three pages it needs, and
     the report warns how many were skipped.
+
+Missing FAQPage/llms.txt is no universal requirement. See [Search policy](search-policy.md).

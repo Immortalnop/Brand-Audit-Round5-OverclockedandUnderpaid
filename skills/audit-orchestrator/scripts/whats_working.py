@@ -67,7 +67,7 @@ def _llms_txt(ctx):
     links = len(llms.get("links") or ())
     if not links:
         return None
-    return f"/llms.txt is present, follows the llms.txt format and lists {_plural(links, 'link')}.", None
+    return f"/llms.txt is present, follows the optional artifact format and lists {_plural(links, 'link')}. Google Search ignores it; visibility gains are unmeasured.", None
 
 
 # -- Page-level checks over the pages the metadata checks read ---------------

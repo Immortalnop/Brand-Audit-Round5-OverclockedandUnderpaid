@@ -32,7 +32,7 @@ from url_safety import same_origin
 
 PACKET_SCHEMA_VERSION = SCHEMA_VERSION
 # The release in marketplace.json; code_version() appends the commit.
-RELEASE_VERSION = "8.3.0"
+RELEASE_VERSION = "8.4.0"
 
 MAX_PACKET_BYTES = 512 * 1024
 MAX_PACKET_PAGES = 8
@@ -87,29 +87,40 @@ _TYPE_RANK = {"home": 0, "about": 1, "product": 2, "service": 2, "software": 2, 
 
 
 def code_version(root=None):
-    """'<release>+<commit>' read from the checkout's .git files (no subprocess),
-    or '<release>+unknown' outside a git checkout."""
-    root = root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    commit = "unknown"
+    """Valid checkout metadata, else validated portable release provenance.
+
+    Dirty/unknown state is explicit. RELEASE.json never overrides a valid Git
+    checkout, nor borrows a parent repository's identity.
+    """
+    import subprocess
+    from pathlib import Path
+    from json_boundary import read_json
+    root = Path(root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).resolve()
+    def git(*args):
+        return subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True,
+                              timeout=2, check=True).stdout.strip()
     try:
-        git = os.path.join(root, ".git")
-        with open(os.path.join(git, "HEAD"), encoding="utf-8") as handle:
-            head = handle.read().strip()
-        if head.startswith("ref: "):
-            ref = head[5:]
-            path = os.path.join(git, *ref.split("/"))
-            if os.path.isfile(path):
-                with open(path, encoding="utf-8") as handle:
-                    commit = handle.read().strip()
-            else:
-                with open(os.path.join(git, "packed-refs"), encoding="utf-8") as handle:
-                    commit = next((line.split()[0] for line in handle if line.strip().endswith(" " + ref)),
-                                  "unknown")
-        else:
-            commit = head
-    except (OSError, StopIteration):
+        if Path(git('rev-parse', '--show-toplevel')).resolve() == root:
+            commit = git('rev-parse', 'HEAD')
+            if re.fullmatch(r'(?:[a-f0-9]{40}|[a-f0-9]{64})', commit):
+                try:
+                    state = '.dirty' if git('status', '--porcelain', '--untracked-files=normal') else ''
+                except (OSError, subprocess.SubprocessError):
+                    state = '.state-unknown'
+                return f'{RELEASE_VERSION}+{commit[:12]}{state}'
+    except (OSError, subprocess.SubprocessError, ValueError):
         pass
-    return f"{RELEASE_VERSION}+{commit[:12]}"
+    try:
+        record = read_json(root / 'RELEASE.json', 64 * 1024)
+        if (isinstance(record, dict) and record.get('version') == RELEASE_VERSION
+                and isinstance(record.get('commit'), str)
+                and re.fullmatch(r'(?:[a-f0-9]{40}|[a-f0-9]{64})', record['commit'])
+                and (record.get('uncommitted_changes') is None or type(record.get('uncommitted_changes')) is bool)):
+            state = '.dirty' if record.get('uncommitted_changes') is True else '.state-unknown' if record.get('uncommitted_changes') is None else ''
+            return f"{RELEASE_VERSION}+{record['commit'][:12]}{state}"
+    except (OSError, ValueError, UnicodeError):
+        pass
+    return f'{RELEASE_VERSION}+unknown'
 
 
 def _sha256(text):

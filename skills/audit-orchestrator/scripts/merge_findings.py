@@ -131,6 +131,9 @@ def merge_evidence(group: list, by_severity: bool = False) -> dict:
             evidence.append(item)
         provenance.append(f.get("provenance"))
     merged = dict(best)
+    action = dict(merged.get('suggested_action') or {})
+    action['owner_roles'] = sorted({role for f in group for role in (f.get('suggested_action') or {}).get('owner_roles', ())})
+    merged['suggested_action'] = action
     merged["check_ids"] = sorted({f["check_id"] for f in group if f.get("check_id")})
     merged["evidence"] = evidence
     from models import make_evidence_text
@@ -191,6 +194,7 @@ def fold_finding(base: dict, addition: dict) -> dict:
         merged.pop("status_note", None)
         merged.pop("severity_gate", None)
     action = dict(base.get("suggested_action") or {})
+    action['owner_roles'] = sorted(set(action.get('owner_roles') or ()) | set((addition.get('suggested_action') or {}).get('owner_roles') or ()))
     if _SEVERITY_RANK.get(merged.get("severity"), 0) > _SEVERITY_RANK.get(action.get("priority"), 0):
         action["priority"] = merged["severity"]
     merged["suggested_action"] = action

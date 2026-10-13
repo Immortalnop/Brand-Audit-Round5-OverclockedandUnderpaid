@@ -230,12 +230,12 @@ def _plan(report):
         lines += [f"Impact {text(start.get('impact', 'n/a'))}, effort {text(start.get('effort', 'n/a'))}. "
                   f"Details are under {text(start.get('finding_id'), 20)} below.", ""]
     if top:
-        lines += ["## Top actions", "", "Defects only; improvement opportunities are listed with the findings.", "", "| # | Finding | Action | Priority | Impact | Effort | Quick win |",
-                  "| --- | --- | --- | --- | --- | --- | --- |"]
+        lines += ["## Top actions", "", "Defects only; improvement opportunities are listed with the findings. Roles are suggestions.", "", "| # | Finding | Action | Priority | Impact | Effort | Quick win | Suggested roles |",
+                  "| --- | --- | --- | --- | --- | --- | --- | --- |"]
         for n, t in enumerate(top, 1):
             lines.append(f"| {n} | {_cell(t.get('finding_id'), 20)}: {_cell(t.get('title'))} | "
                          f"{_cell(t.get('summary'))} | {_cell(t.get('priority'))} | {_cell(t.get('impact'))} | "
-                         f"{_cell(t.get('effort'))} | {'yes' if t.get('quick_win') else 'no'} |")
+                         f"{_cell(t.get('effort'))} | {'yes' if t.get('quick_win') else 'no'} | {_cell(', '.join(str(r) for r in _list(t.get('owner_roles'))))} |")
         lines.append("")
     if wins:
         lines += ["## Quick wins", "", "Valuable changes that take little work:", ""]
@@ -310,6 +310,9 @@ def _action(action):
     lines = []
     if action.get("summary"):
         lines += [f"**What to do:** {text(action['summary'], 600)}", ""]
+    roles = _list(action.get('owner_roles'))
+    if roles:
+        lines += ["**Suggested roles:** " + text(', '.join(str(r) for r in roles[:8]), 200), ""]
     steps = [s for s in _list(action.get("steps")) if s]
     if steps:
         lines += [f"{n}. {text(s, 600)}" for n, s in enumerate(steps[:12], 1)] + [""]
@@ -341,9 +344,15 @@ def _finding_detail(f):
     if all(isinstance(v, int) and not isinstance(v, bool) for v in (analyzed, affected)) and analyzed > 0 \
             and affected > 0:
         facts.append(f"Seen on {affected} of {analyzed} analyzed page(s)")
+    basis = _dict(f.get('priority_basis'))
+    if basis:
+        denominator = basis.get('assessed_page_denominator')
+        facts.append('Rule assessed-page denominator: ' + (str(denominator) if type(denominator) is int else 'unavailable'))
     lines += ["; ".join(facts), ""]
     if f.get("status_note"):
         lines += [text(f["status_note"], 300), ""]
+    if basis:
+        lines += ['**Priority basis:** ' + text(f"{basis.get('severity')} severity, {basis.get('status')} status, confidence {basis.get('confidence')}; {basis.get('supported_page_count')} supported page(s), {basis.get('effort')} effort. Ties use title, URLs, cause and stable ID. Provenance explains confidence; no extra score is applied.", 700), '']
     gate = _dict(f.get("severity_gate"))
     if gate.get("from") and gate.get("to"):
         lines += [f"**Severity lowered** from {text(gate['from'], 20)} to {text(gate['to'], 20)}: "

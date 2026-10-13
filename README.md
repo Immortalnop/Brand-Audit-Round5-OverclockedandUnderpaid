@@ -12,9 +12,9 @@ Validates the target URL, performs a single bounded acquisition (robots.txt, sit
 
 Analyzes the acquisition snapshot for crawlability and machine-readability issues:
 - Robots.txt and AI-crawler access for 18 crawlers, each labelled search (OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot, Applebot), user-requested fetch (ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User) or training (GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot, Bytespider); a whole-site block of a search crawler is high, any other block low
-- Sitemap presence; llms.txt presence, format (H1 title, Markdown links in H2 sections) and dead links it lists; the companion `llms-full.txt` is probed too
+- Sitemap presence; optional supplied llms.txt observation, format (H1 title, Markdown links in H2 sections) and dead links it lists; the companion `llms-full.txt` is probed too
 - Recursive JSON-LD structured data inspection and schema-type coverage
-- Citation-oriented markup: incomplete or inconsistent FAQPage, HowTo, Review and AggregateRating markup, and pages that show questions, steps or ratings without it
+- Citation-oriented markup: incomplete or inconsistent FAQPage, HowTo, Review and AggregateRating markup, and optional structured export of existing steps or ratings
 - Technical metadata (titles, descriptions, canonicals, language, social cards)
 - Page performance (HTML size, markup ratio, fetch latency)
 - Core Web Vitals (LCP, CLS, INP): real-user field data when a PageSpeed Insights key is set (`PAGESPEED_API_KEY`), otherwise estimates from markup patterns, labelled as estimates
@@ -98,9 +98,9 @@ URL input
 └─────────────────────────┘
 ```
 
-All four analysis skills read the same immutable acquisition snapshot, so nothing is fetched twice.
+The three native specialist skills read the immutable acquisition snapshot. The host entity agent reads its bounded evidence packet; merge and rendering make no requests.
 
-Every suggested action carries an impact (from severity and evidence), an effort and its impact x effort quadrant. `top_actions` marks one `start_here` item and `quick_wins` lists the cheap, valuable fixes. For markup fixes (JSON-LD, llms.txt, canonical and Open Graph tags, location and contact markup) the action includes a ready-to-paste `snippet` filled from what the audit observed; anything it did not observe is a listed `REPLACE_WITH_` placeholder, never a guess.
+Suggested `owner_roles` identify semantic roles (developer, infrastructure, content, SEO); they assign no teammates. `priority_basis` records the actual severity/status/confidence/reach/effort ordering and tie breakers, without rescoring. Rule-specific assessed denominators are shown when recorded; otherwise they are unavailable. Every suggested action carries an impact (from severity and evidence), an effort and its impact x effort quadrant. `top_actions` marks one `start_here` item and `quick_wins` lists the cheap, valuable fixes. For markup fixes (JSON-LD, llms.txt, canonical and Open Graph tags, location and contact markup) the action includes a ready-to-paste `snippet` filled from what the audit observed; anything it did not observe is a listed `REPLACE_WITH_` placeholder, never a guess.
 
 `recommendations` link to proactive findings by `finding_id` rather than copying their evidence and steps; only the baseline maintenance items carry their own action. `whats_working` lists the checks that ran and passed (for example "All 12 pages checked have a document title"). A check appears there only when its skill finished, no finding or recommendation carries its check IDs, and the stated observation holds on the crawled pages, so the section never hides a skipped check or contradicts a finding.
 
@@ -126,6 +126,8 @@ python3 skills/audit-orchestrator/scripts/run_audit.py <site> --out out/base-rep
 python3 skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
 python3 common/report_markdown.py out/final-report.json out/final-report.md
 ```
+
+Release 8.4.0 uses packet/outcome schema 1.1. Final packet digests bind every exported passage, claim, focus and image to the report; edits require a new export and assessment. Known failed About targets remain not assessed, and exact fragments identify the selected body passage. Git/release provenance records dirty or unknown state explicitly.
 
 The base report is never overwritten (the merge refuses to write over its input) and stays the merge base. AG-01 needs only the packet; checks that need search or vision are recorded as not assessed when the host did not run them. `examples/` holds one complete run of this workflow: `sample-report.json` (the base report), `evidence.json`, `agent-outcomes.json`, `final-report.json` and `final-report.md`. `tests/test_round5_release.py` replays the same workflow offline on a fixture site.
 
@@ -314,3 +316,10 @@ The scorer reports precision, high-severity precision, per-check precision and e
 ## Packaging
 
 `python3 tools/package_release.py` builds `dist/brand-ai-readiness-audit-<version>.zip` from an allowlist (`marketplace.json`, `README.md`, `skills/`, `common/`, `examples/`, `tests/`) with a `RELEASE.json` naming the version, the commit and whether the tree was clean. Planning PDFs and notes, `data/store.sqlite` (no code reads it), `benchmark_runs/` and `.env` files are left out of the archive but never deleted.
+
+Google Search ignores llms.txt for visibility and ranking, including generative
+Search. FAQ rich results ended on 7 May 2026. Useful Q&A and generic FAQPage
+parsing remain supported. Missing either artifact creates no universal readiness
+defect; supplied llms.txt issues stay scoped to that optional artifact and its
+configured readers. No repair proves ranking, citation or conversion gains.
+Sources and scope: [Search policy](skills/crawl-render-audit/references/search-policy.md).

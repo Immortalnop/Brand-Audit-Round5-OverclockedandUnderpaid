@@ -85,15 +85,16 @@ def test_parse_valid_llms_txt():
     ("# Acme\n# Again\n## S\n- [Guide](/g)\n", "has 2 H1 titles"),
     ("# Acme\n\n> Summary only.\n", "links to no pages"),
     ("# Acme\n\nhttps://acme.example/a\nhttps://acme.example/b\n", "bare URLs, not as Markdown links"),
-    ("# Acme\n\n- [Guide](/g)\n", "not grouped under H2 sections"),
+    ("# Acme\n\n- [Guide](/g)\n", "not grouped under optional H2 sections"),
 ])
 def test_parse_llms_txt_issues(text, issue):
-    issues = parse_llms_txt(text, SITE + "/llms.txt")["structure_issues"]
+    parsed = parse_llms_txt(text, SITE + "/llms.txt")
+    issues = parsed["structure_issues"] + parsed["format_advice"]
     assert any(issue in i for i in issues), issues
 
 
 def test_check_llms_txt_reports_broken_links_format_and_llms_full():
-    llms = {"present": True, "status": "ok", "structure_issues": ["the file links to no pages"],
+    llms = {"present": True, "status": "ok", "structure_issues": ["the file does not start with an H1 title"],
             "link_count": 3,
             "link_checks": [{"url": SITE + "/a", "status": "ok", "http_status": 200},
                             {"url": SITE + "/gone", "status": "broken", "http_status": 404},
@@ -104,7 +105,7 @@ def test_check_llms_txt_reports_broken_links_format_and_llms_full():
     (broken,) = by_id(result, "llms-txt-broken-links")
     assert broken["severity"] == "medium" and "HTTP 404 for https://acme.example/gone" in broken["evidence_text"]
     (invalid,) = by_id(result, "llms-txt-invalid")
-    assert "links to no pages" in invalid["evidence_text"]
+    assert "does not start with an H1 title" in invalid["evidence_text"]
     assert "/llms-full.txt answers with an HTML page" in invalid["evidence_text"]
     metrics = result["metrics"]
     assert metrics["llms_txt_links_checked"] == 2 and metrics["llms_full_txt_status"] == "malformed"
@@ -113,8 +114,9 @@ def test_check_llms_txt_reports_broken_links_format_and_llms_full():
 
 def test_absent_llms_txt_mentions_existing_llms_full():
     llms = {"present": False, "status": "absent", "full": {"present": True, "status": "ok"}}
-    (finding,) = by_id(check_llms_txt(snapshot([page()], llms), make_deadline(LIMITS)), "no-llms-txt")
-    assert "/llms-full.txt exists" in finding["evidence_text"]
+    result = check_llms_txt(snapshot([page()], llms), make_deadline(LIMITS))
+    assert not result["findings"]
+    assert result["metrics"]["llms_full_txt_present"] is True
 
 
 def test_valid_llms_txt_with_live_links_is_quiet():
