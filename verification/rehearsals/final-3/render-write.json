@@ -1,0 +1,5 @@
+{
+  "original_markdown_written_at_unix": 1791862288.3038988,
+  "sha256": "bbe9ca55318c55e935a2b1fa61599c3a481750c874daa022ae83e3781d7df94b",
+  "measurement": "Original filesystem write timestamp captured before copying/committing artifacts; not an instrumented user-request start."
+}

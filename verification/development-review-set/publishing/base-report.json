@@ -1,0 +1,2715 @@
+{
+  "site": "https://www.propublica.org/",
+  "audit_id": "0fc6c6b5a3dd40f6a43178dde620089e",
+  "snapshot_sha256": "5f910a49a45b34a3f1d2e6903f1ad5c6ce8c962a3ec911fbf3b5cb4c18f32a39",
+  "code_version": "8.4.0+aafdbfa13cc4",
+  "audited_at": "2026-10-13T03:15:19.373212+00:00",
+  "summary": {
+    "total_findings": 13,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 13,
+    "proactive_improvements": 12,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 13
+  },
+  "coverage": {
+    "pages_discovered": 163,
+    "pages_fetched_attempted": 6,
+    "pages_fetched_ok": 6,
+    "pages_analyzed": 6,
+    "pages_blocked": 0,
+    "pages_out_of_scope": 0,
+    "out_of_scope_pages": [],
+    "start_url_out_of_scope": false,
+    "pages_challenged": 0,
+    "challenged_pages": [],
+    "crawl_stopped_by_challenge": false,
+    "pages_waiting_room": 0,
+    "waiting_room_pages": [],
+    "crawl_stopped_by_waiting_room": false,
+    "pages_fully_observed": 6,
+    "pages_partially_observed": 0,
+    "pages_redirect_duplicates": 0,
+    "url_aliases": 0,
+    "sitemap_status": "ok",
+    "sitemap_url_entries": 9,
+    "sitemap_candidates": 9,
+    "sitemap_partial": true,
+    "crawl_limit_reached": true,
+    "acquisition_failure": null,
+    "sections_discovered": 37,
+    "sections_analyzed": 2,
+    "page_types_analyzed": [
+      "article",
+      "home"
+    ],
+    "start_redirect": null,
+    "audited_url": "https://www.propublica.org/",
+    "robots_permission": "evaluated",
+    "transport_diagnostics": [
+      {
+        "url": "https://www.propublica.org/llms.txt",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.propublica.org/llms-full.txt",
+        "category": "http_error",
+        "http_status": 404
+      }
+    ],
+    "transport_environment": {
+      "python_version": "3.14.8",
+      "openssl_version": "OpenSSL 3.6.5 29 Sep 2026",
+      "connection_route": "direct_validated_ip",
+      "extra_ca_bundle_configured": false,
+      "openssl_ca_override_configured": false,
+      "proxy_environment_present": false,
+      "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
+      "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
+    },
+    "robots_attempt_outcomes": [
+      "ok"
+    ],
+    "pages_timed_out": 0,
+    "pages_failed_other": 0,
+    "pages_never_attempted": 157,
+    "pages_skipped": 1,
+    "skip_reason_counts": {
+      "acquisition_limit_reached": 1
+    },
+    "rendered_pages": 0,
+    "non_text_media": {
+      "images_observed": 165,
+      "unique_image_urls": 39,
+      "fact_keyword_images": 0,
+      "image_fetches_attempted": 4,
+      "images_fetched_ok": 4,
+      "svg_text_read": 0,
+      "pdfs_discovered": 0,
+      "pdfs_fetch_attempted": 0,
+      "pdfs_text_extracted": 0,
+      "image_fetch_cap": 6,
+      "pdf_fetch_cap": 3,
+      "image_weight_candidates": 36,
+      "image_weight_probes": 4,
+      "image_weight_probe_cap": 4,
+      "image_fetch_outcomes": {
+        "ok": 4
+      },
+      "pdf_outcomes": []
+    },
+    "external_claims_checked": 0,
+    "external_footprint_queries": 0,
+    "knowledge_graph": {
+      "organization_pages": 6,
+      "declared_wikidata": [],
+      "declared_wikipedia": [],
+      "lookup": "not_needed"
+    },
+    "llms_txt": {
+      "llms_txt_present": false,
+      "llms_txt_scope": "optional supplied artifact; intended reader must be identified",
+      "llms_txt_status": "absent",
+      "llms_txt_links": 0,
+      "llms_txt_optional_format_advice": [],
+      "llms_txt_links_checked": 0,
+      "llms_txt_link_outcomes": {},
+      "llms_full_txt_status": "absent",
+      "llms_full_txt_present": false
+    },
+    "off_site_profiles": {
+      "same_as_links": 3,
+      "review_platforms_linked": [],
+      "business_kind": "general",
+      "lookup": "disabled",
+      "profiles": [
+        {
+          "url": "https://www.facebook.com/propublica",
+          "source": "sameAs",
+          "verdict": "unverified",
+          "detail": "lookup_disabled",
+          "http_status": null
+        },
+        {
+          "url": "https://x.com/propublica",
+          "source": "sameAs",
+          "verdict": "unverified",
+          "detail": "lookup_disabled",
+          "http_status": null
+        },
+        {
+          "url": "https://newsie.social/@ProPublica",
+          "source": "sameAs",
+          "verdict": "unverified",
+          "detail": "lookup_disabled",
+          "http_status": null
+        }
+      ],
+      "profile_outcomes": {
+        "unverified": 3
+      },
+      "profiles_unverified": 3,
+      "review_platform_check": "not_applicable_nonprofit",
+      "review_platform_search": "not_run"
+    },
+    "web_vitals": {
+      "web_vitals_mode": "static_estimate",
+      "web_vitals_pages_estimated": 6,
+      "web_vitals_estimate_pages": {
+        "LCP": 1,
+        "CLS": 0,
+        "INP": 6
+      },
+      "web_vitals_estimates_suppressed_by_field_data": [],
+      "web_vitals_field_lookup": "not_configured"
+    },
+    "freshness_update_signals": {
+      "page_update_date_facts": 0,
+      "sitemap_lastmod_entries": 9,
+      "sitemap_lastmod_trusted": true,
+      "sitemap_lastmod_invalid": 0,
+      "sitemap_lastmod_uniform": null,
+      "update_dates_from_sitemap_lastmod": 5,
+      "update_dates_from_last_modified": 0,
+      "last_modified_header": {
+        "absent": 6
+      },
+      "pages_with_update_date": 5
+    },
+    "hreflang": {
+      "hreflang_pages": 0,
+      "hreflang_annotations": 0,
+      "hreflang_sitemap_entries": 0,
+      "hreflang_alternates_unverified": 0,
+      "html_languages": [
+        "en"
+      ]
+    },
+    "noscript": {
+      "noscript_js_required_pages": 0,
+      "noscript_fallback_pages": []
+    },
+    "graphics_text": {
+      "canvases_observed": 0,
+      "canvas_pages_without_text": 0,
+      "inline_svg_fact_pages": 0,
+      "icon_font_pages": 0
+    },
+    "image_context": {
+      "image_context_content_images": 16,
+      "image_context_with_alt": 16,
+      "image_context_context_only": 0,
+      "image_context_no_context": 0,
+      "image_context_with_caption": 21
+    },
+    "image_weight": {
+      "image_weight_measured": 4,
+      "image_weight_probes": 4,
+      "image_weight_problems": 2,
+      "image_weight_bytes_largest": 490008,
+      "responsive_image_gaps": 0
+    },
+    "accessibility": {
+      "accessibility_pages_analyzed": 6,
+      "accessibility_form_fields": 18,
+      "accessibility_unlabeled_fields": 0,
+      "accessibility_placeholder_only_fields": 0,
+      "accessibility_controls": 641,
+      "accessibility_unnamed_controls": 0,
+      "accessibility_contrast_pairs_checked": 0,
+      "accessibility_stylesheet_styles_measured": false
+    },
+    "overlays": {
+      "overlay_pages_analyzed": 6,
+      "overlay_blocking_pages": 0,
+      "overlay_class_only_pages": 0,
+      "consent_platform_pages": 0,
+      "consent_text_summary_pages": 0,
+      "consent_text_opening_pages": 0,
+      "overlay_timing_measured": false
+    },
+    "answer_format": {
+      "answer_format_pages_analyzed": 6,
+      "answer_format_script_dependent_pages": 0,
+      "answer_format_question_headings_checked": 0,
+      "answer_format_indirect_answers": 0,
+      "answer_format_data_tables": 0,
+      "answer_format_english_pages": 6
+    },
+    "context_signals": {
+      "context_pages_analyzed": 6,
+      "context_script_dependent_pages": 0,
+      "context_location_markup_pages": 0,
+      "context_location_evidence_pages": 0,
+      "context_location_evidence_kinds": [],
+      "context_commercial_site": false,
+      "context_audience_pages": 0,
+      "context_contact_pages": 0,
+      "context_contact_markup_pages": 0
+    },
+    "context_retention": {
+      "context_retention_pages_analyzed": 6,
+      "context_retention_site_urls": 163,
+      "context_retention_script_dependent_pages": 0,
+      "context_retention_saved_state_hints": [],
+      "context_retention_search_present": true,
+      "context_retention_shop_pages": 0,
+      "context_retention_query_urls": 0
+    },
+    "offer_expiry": {
+      "offer_expiry_pages_scanned": 1,
+      "offer_deadlines_found": 0,
+      "expired_offer_pages": 0,
+      "offer_expiry_reference_date": "2026-10-13"
+    },
+    "fact_consistency": {
+      "facts_compared_with_text": 0,
+      "markup_text_mismatches": 0,
+      "cross_page_conflicts": 0,
+      "fact_consistency_pages": 6
+    },
+    "ai_crawler_purposes": {
+      "OAI-SearchBot": "search",
+      "ChatGPT-User": "user_fetch",
+      "GPTBot": "training",
+      "Claude-SearchBot": "search",
+      "Claude-User": "user_fetch",
+      "ClaudeBot": "training",
+      "PerplexityBot": "search",
+      "Perplexity-User": "user_fetch",
+      "Googlebot": "search",
+      "Google-Extended": "training",
+      "Applebot": "search",
+      "Applebot-Extended": "training",
+      "Amazonbot": "training",
+      "Meta-ExternalAgent": "training",
+      "Meta-ExternalFetcher": "user_fetch",
+      "MistralAI-User": "user_fetch",
+      "CCBot": "training",
+      "Bytespider": "training"
+    },
+    "agent_corroboration_stage": "not_supplied",
+    "agent_stage": {
+      "submission_status": "not_supplied",
+      "assessment_status": "not_run",
+      "checks_assessed": [],
+      "checks_not_assessed": [
+        "AG-01",
+        "AG-02",
+        "AG-03",
+        "AG-04",
+        "AG-05",
+        "AG-06"
+      ],
+      "assessed_count": 0,
+      "not_assessed_count": 6,
+      "checks_with_errors": [],
+      "checks": {
+        "AG-01": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-02": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-03": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-04": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-05": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-06": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        }
+      }
+    },
+    "external_fetches": 0,
+    "identity_confidence": 0.92,
+    "identity_resolution": "resolved",
+    "memory_budget_used_mb": 4.29,
+    "runtime_seconds": 10.305,
+    "deadline_reached": false,
+    "capabilities": {
+      "check_tiers": {
+        "robots_and_ai_crawler_access": "executable",
+        "crawlability": "executable",
+        "machine_readability_jsonld": "executable",
+        "llms_txt_presence": "executable",
+        "sitemap_discovery": "executable",
+        "claim_extraction_heuristic": "executable",
+        "entity_resolution_from_jsonld": "executable",
+        "site_graph_engagement": "executable",
+        "freshness_from_dated_facts": "executable",
+        "dedup_merge_prioritize_validate": "executable",
+        "rendering_gap_heuristic": "executable",
+        "non_text_svg_and_pdf_text": "executable",
+        "structured_date_freshness": "executable",
+        "sitemap_lastmod_and_last_modified_freshness": "executable",
+        "knowledge_graph_link_check": "executable",
+        "knowledge_graph_entity_verification": "fallback",
+        "alt_text_quality": "executable",
+        "media_transcripts_and_schema": "executable",
+        "citation_schema_types": "executable",
+        "author_eeat_signals": "executable",
+        "llms_txt_structure_and_links": "executable",
+        "llms_full_txt_probe": "executable",
+        "same_as_static_validation": "executable",
+        "review_platform_links": "executable",
+        "web_vitals_static_estimate": "executable",
+        "hreflang_annotations": "executable",
+        "noscript_fallback": "executable",
+        "canvas_svg_icon_font_text": "executable",
+        "image_caption_context": "executable",
+        "image_weight_measurement": "executable",
+        "accessibility_html_checks": "executable",
+        "overlay_and_consent_detection": "executable",
+        "answer_format_checks": "executable",
+        "location_and_audience_signals": "executable",
+        "context_retention_checks": "executable",
+        "expired_offer_dates": "executable",
+        "on_site_fact_consistency": "executable",
+        "ai_crawler_purpose_labels": "executable",
+        "fix_snippets": "executable",
+        "impact_effort_matrix": "executable",
+        "same_as_profile_verification": "fallback",
+        "review_platform_search": "fallback",
+        "web_vitals_field_data": "fallback",
+        "rendering_headless_browser": "fallback",
+        "external_corroboration": "fallback",
+        "external_footprint_search": "fallback",
+        "agent_entity_corroboration": "optional",
+        "agent_image_vision": "optional",
+        "agent_knowledge_graph_search": "optional",
+        "agent_review_platform_search": "optional"
+      },
+      "capabilities_detected": {
+        "headless_rendering": false,
+        "external_search": false
+      },
+      "rendering_mode": "heuristic_only",
+      "external_analysis_mode": "unavailable",
+      "web_vitals_mode": "static_estimate"
+    },
+    "instrumentation": {
+      "stage_timings_s": {
+        "acquisition": {
+          "start": 62014.997545981,
+          "end": 62025.066907328,
+          "duration": 10.069
+        },
+        "independent_batch": {
+          "start": 62025.086290826,
+          "end": 62025.166327582,
+          "duration": 0.08
+        },
+        "identify_important_facts": {
+          "start": 62025.166335826,
+          "end": 62025.16642613,
+          "duration": 0.0
+        },
+        "dependent_batch": {
+          "start": 62025.166434259,
+          "end": 62025.298267078,
+          "duration": 0.132
+        }
+      },
+      "requests_attempted": 17,
+      "requests_completed": 17,
+      "requests_failed": 0,
+      "requests_timed_out": 0,
+      "requests_retried": 0,
+      "redirects_followed": 0,
+      "responses_truncated": 5,
+      "urls_deduplicated": 0,
+      "bytes_downloaded": 2712622,
+      "pages_skipped": 1,
+      "pages_skipped_reasons": [
+        "acquisition_limit_reached"
+      ],
+      "safety_blocks": [],
+      "external_fetches_attempted": 0,
+      "external_fetches_completed": 0,
+      "search_queries_attempted": 0,
+      "worker_timeout_events": [],
+      "memory_peak_mb": 4.29,
+      "process_rss_mb": 45.27
+    },
+    "network_budget": {
+      "accounting": "reserve before send; unused bytes refunded; bytes are the larger of wire and decoded bytes",
+      "pools": {
+        "site": {
+          "max_requests": 90,
+          "max_bytes": 41943040,
+          "requests": 17,
+          "bytes": 2712622,
+          "refused": 0
+        },
+        "external": {
+          "max_requests": 40,
+          "max_bytes": 16777216,
+          "requests": 0,
+          "bytes": 0,
+          "refused": 0
+        }
+      },
+      "stages": {
+        "llms_txt": {
+          "pool": "site",
+          "requests": 2,
+          "bytes": 187130
+        },
+        "media": {
+          "pool": "site",
+          "requests": 4,
+          "bytes": 122078
+        },
+        "pages": {
+          "pool": "site",
+          "requests": 6,
+          "bytes": 1887898
+        },
+        "robots": {
+          "pool": "site",
+          "requests": 1,
+          "bytes": 190
+        },
+        "sitemap": {
+          "pool": "site",
+          "requests": 4,
+          "bytes": 515326
+        }
+      },
+      "total_requests": 17,
+      "total_bytes": 2712622,
+      "not_counted": [
+        "host-agent tool calls (agent stage searches and page views)"
+      ]
+    },
+    "discovery_reliable": false,
+    "coverage_scope": "sample",
+    "agent_checks_assessed": [],
+    "evidence_packet_bytes": 40359,
+    "evidence_packet_ready": true
+  },
+  "warnings": [
+    "English lexical checks skipped on pages with unknown/non-English language or truncated retained text.",
+    "https://www.propublica.org/: Unsupported IRI value/context form for logo",
+    "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal: Unsupported IRI value/context form for image",
+    "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal: Unsupported IRI value/context form for logo",
+    "https://www.propublica.org/article/ken-paxton-travel-security-costs: Unsupported IRI value/context form for logo",
+    "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters: Unsupported IRI value/context form for image",
+    "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters: Unsupported IRI value/context form for logo",
+    "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel: Unsupported IRI value/context form for image",
+    "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel: Unsupported IRI value/context form for logo",
+    "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall: Unsupported IRI value/context form for logo",
+    "No external search provider configured (SEARCH_API_URL unset); corroboration is an optional capability in this deployment (not checked, not \"not found\").",
+    "No external search provider configured (SEARCH_API_URL unset); footprint assessment is an optional capability in this deployment (not checked, not \"no presence found\").",
+    "Off-site profile lookup disabled (OFF_SITE_LOOKUP=0); linked profiles were not fetched or verified.",
+    "An email signup form appears on 6/6 sampled pages. A site audit cannot see the emails the site sends, so whether inbox assistants can summarize them was not checked.",
+    "Orphan pages and isolated page clusters were not assessed: the crawl analyzed a sample, and a page the sample does not link to may be linked from a page that was not fetched.",
+    "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the qualitative About-concreteness and cross-web corroboration checks were not run this audit (not checked, not \"no corroboration found\"). See skills/entity-corroboration-agent/SKILL.md."
+  ],
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "engagement",
+      "finding_type": "defect",
+      "title": "Images are heavier than they need to be",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "Large, oversized or legacy-format image files delay the largest paint and cost mobile visitors data, so visitors arriving from search or an AI answer wait longer",
+      "evidence": [
+        {
+          "type": "image_weight",
+          "description": "https://www.propublica.org/wp-content/uploads/2026/10/D5612E06-F25D-4891-8753-A68B9ABB663C_d64c8e.jpg: the file is 479 KB (likely the largest image on the page)",
+          "urls": [
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+          ]
+        },
+        {
+          "type": "image_weight",
+          "description": "https://www.propublica.org/wp-content/uploads/2026/09/20260507-Sanchez-Family-Homelessness-106.jpg?w=2560: the file is 303 KB (likely the largest image on the page)",
+          "urls": [
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters"
+          ]
+        }
+      ],
+      "evidence_text": "https://www.propublica.org/wp-content/uploads/2026/10/D5612E06-F25D-4891-8753-A68B9ABB663C_d64c8e.jpg: the file is 479 KB (likely the largest image on the page); https://www.propublica.org/wp-content/uploads/2026/09/20260507-Sanchez-Family-Homelessness-106.jpg?w=2560: the file is 303 KB (likely the largest image on the page)",
+      "suggested_action": {
+        "summary": "Compress, resize and convert the listed images",
+        "steps": [
+          "Serve AVIF or WebP, with JPEG or PNG only as a fallback in <picture>",
+          "Resize each image to the largest size it is displayed at and add srcset and sizes for smaller screens",
+          "Compress photos, aiming for under 200 KB for the largest image of a page"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Faster largest paint and less data for visitors on mobile",
+        "verification": "Re-run the audit and confirm the listed images are smaller",
+        "implementation_detail": "Serve AVIF or WebP, resize each image to its displayed size with srcset, and compress large photos.",
+        "expected_outcome": "Images load faster, especially the largest image of each page.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_image_weight.py",
+            "rule_id": "image-weight"
+          }
+        ]
+      },
+      "check_id": "image-weight",
+      "mechanism": "Large, oversized or legacy-format image files delay the largest paint and cost mobile visitors data.",
+      "implementation_detail": "Serve AVIF or WebP, resize each image to its displayed size with srcset, and compress large photos.",
+      "expected_outcome": "Images load faster, especially the largest image of each page.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "image-weight"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_image_weight.py",
+              "rule_id": "image-weight"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-002",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Organization markup does not link the brand to a knowledge-graph entity",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.propublica.org/",
+        "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal",
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "No Wikidata or Wikipedia link is declared, so nothing ties the brand to one knowledge-graph entity",
+      "evidence": [
+        {
+          "type": "organization_markup",
+          "description": "Organization markup on 6 page(s) declares sameAs: https://www.facebook.com/propublica, https://x.com/propublica, https://newsie.social/@ProPublica; none names a Wikidata item or Wikipedia article",
+          "urls": [
+            "https://www.propublica.org/",
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel",
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall",
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+            "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal"
+          ]
+        }
+      ],
+      "evidence_text": "Organization markup on 6 page(s) declares sameAs: https://www.facebook.com/propublica, https://x.com/propublica, https://newsie.social/@ProPublica; none names a Wikidata item or Wikipedia article",
+      "suggested_action": {
+        "summary": "Link the brand to its Wikidata item in Organization sameAs",
+        "steps": [
+          "Find the brand's Wikidata item, or create one if the organization meets Wikidata's notability policy (public, serious references)",
+          "Add the item URL (and the Wikipedia article, if one exists) to Organization sameAs",
+          "Make sure the item lists this site as its official website (P856)"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Assistants can tell the brand apart from same-named entities",
+        "verification": "Re-run the audit after the markup or the knowledge-graph entry changes",
+        "implementation_detail": "Add the Wikidata item (and Wikipedia article, if one exists) to Organization sameAs, and make sure the Wikidata item lists this site as its official website (P856).",
+        "expected_outcome": "The site names the one knowledge-graph entity that is the brand, an explicit signal that separates it from same-named entities.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "freshness-corroboration",
+            "script": "check_knowledge_graph.py",
+            "rule_id": "kg-link-missing"
+          }
+        ]
+      },
+      "check_id": "kg-link-missing",
+      "mechanism": "Knowledge graphs are the main signal assistants use to tell same-named entities apart; without a two-way link between the site and its knowledge-graph entity, the brand can be confused with a namesake.",
+      "implementation_detail": "Add the Wikidata item (and Wikipedia article, if one exists) to Organization sameAs, and make sure the Wikidata item lists this site as its official website (P856).",
+      "expected_outcome": "The site names the one knowledge-graph entity that is the brand, an explicit signal that separates it from same-named entities.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "kg-link-missing"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "check_knowledge_graph.py",
+              "rule_id": "kg-link-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-003",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio is embedded without complete VideoObject or AudioObject markup",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.propublica.org/",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+      ],
+      "root_cause": "Without VideoObject or AudioObject markup, search engines and assistants have no machine-readable title, description, thumbnail or date for the media",
+      "evidence": [
+        {
+          "type": "structured_data",
+          "description": "video with no VideoObject markup",
+          "urls": [
+            "https://www.propublica.org/"
+          ]
+        },
+        {
+          "type": "structured_data",
+          "description": "video with no VideoObject markup",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        }
+      ],
+      "evidence_text": "video with no VideoObject markup; video with no VideoObject markup",
+      "suggested_action": {
+        "summary": "Describe each video and audio clip with VideoObject or AudioObject JSON-LD",
+        "steps": [
+          "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration",
+          "Use AudioObject or PodcastEpisode markup for audio",
+          "Add the transcript property where a transcript exists"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Media becomes eligible for video results and its details are quotable",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration, or AudioObject or PodcastEpisode markup for audio.",
+        "expected_outcome": "Each video and audio clip has a machine-readable title, description, thumbnail and date.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_media_text.py",
+            "rule_id": "media-schema-missing"
+          }
+        ]
+      },
+      "check_id": "media-schema-missing",
+      "mechanism": "Search engines and assistants rely on VideoObject and AudioObject markup to identify and describe embedded media.",
+      "implementation_detail": "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration, or AudioObject or PodcastEpisode markup for audio.",
+      "expected_outcome": "Each video and audio clip has a machine-readable title, description, thumbnail and date.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "media-schema-missing"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 3,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-003",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_media_text.py",
+              "rule_id": "media-schema-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-004",
+      "category": "answer_content",
+      "finding_type": "proactive_improvement",
+      "title": "Article authors lack a Person profile or credentials",
+      "severity": "low",
+      "confidence": 0.75,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal",
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "The article author is not stated as a Person with a profile and credentials, so the expertise behind the content cannot be checked",
+      "evidence": [
+        {
+          "type": "authorship",
+          "description": "author Jake Pearson has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Lisa Riordan Seville has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        },
+        {
+          "type": "authorship",
+          "description": "author Ryan Devereaux has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+          "urls": [
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+          ]
+        },
+        {
+          "type": "authorship",
+          "description": "author Nicole Santa Cruz has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Zaydee Sanchez has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+          "urls": [
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters"
+          ]
+        },
+        {
+          "type": "authorship",
+          "description": "author Zach Despart has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        },
+        {
+          "type": "authorship",
+          "description": "author Aaron Davis has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Robert Faturechi has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+          "urls": [
+            "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal"
+          ]
+        }
+      ],
+      "evidence_text": "author Jake Pearson has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Lisa Riordan Seville has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Ryan Devereaux has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Nicole Santa Cruz has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Zaydee Sanchez has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Zach Despart has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Aaron Davis has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential); author Robert Faturechi has no credentials in markup (jobTitle, description, knowsAbout, alumniOf, award or hasCredential)",
+      "suggested_action": {
+        "summary": "State each article author as a Person with a profile and credentials",
+        "steps": [
+          "Type the Article author as a Person, not a plain string or the Organization",
+          "Give the Person a url to an author page and sameAs links to professional profiles",
+          "Add jobTitle, description or knowsAbout that state the author's expertise",
+          "Show the same author name in the visible byline"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "The expertise behind each article becomes explicit and checkable",
+        "verification": "Validate the Article markup and re-run the audit",
+        "implementation_detail": "Type the Article author as a Person with a url to an author page, sameAs profile links and jobTitle, description or knowsAbout, and show the same name in the byline.",
+        "expected_outcome": "The expertise behind each article is explicit and checkable.",
+        "owner_roles": [
+          "content",
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "freshness-corroboration",
+            "script": "analyze_authorship.py",
+            "rule_id": "author-credentials-weak"
+          }
+        ]
+      },
+      "check_id": "author-credentials-weak",
+      "mechanism": "An author given only as a plain name or as the organization, without a profile or credentials, cannot be connected to real expertise.",
+      "implementation_detail": "Type the Article author as a Person with a url to an author page, sameAs profile links and jobTitle, description or knowsAbout, and show the same name in the byline.",
+      "expected_outcome": "The expertise behind each article is explicit and checkable.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "author-credentials-weak"
+      ],
+      "coverage": {
+        "affected_pages": 5,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 4,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.75,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 5,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-004",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "analyze_authorship.py",
+              "rule_id": "author-credentials-weak"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-005",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio has no transcript that crawlers can read",
+      "severity": "low",
+      "confidence": 0.75,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.propublica.org/",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+      ],
+      "root_cause": "Crawlers and assistants do not watch or listen, so what is said in a video or podcast is invisible to them unless a transcript is on or linked from the page",
+      "evidence": [
+        {
+          "type": "media",
+          "description": "No transcript in the page text or links; YouTube embed: captions inside the player not checked",
+          "urls": [
+            "https://www.propublica.org/"
+          ]
+        },
+        {
+          "type": "media",
+          "description": "No transcript in the page text or links; YouTube embed: captions inside the player not checked",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        }
+      ],
+      "evidence_text": "No transcript in the page text or links; YouTube embed: captions inside the player not checked; No transcript in the page text or links; YouTube embed: captions inside the player not checked",
+      "suggested_action": {
+        "summary": "Publish a transcript with each video and audio clip",
+        "steps": [
+          "Add the full transcript as text on the page, or link to it from next to the player",
+          "Add a captions track (WebVTT) to native video players and enable captions on embeds",
+          "Include the transcript in the VideoObject or AudioObject transcript property"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "What the video or audio says becomes quotable text",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Publish a transcript on the page or link it next to the player, add a captions track to native players and enable captions on embeds.",
+        "expected_outcome": "What is said in videos and podcasts becomes quotable text.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_media_text.py",
+            "rule_id": "media-transcript-missing"
+          }
+        ]
+      },
+      "check_id": "media-transcript-missing",
+      "mechanism": "Crawlers and assistants do not watch video or listen to audio, so spoken content is invisible to them unless it is also text.",
+      "implementation_detail": "Publish a transcript on the page or link it next to the player, add a captions track to native players and enable captions on embeds.",
+      "expected_outcome": "What is said in videos and podcasts becomes quotable text.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "media-transcript-missing"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 5,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.75,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-005",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_media_text.py",
+              "rule_id": "media-transcript-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-006",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Interaction to Next Paint (INP) risk, estimated from markup and not measured",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/",
+        "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal",
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "Markup patterns that load heavy JavaScript were observed: the page may respond slowly to input",
+      "evidence": [
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 68 external scripts",
+          "urls": [
+            "https://www.propublica.org/"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 70 external scripts",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 68 external scripts",
+          "urls": [
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 71 external scripts",
+          "urls": [
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 70 external scripts",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: 70 external scripts",
+          "urls": [
+            "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal"
+          ]
+        }
+      ],
+      "evidence_text": "Estimate, not a measurement: 68 external scripts; Estimate, not a measurement: 70 external scripts; Estimate, not a measurement: 68 external scripts; Estimate, not a measurement: 71 external scripts; Estimate, not a measurement: 70 external scripts; Estimate, not a measurement: 70 external scripts",
+      "suggested_action": {
+        "summary": "Check INP in a browser or with field data, and remove the listed patterns",
+        "steps": [
+          "Remove unused scripts and third-party tags",
+          "Split long JavaScript tasks and defer work that is not needed for the first interaction",
+          "Move large inline scripts to cached external files loaded with defer",
+          "Confirm with PageSpeed Insights or the Chrome UX Report"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Lower risk of a poor Interaction to Next Paint score",
+        "verification": "Measure the page with PageSpeed Insights and re-run the audit",
+        "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+        "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_web_vitals.py",
+            "rule_id": "cwv-risk"
+          }
+        ]
+      },
+      "check_id": "cwv-risk",
+      "mechanism": "Some markup patterns reliably worsen LCP, CLS or INP; without a browser the audit can only estimate the risk from them, not measure it.",
+      "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+      "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 6,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.9
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-006",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_web_vitals.py",
+              "rule_id": "cwv-risk"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-007",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 2/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "Skipped heading levels can make section relationships less clear.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 3, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3]",
+          "urls": [
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [1, 3, 3, 3, 2, 2, 3, 3, 2, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3]",
+          "urls": [
+            "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal"
+          ]
+        }
+      ],
+      "evidence_text": "Observed heading levels: [1, 3, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3]; Observed heading levels: [1, 3, 3, 3, 2, 2, 3, 3, 2, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3]",
+      "suggested_action": {
+        "summary": "Review the outline and nest headings according to the document hierarchy.",
+        "steps": [
+          "Review the outline and nest headings according to the document hierarchy."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves outline consistency without requiring an arbitrary visual style.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+        "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "heading-hierarchy"
+          }
+        ]
+      },
+      "check_id": "heading-hierarchy",
+      "mechanism": "Skipped heading levels can make section relationships less clear.",
+      "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+      "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 7,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-007",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "heading-hierarchy"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-008",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Largest Contentful Paint (LCP) risk, estimated from markup and not measured",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/"
+      ],
+      "root_cause": "Markup patterns that delay the largest paint were observed: the main content may appear slowly",
+      "evidence": [
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: the first content image is lazy-loaded in the HTML; 13 render-blocking scripts and stylesheets in the head",
+          "urls": [
+            "https://www.propublica.org/"
+          ]
+        }
+      ],
+      "evidence_text": "Estimate, not a measurement: the first content image is lazy-loaded in the HTML; 13 render-blocking scripts and stylesheets in the head",
+      "suggested_action": {
+        "summary": "Check LCP in a browser or with field data, and remove the listed patterns",
+        "steps": [
+          "Do not lazy-load the first large image; give it fetchpriority=\"high\" or preload it",
+          "Defer or async non-critical scripts and inline only critical CSS",
+          "Reduce server response time with caching",
+          "Confirm with PageSpeed Insights or the Chrome UX Report"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Lower risk of a poor Largest Contentful Paint score",
+        "verification": "Measure the page with PageSpeed Insights and re-run the audit",
+        "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+        "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_web_vitals.py",
+            "rule_id": "cwv-risk"
+          }
+        ]
+      },
+      "check_id": "cwv-risk",
+      "mechanism": "Some markup patterns reliably worsen LCP, CLS or INP; without a browser the audit can only estimate the risk from them, not measure it.",
+      "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+      "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 8,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.9
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-008",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_web_vitals.py",
+              "rule_id": "cwv-risk"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-009",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 4/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal",
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+      ],
+      "root_cause": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 88 characters: DHS Border Wall Construction Leads to Surveillance of Tohono O’odham Nation — ProPublica. Display width was not measured.",
+          "urls": [
+            "https://www.propublica.org/article/tohono-oodham-nation-arizona-border-wall"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 78 characters: Maricopa County’s Housing Hub Is a Dead End for Homeless Families — ProPublica. Display width was not measured.",
+          "urls": [
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 72 characters: Ken Paxton’s Travel Security Detail Cost Taxpayers Millions — ProPublica. Display width was not measured.",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 118 characters: The Pentagon Gave Contracts to Alvarez & Marsal Federal, a Firm Closely Tied to a Senior Defense Off. Display width was not measured.",
+          "urls": [
+            "https://www.propublica.org/article/george-kollitides-pentagon-contracts-alvarez-marsal"
+          ]
+        }
+      ],
+      "evidence_text": "Title has 88 characters: DHS Border Wall Construction Leads to Surveillance of Tohono O’odham Nation — ProPublica. Display width was not measured.; Title has 78 characters: Maricopa County’s Housing Hub Is a Dead End for Homeless Families — ProPublica. Display width was not measured.; Title has 72 characters: Ken Paxton’s Travel Security Detail Cost Taxpayers Millions — ProPublica. Display width was not measured.; Title has 118 characters: The Pentagon Gave Contracts to Alvarez & Marsal Federal, a Firm Closely Tied to a Senior Defense Off. Display width was not measured.",
+      "suggested_action": {
+        "summary": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "steps": [
+          "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves title usefulness; pixel width and platform behavior vary.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "title-length"
+          }
+        ]
+      },
+      "check_id": "title-length",
+      "mechanism": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+      "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 1,
+        "sites": 6,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.8
+      },
+      "check_ids": [
+        "title-length"
+      ],
+      "coverage": {
+        "affected_pages": 4,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 9,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 1,
+          "sites": 6,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.8
+        },
+        "supported_page_count": 4,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-009",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "title-length"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-010",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Visible text is under 3% of the HTML on 1/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+      ],
+      "root_cause": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Visible text represents 2.6% of decoded HTML body bytes. This is not a ranking metric.",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        }
+      ],
+      "evidence_text": "Visible text represents 2.6% of decoded HTML body bytes. This is not a ranking metric.",
+      "suggested_action": {
+        "summary": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "steps": [
+          "Inspect inline assets and template boilerplate before trimming unnecessary HTML."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+        "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "markup-ratio"
+          }
+        ]
+      },
+      "check_id": "markup-ratio",
+      "mechanism": "A small visible-text share in a large HTML document can indicate excess markup.",
+      "implementation_detail": "Inspect inline assets and template boilerplate before trimming unnecessary HTML.",
+      "expected_outcome": "Reduces document overhead if the sampled ratio reflects avoidable markup.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 1,
+        "sites": 6,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.8
+      },
+      "check_ids": [
+        "markup-ratio"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 10,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 1,
+          "sites": 6,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.8
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-010",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_performance.py",
+              "rule_id": "markup-ratio"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-011",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Content pages lack a clear orientation heading above the fold",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+      ],
+      "root_cause": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        }
+      ],
+      "evidence_text": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "suggested_action": {
+        "summary": "Lead each content page with a descriptive H1 that names the topic",
+        "steps": [
+          "Lead each content page with a descriptive H1 that names the topic",
+          "Follow with scannable H2 sections so the page structure is clear at a glance"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Lead each content page with a descriptive short H1 and follow with scannable H2 sections.",
+        "expected_outcome": "Substantial content pages open with a short descriptive heading; the rendered first screen is not measured here.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "page-orientation"
+          }
+        ]
+      },
+      "check_id": "page-orientation",
+      "mechanism": "A substantial page without a clear primary heading gives arriving visitors no immediate sense of its topic.",
+      "implementation_detail": "Lead each content page with a descriptive short H1 and follow with scannable H2 sections.",
+      "expected_outcome": "Substantial content pages open with a short descriptive heading; the rendered first screen is not measured here.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "page-orientation"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 11,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.7,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-011",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "page-orientation"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-012",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No question-shaped headings on 3/3 content pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs",
+        "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters",
+        "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+      ],
+      "root_cause": "Question-shaped sections may help readers locate direct answers where that format fits the content.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.",
+          "urls": [
+            "https://www.propublica.org/article/sports-betting-problem-gambling-draftkings-fanduel"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.",
+          "urls": [
+            "https://www.propublica.org/article/maricopa-county-homeless-hub-hotline-shelters"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        }
+      ],
+      "evidence_text": "No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.; No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.; No question-shaped H2/H3 headings observed in this English content-page sample. Direct answers can still exist without question headings.",
+      "suggested_action": {
+        "summary": "Review audience questions and add useful question headings with concise answers; do not add empty FAQs or inappropriate schema.",
+        "steps": [
+          "Review audience questions and add useful question headings with concise answers; do not add empty FAQs or inappropriate schema."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "May improve answer readability; questions are not required for retrieval or citation.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review audience questions and add useful question headings with concise answers; do not add empty FAQs or inappropriate schema.",
+        "expected_outcome": "May improve answer readability; questions are not required for retrieval or citation.",
+        "owner_roles": [
+          "content",
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "freshness-corroboration",
+            "script": "analyze_answer_content.py",
+            "rule_id": "answer-headings"
+          }
+        ]
+      },
+      "check_id": "answer-headings",
+      "mechanism": "Question-shaped sections may help readers locate direct answers where that format fits the content.",
+      "implementation_detail": "Review audience questions and add useful question headings with concise answers; do not add empty FAQs or inappropriate schema.",
+      "expected_outcome": "May improve answer readability; questions are not required for retrieval or citation.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "answer-headings"
+      ],
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 12,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-012",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "analyze_answer_content.py",
+              "rule_id": "answer-headings"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-013",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Canonical tag points to another site on 1/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+      ],
+      "root_cause": "An external canonical can nominate another origin as the preferred copy.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "External canonical hint: https://www.texastribune.org/2026/10/09/ken-paxton-travel-costs/",
+          "urls": [
+            "https://www.propublica.org/article/ken-paxton-travel-security-costs"
+          ]
+        }
+      ],
+      "evidence_text": "External canonical hint: https://www.texastribune.org/2026/10/09/ken-paxton-travel-costs/",
+      "suggested_action": {
+        "summary": "Verify ownership and content equivalence; correct the URL only if the external canonical is unintended.",
+        "steps": [
+          "Verify ownership and content equivalence; correct the URL only if the external canonical is unintended."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Avoids unintended consolidation while preserving legitimate syndication.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Verify ownership and content equivalence; correct the URL only if the external canonical is unintended.",
+        "expected_outcome": "Avoids unintended consolidation while preserving legitimate syndication.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "cross-origin-canonical"
+          }
+        ]
+      },
+      "check_id": "cross-origin-canonical",
+      "mechanism": "An external canonical can nominate another origin as the preferred copy.",
+      "implementation_detail": "Verify ownership and content equivalence; correct the URL only if the external canonical is unintended.",
+      "expected_outcome": "Avoids unintended consolidation while preserving legitimate syndication.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "cross-origin-canonical"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 163
+      },
+      "priority_basis": {
+        "rank": 13,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-013",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "cross-origin-canonical"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "R-001",
+      "finding_id": "F-002",
+      "check_id": "kg-link-missing",
+      "check_ids": [
+        "kg-link-missing"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Organization markup does not link the brand to a knowledge-graph entity",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-002",
+      "finding_id": "F-003",
+      "check_id": "media-schema-missing",
+      "check_ids": [
+        "media-schema-missing"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio is embedded without complete VideoObject or AudioObject markup",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-003",
+      "finding_id": "F-004",
+      "check_id": "author-credentials-weak",
+      "check_ids": [
+        "author-credentials-weak"
+      ],
+      "category": "answer_content",
+      "finding_type": "proactive_improvement",
+      "title": "Article authors lack a Person profile or credentials",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-004",
+      "finding_id": "F-005",
+      "check_id": "media-transcript-missing",
+      "check_ids": [
+        "media-transcript-missing"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio has no transcript that crawlers can read",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-005",
+      "finding_id": "F-006",
+      "check_id": "cwv-risk",
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Interaction to Next Paint (INP) risk, estimated from markup and not measured",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-006",
+      "finding_id": "F-007",
+      "check_id": "heading-hierarchy",
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 2/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-007",
+      "finding_id": "F-008",
+      "check_id": "cwv-risk",
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Largest Contentful Paint (LCP) risk, estimated from markup and not measured",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-008",
+      "finding_id": "F-009",
+      "check_id": "title-length",
+      "check_ids": [
+        "title-length"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 4/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-009",
+      "finding_id": "F-010",
+      "check_id": "markup-ratio",
+      "check_ids": [
+        "markup-ratio"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Visible text is under 3% of the HTML on 1/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-010",
+      "finding_id": "F-011",
+      "check_id": "page-orientation",
+      "check_ids": [
+        "page-orientation"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Content pages lack a clear orientation heading above the fold",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-011",
+      "finding_id": "F-012",
+      "check_id": "answer-headings",
+      "check_ids": [
+        "answer-headings"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No question-shaped headings on 3/3 content pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-012",
+      "finding_id": "F-013",
+      "check_id": "cross-origin-canonical",
+      "check_ids": [
+        "cross-origin-canonical"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Canonical tag points to another site on 1/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-013",
+      "check_id": "baseline:off_site_presence",
+      "category": "off_site_presence",
+      "finding_type": "proactive_improvement",
+      "title": "Continue building independent, identity-matched off-site mentions",
+      "severity": "low",
+      "confidence": 0.4,
+      "status": "insufficient_evidence",
+      "evidence_status": "The check could not be completed on this run; this is the absence of a result, not evidence of a defect, so it is reported as advisory only.",
+      "affected_pages": [],
+      "root_cause": "Off-site presence is cumulative; even a well-corroborated brand benefits from continued, diverse independent mentions.",
+      "evidence": [],
+      "evidence_text": "",
+      "suggested_action": {
+        "summary": "Continue building independent, identity-matched off-site mentions",
+        "steps": [
+          "List the brand on relevant, reputable directories",
+          "Keep sameAs and social profiles active and identity-consistent",
+          "Encourage independent, identity-matched mentions over time"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Maintains current AI-readiness posture",
+        "verification": "Periodically confirm off-site profiles resolve to the same canonical identity as the site.",
+        "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+        "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source.",
+        "owner_roles": [
+          "content",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "baseline_calibrated"
+      },
+      "mechanism": "Off-site presence is cumulative, so it benefits from continued diverse independent mentions.",
+      "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+      "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "priority_basis": {
+        "rank": null,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "insufficient_evidence",
+        "confidence": 0.4,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 0,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "R-013",
+        "provenance": {
+          "source": "baseline_calibrated"
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "execution_status": "completed",
+  "limitations": [
+    "157 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 163 discovered); findings reflect only the 6 page(s) actually crawled, not the whole site. The sample reached 2 of 37 site sections (first path segment).",
+    "Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.",
+    "No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as \"nothing found\").",
+    "No search for same-named knowledge-graph entities was run: robots.txt for Wikidata and Wikipedia disallows their search endpoints, so only the agent stage (AG-05) can look the brand name up; namesake ambiguity is unassessed.",
+    "Linked sameAs and review profiles were not fetched (OFF_SITE_LOOKUP=0), so whether they resolve and belong to the brand was not checked.",
+    "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not searched for the brand: they block automated clients, no search provider was configured, and the agent stage (AG-06) was not supplied. Only profiles linked from the site were considered.",
+    "Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and no PAGESPEED_API_KEY is configured. Web-vitals findings are estimates from markup patterns, not measurements.",
+    "Colour contrast and tap-target size were judged only where inline styles set them; colours and sizes from stylesheets need a browser to compute and were not assessed.",
+    "32 same-origin content image(s) were not measured for file size (per-audit cap of 4 or remaining budget); cross-origin images are never requested, so their weight is unassessed."
+  ],
+  "confidence": {
+    "score": 0.05,
+    "level": "low",
+    "method": "min(sample_representativeness, observation_completeness, execution_penalty), where sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)), capped at 0.9 unless discovery_reliable is true, and crawl_completeness = pages_analyzed / pages_discovered; observation_completeness = (pages read in full + half of pages read in part) / (pages analyzed + challenged, waiting-room, timed-out and failed fetches). A weak link caps the score rather than being averaged out. identity_confidence is reported beside the score, not in it: it gates only the checks that depend on the brand's identity",
+    "interpretation": "A heuristic rating of how far the report speaks for the whole site, not a calibrated probability. Each finding states its own confidence.",
+    "components": {
+      "crawl_completeness": 0.04,
+      "section_coverage": 0.05,
+      "sample_size": 0.2,
+      "sample_representativeness": 0.05,
+      "observation_completeness": 1.0,
+      "identity_confidence": 0.92,
+      "execution_penalty": 1.0
+    },
+    "limiting_factor": "sample_representativeness",
+    "reasons": {
+      "sample_representativeness": "The page sample is small or one-sided: the crawl analyzed 6 of 163 discovered page(s) and reached 2 of 37 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched).",
+      "observation_completeness": "Every page the audit tried to read was read in full.",
+      "identity_confidence": "The brand identity is clear: the Organization markup names one brand.",
+      "execution_penalty": "The audit run completed normally."
+    },
+    "explanation": "Confidence is low (0.05). The weakest of its parts sets the score, here the page sample. The page sample is small or one-sided: the crawl analyzed 6 of 163 discovered page(s) and reached 2 of 37 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched). Brand identity (reported separately, not part of the score): The brand identity is clear: the Organization markup names one brand. The score rates how far the report speaks for the whole site; each finding has its own confidence and status, and a problem seen on a page is still real on that page."
+  },
+  "coverage_limited": {
+    "sample_only": true,
+    "pages_not_analyzed": 157,
+    "unassessed_capabilities": [
+      "headless_rendering",
+      "external_search"
+    ]
+  },
+  "top_actions": [
+    {
+      "finding_id": "F-001",
+      "title": "Images are heavier than they need to be",
+      "summary": "Compress, resize and convert the listed images",
+      "priority": "low",
+      "impact": "low",
+      "effort": "medium",
+      "quadrant": "deprioritize",
+      "quick_win": false,
+      "start_here": true,
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_image_weight.py",
+              "rule_id": "image-weight"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      },
+      "status": "confirmed"
+    }
+  ],
+  "quick_wins": [
+    {
+      "id": "F-002",
+      "title": "Organization markup does not link the brand to a knowledge-graph entity",
+      "summary": "Link the brand to its Wikidata item in Organization sameAs",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "check_knowledge_graph.py",
+              "rule_id": "kg-link-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-004",
+      "title": "Article authors lack a Person profile or credentials",
+      "summary": "State each article author as a Person with a profile and credentials",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "content",
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 4,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.75,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 5,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-004",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "analyze_authorship.py",
+              "rule_id": "author-credentials-weak"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "whats_working": [
+    {
+      "id": "W-001",
+      "check": "robots-txt",
+      "title": "robots.txt allows crawling",
+      "check_ids": [
+        "robots-block",
+        "robots-unreachable"
+      ],
+      "evidence": "robots.txt was read and lets crawlers fetch the start URL.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-002",
+      "check": "ai-crawler-access",
+      "title": "AI and search crawlers may fetch the site",
+      "check_ids": [
+        "ai-crawler-blocked",
+        "ai-crawler-section-blocked",
+        "ai-crawler-unchecked"
+      ],
+      "evidence": "robots.txt lets all 18 AI and search crawlers checked fetch the site, and closes no discovered site section to them (AI search: OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot, Applebot; user-requested fetch: ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User; model training: GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot, Bytespider).",
+      "pages_checked": null
+    },
+    {
+      "id": "W-003",
+      "check": "sitemap",
+      "title": "An XML sitemap is available",
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "evidence": "An XML sitemap was read; it lists at least 9 URLs.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-004",
+      "check": "https",
+      "title": "Pages are served over HTTPS",
+      "check_ids": [
+        "http-transport",
+        "tls-health"
+      ],
+      "evidence": "All 6 pages checked were served over HTTPS.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-005",
+      "check": "http-status",
+      "title": "Fetched pages load without HTTP errors",
+      "check_ids": [
+        "broken-pages"
+      ],
+      "evidence": "None of the 6 pages fetched answered with an HTTP error (4xx or 5xx).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-006",
+      "check": "titles",
+      "title": "Every page has a title",
+      "check_ids": [
+        "missing-title"
+      ],
+      "evidence": "All 6 pages checked have a document title.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-007",
+      "check": "meta-descriptions",
+      "title": "Every page has a meta description",
+      "check_ids": [
+        "missing-description"
+      ],
+      "evidence": "All 6 pages checked have a meta description.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-008",
+      "check": "language",
+      "title": "Every page declares its language",
+      "check_ids": [
+        "missing-language"
+      ],
+      "evidence": "All 6 pages checked declare their language (html lang).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-009",
+      "check": "indexable",
+      "title": "Pages are open to indexing and snippets",
+      "check_ids": [
+        "noindex",
+        "nosnippet",
+        "snippet-suppression"
+      ],
+      "evidence": "None of the 6 pages checked carries a noindex, nosnippet or max-snippet:0 directive (meta robots or X-Robots-Tag).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-010",
+      "check": "structured-data",
+      "title": "Structured data parses cleanly",
+      "check_ids": [
+        "malformed-jsonld",
+        "no-jsonld"
+      ],
+      "evidence": "JSON-LD structured data is on 6 of the 6 pages checked, and every block parsed.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-011",
+      "check": "raw-html",
+      "title": "Content is in the raw HTML",
+      "check_ids": [
+        "hash-routing",
+        "render-gap",
+        "render-gap-unconfirmed"
+      ],
+      "evidence": "All 6 pages checked carry their text in the raw HTML, so crawlers that do not run JavaScript can read it.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-012",
+      "check": "viewport",
+      "title": "Mobile viewport is declared and zoom is allowed",
+      "check_ids": [
+        "viewport",
+        "zoom"
+      ],
+      "evidence": "All 6 pages checked declare a mobile viewport, and none blocks zooming.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-013",
+      "check": "image-alt",
+      "title": "Images carry alt attributes",
+      "check_ids": [
+        "alt-text-quality",
+        "image-context-missing",
+        "missing-alt"
+      ],
+      "evidence": "All 165 images on the pages checked carry an alt attribute, and none was flagged as a file name or placeholder.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-014",
+      "check": "internal-links",
+      "title": "Every page links onward",
+      "check_ids": [
+        "dead-ends",
+        "no-internal-navigation"
+      ],
+      "evidence": "Each of the 6 pages crawled links to at least one other page on the site.",
+      "pages_checked": 6
+    }
+  ],
+  "timing": {
+    "workflow_target_s": 270.0,
+    "core_limit_s": 200.0,
+    "agent_stage_budget_s": 55.0,
+    "finalization_budget_s": 15.0,
+    "session_started_at": "2026-10-13T03:15:08.975086+00:00",
+    "agent_deadline_at": "2026-10-13T03:16:14.384031+00:00",
+    "session_deadline_at": "2026-10-13T03:19:38.975086+00:00",
+    "enforcement": {
+      "core": "enforced: the audit worker process is stopped at core_limit_s",
+      "agent_stage": "not enforced by this code: the host agent must stop by agent_deadline_at",
+      "merge": "local only, no network request; elapsed time is recorded"
+    },
+    "core_elapsed_s": 10.409,
+    "agent_time_left_s": 55.0,
+    "agent_stage_recommended": true
+  },
+  "packet_sha256": "e00267df2224fee73929e92446e41a8daff01c46048fcb30d74ab4b39143abbb"
+}

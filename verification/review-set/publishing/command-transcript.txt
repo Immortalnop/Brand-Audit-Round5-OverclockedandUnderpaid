@@ -1,0 +1,8 @@
+[audit] started; total limit 200.0s
+[audit] acquiring https://www.npr.org/
+[audit] working (5s elapsed); Ctrl+C cancels cleanly
+[audit] working (10s elapsed); Ctrl+C cancels cleanly
+[audit] acquired 0 page(s); running analysis
+[audit] analysis complete; merging and validating report
+[audit] evidence packet written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/publishing/evidence.json (UTF-8; not ready: No eligible page was analyzed for the agent evidence packet.)
+[audit] report written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/publishing/base-report.json (UTF-8)

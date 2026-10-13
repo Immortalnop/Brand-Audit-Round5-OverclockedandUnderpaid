@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.1",
+  "audit_id": "b170fb8c55614fe5ab43c4beea3d1403",
+  "snapshot_sha256": "654f9f49ee319c1d9ca82a488b4832d8db1d37704c966945081488d721667059",
+  "packet_sha256": "06dc0f71996b139c4b1cee8b6d2d499240390e15214a669d40136925c3fd6bf5",
+  "capabilities": {
+    "local_reading": true,
+    "search": false,
+    "vision": false
+  },
+  "checks": [
+    {
+      "check": "AG-01",
+      "outcome": "not_assessed",
+      "reason": "The observed About URL returned HTTP 503. Its body opening was not acquired; the acquired homepage cannot establish the About opening."
+    },
+    {
+      "check": "AG-02",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-03",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-04",
+      "outcome": "not_assessed",
+      "reason": "No image was viewed."
+    },
+    {
+      "check": "AG-05",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-06",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[audit] started; total limit 200.0s
+[audit] acquiring https://www.mit.edu/
+[audit] working (5s elapsed); Ctrl+C cancels cleanly
+[audit] working (10s elapsed); Ctrl+C cancels cleanly
+[audit] acquired 6 page(s); running analysis
+[audit] analysis complete; merging and validating report
+[audit] evidence packet written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/education/evidence.json (UTF-8; ready)
+[audit] report written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/education/base-report.json (UTF-8)

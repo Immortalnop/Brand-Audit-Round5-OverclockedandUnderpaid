@@ -1,7 +1,7 @@
 # Validation
 
 How each required regression case of the Round 5 plan (T7.1) is checked. Every
-test below runs offline against 127.0.0.1 and is part of the normal suite
+test below uses offline inputs or controlled localhost fixtures and is part of the normal suite
 (`python -m pytest tests`).
 
 | Case | Required result | Test |
@@ -36,6 +36,16 @@ diagnosis and verification only, not any ranking, citation or conversion gain.
 
 ## Environments
 
-The suite was run on Windows 11 with Python 3.14.4 only. No Linux or macOS run
-and no run on the demonstration laptop has been made; run the suite there before
-the demonstration and record the result here.
+The original destination notes recorded Windows 11 with Python 3.14.4. The 8.4.0
+candidate was also verified on Linux with CPython 3.14.8: 1,293 checkout tests
+passed, and 1,289 extracted-runtime tests passed with one build-tool module skipped
+(the tool is excluded from the package). No macOS run or confirmation of the
+intended demonstration laptop is claimed.
+
+Three actual host workflows read the frozen packet, assessed its exact raw About
+opening, explicitly skipped search/vision and merged once without further
+requests. A known failed-About case stayed unassessed. Local-host rehearsals are
+not independent accuracy evaluation or a presentation recording. The native
+six-site review retains blocked runs and blank human labels; numerical accuracy
+and calibration targets remain unverified. Source-backed editorial suggestions
+still require human judgment. Heuristic confidence is not a calibrated probability.

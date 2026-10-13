@@ -47,7 +47,10 @@ def _record_acquire(*args, **kwargs):
 run_audit.acquire_site = _record_acquire
 if __name__ == '__main__':
     started = time.monotonic()
+    started_wall = time.time()
     result = run_audit.main(sys.argv[1:])
-    atomic_write_text(RUN/'entrypoint.json',json.dumps({'exit_code':result,'entrypoint_elapsed_s':time.monotonic()-started,
+    stage = os.environ.get('BRAND_RUN_STAGE','core')
+    atomic_write_text(RUN/('entrypoint-'+stage+'.json'),json.dumps({'exit_code':result,'entrypoint_elapsed_s':time.monotonic()-started,
+                      'started_at_unix':started_wall,'finished_at_unix':time.time(),
                       'command_arguments':sys.argv[1:],'instrumentation':'client requests after send; observation snapshot excludes cookies/auth headers'})+'\n')
     sys.exit(result)

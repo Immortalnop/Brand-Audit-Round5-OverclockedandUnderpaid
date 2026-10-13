@@ -1,0 +1,156 @@
+{
+  "candidate_commit": "aafdbfa13cc4b0a7ca6c8d3bd03535f03c1c1edf",
+  "scope": "Four actual local-host public-site workflows. One late agent stage is retained; three further runs meet the allowance. No host cancellation enforcement or presentation video is claimed. Search and vision were explicitly unassessed.",
+  "runs": [
+    {
+      "name": "python-1",
+      "code_version": "8.4.0+aafdbfa13cc4",
+      "complete_wall_s": 76.583,
+      "start_basis": "audit start (parent launch overhead unavailable)",
+      "workflow_timing": {
+        "workflow_elapsed_s": 76.53,
+        "workflow_target_s": 270.0,
+        "within_workflow_target": true,
+        "after_agent_deadline": true,
+        "agent_elapsed_s": 72.583,
+        "within_agent_deadline": false,
+        "core_elapsed_s": 3.947,
+        "measured": "from the audit start to this merge; the host agent's time is included but not enforced"
+      },
+      "observed_request_count": 11,
+      "acquisition_calls": 1,
+      "requests_after_merge": null,
+      "capabilities": {
+        "local_reading": true,
+        "search": false,
+        "vision": false
+      },
+      "hashes": {
+        "base-report.json": "1e240753c589e77b3e33af1c0f4b6812a9e9e46f1eb5cf48d2eb199c92d471e2",
+        "agent-outcomes.json": "b4af99b9f3bacdbc7ea8e62dd4aba37d8dc5f80daaf40fb1f484a1dfa3a94a4c",
+        "acquisition.json": "bdae865c096f7f39ff8521fc6a5d11c6479a56edfd38fa14de3a65c62c2933aa",
+        "final-report.json": "8702124f9fd984e49e94d2fb7d5062609d9f7a3090ef830a9301186f39795a5b",
+        "acquisition-calls.jsonl": "1d213312d7c1bae36bf1b8443b646484de5184fe255f7c096976733b9d915c55",
+        "final-report.md": "78e30236754d5dbf1be229d428a2fc662128fd10ea1ba09a4eef1b0b8cbbd119",
+        "requests.jsonl": "195a747e5bf6b9308bf2d671fa927f9561eceaf2c20621ab201c88bba0748f79",
+        "evidence.json": "c41669a096d91a00e5ed69c56c4613e1264376d7ca866280575d1d24ec97ea68",
+        "entrypoint.json": "1825b46016bc6b731cdfc4b61eef93598556679c37ff1b8c9efe721b1f4e2364"
+      }
+    },
+    {
+      "name": "python-2",
+      "code_version": "8.4.0+aafdbfa13cc4",
+      "complete_wall_s": 39.374,
+      "start_basis": "entrypoint start",
+      "workflow_timing": {
+        "workflow_elapsed_s": 39.318,
+        "workflow_target_s": 270.0,
+        "within_workflow_target": true,
+        "after_agent_deadline": false,
+        "agent_elapsed_s": 36.504,
+        "within_agent_deadline": true,
+        "core_elapsed_s": 2.814,
+        "measured": "from the audit start to this merge; the host agent's time is included but not enforced"
+      },
+      "observed_request_count": 11,
+      "acquisition_calls": 1,
+      "requests_after_merge": 0,
+      "capabilities": {
+        "local_reading": true,
+        "search": false,
+        "vision": false
+      },
+      "hashes": {
+        "entrypoint-merge.json": "8bb2345084b11916d18db0989a8ab51f454dbfd8e5f2847bf4ddb6b0910f57be",
+        "base-report.json": "4e56b085f8cdc227c1c0581a2e06938ac2a75cbdd68f5253eef81cd6d2905e80",
+        "requests-before-merge.txt": "4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8",
+        "agent-outcomes.json": "edf8152adb5e69bb28c2b039e6db281181d7bf445cd46ca25a5a4ffb216be51f",
+        "acquisition.json": "71975f5caae87023ec6ed5b91cce98b69820d4f48710d46511b97b7634404b1f",
+        "final-report.json": "61f8b1280b897252bb4bdb70917b83d4e3ff3aff42916ae608d2f038841a04ed",
+        "acquisition-calls.jsonl": "0f4d238ebc77d39974345596789ec2d66334dc6a2d563ec3d8408a5311b80851",
+        "entrypoint-core.json": "f1fa0144f0bb59a5ff34d768c57f50376e42254fa9e2819c47086f352ba664e8",
+        "final-report.md": "6e0e26b12980f01cf0738658d01eb5c7545755e2c72600524dbbce77f0ee2a00",
+        "requests.jsonl": "1b06cab227bbd827d27259aeb268ba8e6d5704fc7b3e4ee2c750a28e155ed34e",
+        "evidence.json": "3078e8d0db9a58b9e2c2492803ee4c2aca051af823d7f300b67ad6ae290cdc90"
+      }
+    },
+    {
+      "name": "python-3",
+      "code_version": "8.4.0+aafdbfa13cc4",
+      "complete_wall_s": 38.891,
+      "start_basis": "entrypoint start",
+      "workflow_timing": {
+        "workflow_elapsed_s": 38.835,
+        "workflow_target_s": 270.0,
+        "within_workflow_target": true,
+        "after_agent_deadline": false,
+        "agent_elapsed_s": 35.752,
+        "within_agent_deadline": true,
+        "core_elapsed_s": 3.083,
+        "measured": "from the audit start to this merge; the host agent's time is included but not enforced"
+      },
+      "observed_request_count": 11,
+      "acquisition_calls": 1,
+      "requests_after_merge": 0,
+      "capabilities": {
+        "local_reading": true,
+        "search": false,
+        "vision": false
+      },
+      "hashes": {
+        "entrypoint-merge.json": "6afef2f4e830648df0c177632cdb24f101195788a62f20401d629b0893bb6732",
+        "base-report.json": "09a86587a53f57dcf374e2b21930bc9fede98831b7f6454f08b059e94a5ec17d",
+        "requests-before-merge.txt": "4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8",
+        "agent-outcomes.json": "628e48f68c0c09c394dc1ab4c28d6980ccbe6dd5400c89577eb32ef0f12db6df",
+        "acquisition.json": "d18c28f32965913ccf7a5cbb8f649846790a3609b927a36ae73deacb6fffa960",
+        "final-report.json": "20734f47b6264588d5e4b17ce84bed87ea93d794b3e0fcc6f31581feb99ee955",
+        "acquisition-calls.jsonl": "6072f713998ac262e76146b4b8f7aeeb80ddeaeb893c448a5f256763051af884",
+        "entrypoint-core.json": "48283c56d5cc22c0270e324617777d8689f2514c55e23115c97dc546b0504769",
+        "final-report.md": "68659b85730f6c9504bb9792120a1ee04916046b07abf0181046e5c7f2196c36",
+        "requests.jsonl": "3af72c87bb2297b86931df28b9abfaae3047e2028fafbb00c54f48c1426626bc",
+        "evidence.json": "b1aed786b7dde01f2677f4fef18289bd8699ef60b15c49b145697abfd478eea0"
+      }
+    },
+    {
+      "name": "python-4",
+      "code_version": "8.4.0+aafdbfa13cc4",
+      "complete_wall_s": 35.449,
+      "start_basis": "entrypoint start",
+      "workflow_timing": {
+        "workflow_elapsed_s": 35.39,
+        "workflow_target_s": 270.0,
+        "within_workflow_target": true,
+        "after_agent_deadline": false,
+        "agent_elapsed_s": 32.528,
+        "within_agent_deadline": true,
+        "core_elapsed_s": 2.862,
+        "measured": "from the audit start to this merge; the host agent's time is included but not enforced"
+      },
+      "observed_request_count": 11,
+      "acquisition_calls": 1,
+      "requests_after_merge": 0,
+      "capabilities": {
+        "local_reading": true,
+        "search": false,
+        "vision": false
+      },
+      "hashes": {
+        "entrypoint-merge.json": "e7fe3a2a2e66a1446efff1217db1f8b1d087fae15d4f53336b23dd4aa6e4b54f",
+        "base-report.json": "e9f54767a566d29d8e9e5408a6b3b031fef810394993207fb6829103fa9c0c3b",
+        "requests-before-merge.txt": "4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8",
+        "agent-outcomes.json": "b6bc1f986f7641d9189d5018898a7da6327412b69df18a27515a92ee7a2743ab",
+        "acquisition.json": "bb1b3a675689cd412e41f4de12bc5fa6e5ab0d3acc109141e6703b6c8de39f17",
+        "final-report.json": "33351982058f95b7f7636ea3db1e795b2f72b00a4fc790a8346082785aa54060",
+        "acquisition-calls.jsonl": "28ae538544bbbb0ce8431e6b74e0636f5e0210367fbd58caccf246a9e27d33e7",
+        "entrypoint-core.json": "74961472e895d6f6d29fbd397124ab277c3f53cfcff8039595745e9f92affab0",
+        "final-report.md": "2e7c4b802b72c1e1d2aa8e6c475b6724ea502d9ec11a4e6890ac85605b063b5a",
+        "requests.jsonl": "e9a076154936a2654417c2cac8574fe7c474fe933441fc0f8c11c67153fbd5ef",
+        "evidence.json": "efa00e1a1f4f331e4da467a438c2279e56f02cd4b26f06c4af46e4bce13b0573"
+      }
+    }
+  ],
+  "count": 4,
+  "within_agent_allowance": 3,
+  "wall_p50_s": 39.1325,
+  "wall_p95_nearest_rank_s": 76.583
+}

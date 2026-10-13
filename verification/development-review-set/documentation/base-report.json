@@ -1,0 +1,2868 @@
+{
+  "site": "https://www.sqlite.org/docs.html",
+  "audit_id": "e5bb59bac6184a57b9410e7ad627e0f9",
+  "snapshot_sha256": "6f928666183fa76b397f64b3291550bcce25ab5596eb137281ae6a1efea0d4ce",
+  "code_version": "8.4.0+aafdbfa13cc4",
+  "audited_at": "2026-10-13T03:15:40.699431+00:00",
+  "summary": {
+    "total_findings": 14,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 13,
+    "proactive_improvements": 12,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 12
+  },
+  "coverage": {
+    "pages_discovered": 183,
+    "pages_fetched_attempted": 6,
+    "pages_fetched_ok": 6,
+    "pages_analyzed": 6,
+    "pages_blocked": 0,
+    "pages_out_of_scope": 0,
+    "out_of_scope_pages": [],
+    "start_url_out_of_scope": false,
+    "pages_challenged": 0,
+    "challenged_pages": [],
+    "crawl_stopped_by_challenge": false,
+    "pages_waiting_room": 0,
+    "waiting_room_pages": [],
+    "crawl_stopped_by_waiting_room": false,
+    "pages_fully_observed": 6,
+    "pages_partially_observed": 0,
+    "pages_redirect_duplicates": 0,
+    "url_aliases": 2,
+    "sitemap_status": "absent",
+    "sitemap_url_entries": 0,
+    "sitemap_candidates": 0,
+    "sitemap_partial": false,
+    "crawl_limit_reached": true,
+    "acquisition_failure": null,
+    "sections_discovered": 129,
+    "sections_analyzed": 6,
+    "page_types_analyzed": [
+      "other"
+    ],
+    "start_redirect": null,
+    "audited_url": "https://www.sqlite.org/docs.html",
+    "robots_permission": "evaluated",
+    "transport_diagnostics": [
+      {
+        "url": "https://www.sqlite.org/sitemap.xml",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.sqlite.org/llms.txt",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.sqlite.org/llms-full.txt",
+        "category": "http_error",
+        "http_status": 404
+      }
+    ],
+    "transport_environment": {
+      "python_version": "3.14.8",
+      "openssl_version": "OpenSSL 3.6.5 29 Sep 2026",
+      "connection_route": "direct_validated_ip",
+      "extra_ca_bundle_configured": false,
+      "openssl_ca_override_configured": false,
+      "proxy_environment_present": false,
+      "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
+      "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
+    },
+    "robots_attempt_outcomes": [
+      "ok"
+    ],
+    "pages_timed_out": 0,
+    "pages_failed_other": 0,
+    "pages_never_attempted": 177,
+    "pages_skipped": 1,
+    "skip_reason_counts": {
+      "acquisition_limit_reached": 1
+    },
+    "rendered_pages": 0,
+    "non_text_media": {
+      "images_observed": 4,
+      "unique_image_urls": 1,
+      "fact_keyword_images": 0,
+      "image_fetches_attempted": 0,
+      "images_fetched_ok": 0,
+      "svg_text_read": 0,
+      "pdfs_discovered": 0,
+      "pdfs_fetch_attempted": 0,
+      "pdfs_text_extracted": 0,
+      "image_fetch_cap": 6,
+      "pdf_fetch_cap": 3,
+      "image_weight_candidates": 0,
+      "image_weight_probes": 0,
+      "image_weight_probe_cap": 4,
+      "image_fetch_outcomes": {},
+      "pdf_outcomes": []
+    },
+    "external_claims_checked": 0,
+    "external_footprint_queries": 0,
+    "knowledge_graph": {
+      "lookup": "not_applicable",
+      "organization_pages": 0
+    },
+    "llms_txt": {
+      "llms_txt_present": false,
+      "llms_txt_scope": "optional supplied artifact; intended reader must be identified",
+      "llms_txt_status": "absent",
+      "llms_txt_links": 0,
+      "llms_txt_optional_format_advice": [],
+      "llms_txt_links_checked": 0,
+      "llms_txt_link_outcomes": {},
+      "llms_full_txt_status": "absent",
+      "llms_full_txt_present": false
+    },
+    "off_site_profiles": {
+      "same_as_links": 0,
+      "review_platforms_linked": [],
+      "business_kind": "general",
+      "lookup": "not_needed",
+      "profiles": [],
+      "profile_outcomes": {},
+      "review_platform_search": "not_run"
+    },
+    "web_vitals": {
+      "web_vitals_mode": "static_estimate",
+      "web_vitals_pages_estimated": 6,
+      "web_vitals_estimate_pages": {
+        "LCP": 2,
+        "CLS": 0,
+        "INP": 0
+      },
+      "web_vitals_estimates_suppressed_by_field_data": [],
+      "web_vitals_field_lookup": "not_configured"
+    },
+    "freshness_update_signals": {
+      "page_update_date_facts": 4,
+      "sitemap_lastmod_entries": 0,
+      "sitemap_lastmod_trusted": false,
+      "sitemap_lastmod_invalid": 0,
+      "sitemap_lastmod_uniform": null,
+      "update_dates_from_sitemap_lastmod": 0,
+      "update_dates_from_last_modified": 4,
+      "last_modified_header": {
+        "ok": 4,
+        "absent": 2
+      },
+      "pages_with_update_date": 4
+    },
+    "hreflang": {
+      "hreflang_pages": 0,
+      "hreflang_annotations": 0,
+      "hreflang_sitemap_entries": 0,
+      "hreflang_alternates_unverified": 0,
+      "html_languages": []
+    },
+    "noscript": {
+      "noscript_js_required_pages": 0,
+      "noscript_fallback_pages": []
+    },
+    "graphics_text": {
+      "canvases_observed": 0,
+      "canvas_pages_without_text": 0,
+      "inline_svg_fact_pages": 0,
+      "icon_font_pages": 0
+    },
+    "image_context": {
+      "image_context_content_images": 4,
+      "image_context_with_alt": 4,
+      "image_context_context_only": 0,
+      "image_context_no_context": 0,
+      "image_context_with_caption": 0
+    },
+    "image_weight": {
+      "image_weight_measured": 0,
+      "image_weight_probes": 0,
+      "image_weight_problems": 0,
+      "image_weight_bytes_largest": 0,
+      "responsive_image_gaps": 0
+    },
+    "accessibility": {
+      "accessibility_pages_analyzed": 6,
+      "accessibility_form_fields": 10,
+      "accessibility_unlabeled_fields": 10,
+      "accessibility_placeholder_only_fields": 0,
+      "accessibility_controls": 490,
+      "accessibility_unnamed_controls": 0,
+      "accessibility_contrast_pairs_checked": 0,
+      "accessibility_stylesheet_styles_measured": false
+    },
+    "overlays": {
+      "overlay_pages_analyzed": 6,
+      "overlay_blocking_pages": 0,
+      "overlay_class_only_pages": 0,
+      "consent_platform_pages": 0,
+      "consent_text_summary_pages": 0,
+      "consent_text_opening_pages": 0,
+      "overlay_timing_measured": false
+    },
+    "answer_format": {
+      "answer_format_pages_analyzed": 6,
+      "answer_format_script_dependent_pages": 0,
+      "answer_format_question_headings_checked": 0,
+      "answer_format_indirect_answers": 0,
+      "answer_format_data_tables": 0,
+      "answer_format_english_pages": 0
+    },
+    "context_signals": {
+      "context_pages_analyzed": 6,
+      "context_script_dependent_pages": 0,
+      "context_location_markup_pages": 0,
+      "context_location_evidence_pages": 0,
+      "context_location_evidence_kinds": [],
+      "context_commercial_site": false,
+      "context_audience_pages": 0,
+      "context_contact_pages": 0,
+      "context_contact_markup_pages": 0
+    },
+    "context_retention": {
+      "context_retention_pages_analyzed": 6,
+      "context_retention_site_urls": 183,
+      "context_retention_script_dependent_pages": 0,
+      "context_retention_saved_state_hints": [],
+      "context_retention_search_present": true,
+      "context_retention_shop_pages": 0,
+      "context_retention_query_urls": 0
+    },
+    "offer_expiry": {
+      "offer_expiry_pages_scanned": 6,
+      "offer_deadlines_found": 0,
+      "expired_offer_pages": 0,
+      "offer_expiry_reference_date": "2026-10-13"
+    },
+    "fact_consistency": {
+      "facts_compared_with_text": 0,
+      "markup_text_mismatches": 0,
+      "cross_page_conflicts": 0,
+      "fact_consistency_pages": 6
+    },
+    "ai_crawler_purposes": {
+      "OAI-SearchBot": "search",
+      "ChatGPT-User": "user_fetch",
+      "GPTBot": "training",
+      "Claude-SearchBot": "search",
+      "Claude-User": "user_fetch",
+      "ClaudeBot": "training",
+      "PerplexityBot": "search",
+      "Perplexity-User": "user_fetch",
+      "Googlebot": "search",
+      "Google-Extended": "training",
+      "Applebot": "search",
+      "Applebot-Extended": "training",
+      "Amazonbot": "training",
+      "Meta-ExternalAgent": "training",
+      "Meta-ExternalFetcher": "user_fetch",
+      "MistralAI-User": "user_fetch",
+      "CCBot": "training",
+      "Bytespider": "training"
+    },
+    "agent_corroboration_stage": "not_supplied",
+    "agent_stage": {
+      "submission_status": "not_supplied",
+      "assessment_status": "not_run",
+      "checks_assessed": [],
+      "checks_not_assessed": [
+        "AG-01",
+        "AG-02",
+        "AG-03",
+        "AG-04",
+        "AG-05",
+        "AG-06"
+      ],
+      "assessed_count": 0,
+      "not_assessed_count": 6,
+      "checks_with_errors": [],
+      "checks": {
+        "AG-01": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-02": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-03": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-04": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-05": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-06": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        }
+      }
+    },
+    "external_fetches": 0,
+    "identity_confidence": 0.0,
+    "identity_resolution": "no_organization_markup",
+    "memory_budget_used_mb": 1.871,
+    "runtime_seconds": 20.334,
+    "deadline_reached": false,
+    "capabilities": {
+      "check_tiers": {
+        "robots_and_ai_crawler_access": "executable",
+        "crawlability": "executable",
+        "machine_readability_jsonld": "executable",
+        "llms_txt_presence": "executable",
+        "sitemap_discovery": "executable",
+        "claim_extraction_heuristic": "executable",
+        "entity_resolution_from_jsonld": "executable",
+        "site_graph_engagement": "executable",
+        "freshness_from_dated_facts": "executable",
+        "dedup_merge_prioritize_validate": "executable",
+        "rendering_gap_heuristic": "executable",
+        "non_text_svg_and_pdf_text": "executable",
+        "structured_date_freshness": "executable",
+        "sitemap_lastmod_and_last_modified_freshness": "executable",
+        "knowledge_graph_link_check": "executable",
+        "knowledge_graph_entity_verification": "fallback",
+        "alt_text_quality": "executable",
+        "media_transcripts_and_schema": "executable",
+        "citation_schema_types": "executable",
+        "author_eeat_signals": "executable",
+        "llms_txt_structure_and_links": "executable",
+        "llms_full_txt_probe": "executable",
+        "same_as_static_validation": "executable",
+        "review_platform_links": "executable",
+        "web_vitals_static_estimate": "executable",
+        "hreflang_annotations": "executable",
+        "noscript_fallback": "executable",
+        "canvas_svg_icon_font_text": "executable",
+        "image_caption_context": "executable",
+        "image_weight_measurement": "executable",
+        "accessibility_html_checks": "executable",
+        "overlay_and_consent_detection": "executable",
+        "answer_format_checks": "executable",
+        "location_and_audience_signals": "executable",
+        "context_retention_checks": "executable",
+        "expired_offer_dates": "executable",
+        "on_site_fact_consistency": "executable",
+        "ai_crawler_purpose_labels": "executable",
+        "fix_snippets": "executable",
+        "impact_effort_matrix": "executable",
+        "same_as_profile_verification": "fallback",
+        "review_platform_search": "fallback",
+        "web_vitals_field_data": "fallback",
+        "rendering_headless_browser": "fallback",
+        "external_corroboration": "fallback",
+        "external_footprint_search": "fallback",
+        "agent_entity_corroboration": "optional",
+        "agent_image_vision": "optional",
+        "agent_knowledge_graph_search": "optional",
+        "agent_review_platform_search": "optional"
+      },
+      "capabilities_detected": {
+        "headless_rendering": false,
+        "external_search": false
+      },
+      "rendering_mode": "heuristic_only",
+      "external_analysis_mode": "unavailable",
+      "web_vitals_mode": "static_estimate"
+    },
+    "instrumentation": {
+      "stage_timings_s": {
+        "acquisition": {
+          "start": 62026.294556631,
+          "end": 62046.504117146,
+          "duration": 20.21
+        },
+        "independent_batch": {
+          "start": 62046.513161746,
+          "end": 62046.556270309,
+          "duration": 0.043
+        },
+        "identify_important_facts": {
+          "start": 62046.556280097,
+          "end": 62046.556300009,
+          "duration": 0.0
+        },
+        "dependent_batch": {
+          "start": 62046.556333068,
+          "end": 62046.624908189,
+          "duration": 0.069
+        }
+      },
+      "requests_attempted": 12,
+      "requests_completed": 12,
+      "requests_failed": 0,
+      "requests_timed_out": 0,
+      "requests_retried": 0,
+      "redirects_followed": 2,
+      "responses_truncated": 0,
+      "urls_deduplicated": 0,
+      "bytes_downloaded": 168363,
+      "pages_skipped": 1,
+      "pages_skipped_reasons": [
+        "acquisition_limit_reached"
+      ],
+      "safety_blocks": [],
+      "external_fetches_attempted": 0,
+      "external_fetches_completed": 0,
+      "search_queries_attempted": 0,
+      "worker_timeout_events": [],
+      "memory_peak_mb": 1.871,
+      "process_rss_mb": 41.203
+    },
+    "network_budget": {
+      "accounting": "reserve before send; unused bytes refunded; bytes are the larger of wire and decoded bytes",
+      "pools": {
+        "site": {
+          "max_requests": 90,
+          "max_bytes": 41943040,
+          "requests": 12,
+          "bytes": 168363,
+          "refused": 0
+        },
+        "external": {
+          "max_requests": 40,
+          "max_bytes": 16777216,
+          "requests": 0,
+          "bytes": 0,
+          "refused": 0
+        }
+      },
+      "stages": {
+        "llms_txt": {
+          "pool": "site",
+          "requests": 2,
+          "bytes": 327
+        },
+        "pages": {
+          "pool": "site",
+          "requests": 8,
+          "bytes": 167772
+        },
+        "robots": {
+          "pool": "site",
+          "requests": 1,
+          "bytes": 100
+        },
+        "sitemap": {
+          "pool": "site",
+          "requests": 1,
+          "bytes": 164
+        }
+      },
+      "total_requests": 12,
+      "total_bytes": 168363,
+      "not_counted": [
+        "host-agent tool calls (agent stage searches and page views)"
+      ]
+    },
+    "discovery_reliable": false,
+    "coverage_scope": "sample",
+    "agent_checks_assessed": [],
+    "evidence_packet_bytes": 34343,
+    "evidence_packet_ready": true
+  },
+  "warnings": [
+    "English lexical checks skipped on pages with unknown/non-English language or truncated retained text.",
+    "Entity identity unresolved; corroboration suppressed.",
+    "External footprint not assessed: identity unresolved or below confidence threshold.",
+    "No Organization markup on the crawled pages; the knowledge-graph link was not assessed.",
+    "Orphan pages and isolated page clusters were not assessed: the crawl analyzed a sample, and a page the sample does not link to may be linked from a page that was not fetched.",
+    "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the qualitative About-concreteness and cross-web corroboration checks were not run this audit (not checked, not \"no corroboration found\"). See skills/entity-corroboration-agent/SKILL.md."
+  ],
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "engagement",
+      "finding_type": "defect",
+      "title": "Form fields have no label",
+      "severity": "medium",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "A field with no label, aria-label or title has no name in the accessibility tree, so screen-reader users and AI agents filling the form cannot tell what it asks for",
+      "evidence": [
+        {
+          "type": "form_labels",
+          "description": "4 unlabeled field(s): <select name=s>, <input type=text name=q>, <select name=s>, <input type=text name=q>",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "2 unlabeled field(s): <select name=s>, <input type=text name=q>",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "2 unlabeled field(s): <select name=s>, <input type=text name=q>",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "form_labels",
+          "description": "2 unlabeled field(s): <select name=s>, <input type=text name=q>",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "4 unlabeled field(s): <select name=s>, <input type=text name=q>, <select name=s>, <input type=text name=q>; 2 unlabeled field(s): <select name=s>, <input type=text name=q>; 2 unlabeled field(s): <select name=s>, <input type=text name=q>; 2 unlabeled field(s): <select name=s>, <input type=text name=q>",
+      "suggested_action": {
+        "summary": "Give every form field a visible label tied to it",
+        "steps": [
+          "Add <label for=\"field-id\"> with visible text for each field, or wrap the field in <label>",
+          "Use aria-label only where a visible label is impossible; a placeholder is not a label"
+        ],
+        "priority": "medium",
+        "effort": "low",
+        "expected_benefit": "Visitors using assistive technology, and AI agents that act through the accessibility tree, can identify and use the affected elements",
+        "verification": "Re-run the audit and check the pages with a screen reader or an accessibility checker",
+        "implementation_detail": "Tie a visible label element to every field, or use aria-label where a visible label is impossible.",
+        "expected_outcome": "Every form field can be identified and filled in with assistive technology or by an AI agent.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_accessibility.py",
+            "rule_id": "form-label-missing"
+          }
+        ]
+      },
+      "check_id": "form-label-missing",
+      "mechanism": "A field with no label has no name in the accessibility tree, so screen-reader users and AI agents cannot tell what it asks for.",
+      "implementation_detail": "Tie a visible label element to every field, or use aria-label where a visible label is impossible.",
+      "expected_outcome": "Every form field can be identified and filled in with assistive technology or by an AI agent.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "form-label-missing"
+      ],
+      "coverage": {
+        "affected_pages": 4,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 4,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_accessibility.py",
+              "rule_id": "form-label-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-002",
+      "category": "ai_discoverability",
+      "finding_type": "defect",
+      "title": "Pages omit an explicit document language",
+      "severity": "low",
+      "confidence": 0.95,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "A missing document language can impede assistive pronunciation and language interpretation.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "The html lang attribute is absent or empty.",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "The html lang attribute is absent or empty.; The html lang attribute is absent or empty.; The html lang attribute is absent or empty.; The html lang attribute is absent or empty.; The html lang attribute is absent or empty.; The html lang attribute is absent or empty.",
+      "suggested_action": {
+        "summary": "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately.",
+        "steps": [
+          "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Gives consumers an explicit language hint.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately.",
+        "expected_outcome": "Gives consumers an explicit language hint.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-language"
+          }
+        ]
+      },
+      "check_id": "missing-language",
+      "mechanism": "A missing document language can impede assistive pronunciation and language interpretation.",
+      "implementation_detail": "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately.",
+      "expected_outcome": "Gives consumers an explicit language hint.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "missing-language"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.95,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-language"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-003",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No structured data (JSON-LD) found on any crawled page",
+      "severity": "low",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Pages lack schema.org JSON-LD markup (observed on the 6 of 183 discovered pages that were actually crawled)",
+      "evidence": [
+        {
+          "type": "structured_data",
+          "description": "0/6 pages contain JSON-LD",
+          "urls": [
+            "https://www.sqlite.org/docs.html",
+            "https://www.sqlite.org/about.html",
+            "https://sqlite.org/android/",
+            "https://sqlite.org/sqlar/",
+            "https://www.sqlite.org/34to35.html",
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "0/6 pages contain JSON-LD",
+      "suggested_action": {
+        "summary": "Add Organization/Product/Article JSON-LD to key pages",
+        "steps": [
+          "Identify page types",
+          "Add matching schema.org JSON-LD blocks"
+        ],
+        "priority": "medium",
+        "effort": "medium",
+        "expected_benefit": "Key facts are also stated as explicit structured data; no ranking or citation gain is implied",
+        "verification": "Validate JSON-LD with a schema.org validator",
+        "implementation_detail": "Identify the type of each key page. Add a matching schema.org JSON-LD block (Organization and WebSite on the home page; Product, Article or Service on inner pages) and validate it.",
+        "expected_outcome": "Key facts are also stated as explicit structured data that parsers can read without inferring them from layout; no ranking, rich-result or citation gain is implied.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- Home page https://www.sqlite.org/docs.html -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@graph\": [\n    {\n      \"@type\": \"Organization\",\n      \"@id\": \"https://www.sqlite.org/#organization\",\n      \"name\": \"SQLite Documentation\",\n      \"url\": \"https://www.sqlite.org/\",\n      \"logo\": \"REPLACE_WITH_LOGO_URL\",\n      \"description\": \"REPLACE_WITH_ONE_SENTENCE_DESCRIPTION\"\n    },\n    {\n      \"@type\": \"WebSite\",\n      \"@id\": \"https://www.sqlite.org/#website\",\n      \"name\": \"SQLite Documentation\",\n      \"url\": \"https://www.sqlite.org/\",\n      \"publisher\": {\n        \"@id\": \"https://www.sqlite.org/#organization\"\n      }\n    }\n  ]\n}\n</script>\n\n<!-- Other page https://sqlite.org/android/doc/trunk/www/index.wiki -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"WebPage\",\n  \"url\": \"https://sqlite.org/android/doc/trunk/www/index.wiki\",\n  \"name\": \"SQLite Android Bindings\",\n  \"description\": \"REPLACE_WITH_PAGE_DESCRIPTION\",\n  \"about\": {\n    \"@id\": \"https://www.sqlite.org/#organization\"\n  }\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "name": "home page title",
+            "page fields": "each page's H1 or title, meta description and URL"
+          },
+          "placeholders": [
+            "REPLACE_WITH_LOGO_URL",
+            "REPLACE_WITH_ONE_SENTENCE_DESCRIPTION",
+            "REPLACE_WITH_PAGE_DESCRIPTION"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "medium",
+        "quadrant": "major_project",
+        "quadrant_label": "Major project: real value, plan the work",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_machine_readability.py",
+            "rule_id": "no-jsonld"
+          }
+        ]
+      },
+      "check_id": "no-jsonld",
+      "mechanism": "Without JSON-LD or other structured markup, consumers must infer names, prices and dates from visible text and layout. Search engines do not require it for indexing, so its absence is an improvement opportunity, not a defect.",
+      "implementation_detail": "Identify the type of each key page. Add a matching schema.org JSON-LD block (Organization and WebSite on the home page; Product, Article or Service on inner pages) and validate it.",
+      "expected_outcome": "Key facts are also stated as explicit structured data that parsers can read without inferring them from layout; no ranking, rich-result or citation gain is implied.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "no-jsonld"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 3,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-003",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_machine_readability.py",
+              "rule_id": "no-jsonld"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-004",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No meta description on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "An absent description removes an optional page summary hint.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.",
+      "suggested_action": {
+        "summary": "Write a concise page-specific meta description that matches visible content.",
+        "steps": [
+          "Write a concise page-specific meta description that matches visible content."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides a summary candidate; search engines may choose other text.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Write a concise page-specific meta description that matches visible content.",
+        "expected_outcome": "Provides a summary candidate; search engines may choose other text.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-description"
+          }
+        ]
+      },
+      "check_id": "missing-description",
+      "mechanism": "An absent description removes an optional page summary hint.",
+      "implementation_detail": "Write a concise page-specific meta description that matches visible content.",
+      "expected_outcome": "Provides a summary candidate; search engines may choose other text.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 6,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 6,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "missing-description"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 4,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 6,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 6,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-004",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-description"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-005",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Open Graph tags missing: og:description on 6/6 sampled pages, og:image on 6/6 sampled pages, og:title on 6/6 sampled pages, og:url on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Incomplete Open Graph metadata limits available shared-link preview hints.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url",
+      "suggested_action": {
+        "summary": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+        "steps": [
+          "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides preview candidates; image availability and platform rendering still need verification.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+        "expected_outcome": "Provides preview candidates; image availability and platform rendering still need verification.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://sqlite.org/android/doc/trunk/www/index.wiki -->\n<meta property=\"og:title\" content=\"SQLite Android Bindings: Documentation\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"https://sqlite.org/android/doc/trunk/www/index.wiki\">\n\n<!-- https://sqlite.org/sqlar/doc/trunk/README.md -->\n<meta property=\"og:title\" content=\"SQLite Archiver: Documentation\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"https://sqlite.org/sqlar/doc/trunk/README.md\">\n\n<!-- https://www.sqlite.org/34to35.html -->\n<meta property=\"og:title\" content=\"SQLite Changes From Version 3.4.2 To 3.5.0\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"REPLACE_WITH_SHARE_IMAGE_URL\">\n<meta property=\"og:url\" content=\"https://www.sqlite.org/34to35.html\">",
+          "filled_from": {
+            "values": "each page's title, meta description, final URL and lead image"
+          },
+          "placeholders": [
+            "REPLACE_WITH_PAGE_DESCRIPTION",
+            "REPLACE_WITH_SHARE_IMAGE_URL"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "social-metadata"
+          }
+        ]
+      },
+      "check_id": "social-metadata",
+      "mechanism": "Incomplete Open Graph metadata limits available shared-link preview hints.",
+      "implementation_detail": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+      "expected_outcome": "Provides preview candidates; image availability and platform rendering still need verification.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 6,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 6,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "social-metadata"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 5,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 6,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 6,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-005",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "social-metadata"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-006",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Largest Contentful Paint (LCP) risk, estimated from markup and not measured",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/"
+      ],
+      "root_cause": "Markup patterns that delay the largest paint were observed: the main content may appear slowly",
+      "evidence": [
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: the HTML took 3974 ms to arrive",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "web_vitals_estimate",
+          "description": "Estimate, not a measurement: the HTML took 3256 ms to arrive",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        }
+      ],
+      "evidence_text": "Estimate, not a measurement: the HTML took 3974 ms to arrive; Estimate, not a measurement: the HTML took 3256 ms to arrive",
+      "suggested_action": {
+        "summary": "Check LCP in a browser or with field data, and remove the listed patterns",
+        "steps": [
+          "Do not lazy-load the first large image; give it fetchpriority=\"high\" or preload it",
+          "Defer or async non-critical scripts and inline only critical CSS",
+          "Reduce server response time with caching",
+          "Confirm with PageSpeed Insights or the Chrome UX Report"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Lower risk of a poor Largest Contentful Paint score",
+        "verification": "Measure the page with PageSpeed Insights and re-run the audit",
+        "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+        "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_web_vitals.py",
+            "rule_id": "cwv-risk"
+          }
+        ]
+      },
+      "check_id": "cwv-risk",
+      "mechanism": "Some markup patterns reliably worsen LCP, CLS or INP; without a browser the audit can only estimate the risk from them, not measure it.",
+      "implementation_detail": "Remove the listed markup patterns (lazy-loaded first image, render-blocking resources, unsized embeds, heavy scripts) and measure the page with PageSpeed Insights.",
+      "expected_outcome": "Lower risk of poor Core Web Vitals; confirm with a browser or field data.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 6,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.9
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-006",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_web_vitals.py",
+              "rule_id": "cwv-risk"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-007",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 1/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.sqlite.org/about.html"
+      ],
+      "root_cause": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 12 characters: About SQLite. Display width was not measured.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        }
+      ],
+      "evidence_text": "Title has 12 characters: About SQLite. Display width was not measured.",
+      "suggested_action": {
+        "summary": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "steps": [
+          "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves title usefulness; pixel width and platform behavior vary.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "title-length"
+          }
+        ]
+      },
+      "check_id": "title-length",
+      "mechanism": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+      "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 1,
+        "sites": 6,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.8
+      },
+      "check_ids": [
+        "title-length"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 7,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 1,
+          "sites": 6,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.8
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-007",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "title-length"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-008",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Dense paragraphs may obscure key answers",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/"
+      ],
+      "root_cause": "More than 40% of paragraphs exceed 600 characters on substantial pages.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "More than 40% of paragraphs exceed 600 characters on substantial pages.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        }
+      ],
+      "evidence_text": "More than 40% of paragraphs exceed 600 characters on substantial pages.",
+      "suggested_action": {
+        "summary": "Review dense passages and split by topic",
+        "steps": [
+          "Review dense passages and split by topic",
+          "Use lists or tables where appropriate"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Split dense passages by topic and use appropriate lists or tables.",
+        "expected_outcome": "Improves readability of the observed long passages.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "long-paragraphs"
+          }
+        ]
+      },
+      "check_id": "long-paragraphs",
+      "mechanism": "Dense paragraphs can hide important answers.",
+      "implementation_detail": "Split dense passages by topic and use appropriate lists or tables.",
+      "expected_outcome": "Improves readability of the observed long passages.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "long-paragraphs"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 8,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.7,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-008",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "long-paragraphs"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-009",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "No H1 was found on these sampled pages.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "No H1 was found on these sampled pages.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "html_observation",
+          "description": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        }
+      ],
+      "evidence_text": "No H1 was found on these sampled pages.; Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "suggested_action": {
+        "summary": "Add a descriptive primary heading where a clear page title is missing",
+        "steps": [
+          "Add a descriptive primary heading where a clear page title is missing"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+        "expected_outcome": "Makes the page topic easier to identify.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "h1"
+          },
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "page-orientation"
+          }
+        ]
+      },
+      "check_id": "h1",
+      "mechanism": "An absent primary heading can weaken page orientation.",
+      "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+      "expected_outcome": "Makes the page topic easier to identify.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 9,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.7,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-009",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "h1"
+            },
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "page-orientation"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-010",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.",
+      "suggested_action": {
+        "summary": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "steps": [
+          "Mark the main content semantically and keep navigation outside it when appropriate."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves structural clarity for supporting readers and extractors.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-landmarks"
+          }
+        ]
+      },
+      "check_id": "missing-landmarks",
+      "mechanism": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+      "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 10,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-010",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-landmarks"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-011",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.",
+      "suggested_action": {
+        "summary": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "steps": [
+          "Assess real duplicates before declaring the correct absolute canonical URL."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://sqlite.org/android/doc/trunk/www/index.wiki -->\n<link rel=\"canonical\" href=\"https://sqlite.org/android/doc/trunk/www/index.wiki\">\n\n<!-- https://sqlite.org/sqlar/doc/trunk/README.md -->\n<link rel=\"canonical\" href=\"https://sqlite.org/sqlar/doc/trunk/README.md\">\n\n<!-- https://www.sqlite.org/34to35.html -->\n<link rel=\"canonical\" href=\"https://www.sqlite.org/34to35.html\">",
+          "filled_from": {
+            "href": "each page's final URL, without fragments or tracking parameters"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-canonical"
+          }
+        ]
+      },
+      "check_id": "missing-canonical",
+      "mechanism": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+      "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 11,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-011",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-canonical"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-012",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://sqlite.org/sqlar/",
+        "https://www.sqlite.org/34to35.html",
+        "https://www.sqlite.org/35to36.html",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.sqlite.org/about.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://sqlite.org/android/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://sqlite.org/sqlar/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.sqlite.org/34to35.html"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.sqlite.org/35to36.html"
+          ]
+        }
+      ],
+      "evidence_text": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+      "suggested_action": {
+        "summary": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "steps": [
+          "Choose an appropriate supported twitter:card value and verify the target platform preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://sqlite.org/android/doc/trunk/www/index.wiki -->\n<meta name=\"twitter:card\" content=\"summary\">\n\n<!-- https://sqlite.org/sqlar/doc/trunk/README.md -->\n<meta name=\"twitter:card\" content=\"summary\">\n\n<!-- https://www.sqlite.org/34to35.html -->\n<meta name=\"twitter:card\" content=\"summary\">",
+          "filled_from": {
+            "card": "summary_large_image when the page has a lead image, otherwise summary"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "twitter-card"
+          }
+        ]
+      },
+      "check_id": "twitter-card",
+      "mechanism": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+      "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "twitter-card"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 12,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-012",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "twitter-card"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-013",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No XML sitemap found",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Sitemap probe status: absent; checked: https://www.sqlite.org/sitemap.xml (absent). No additional sitemap discovery was attempted by this check.",
+          "urls": [
+            "https://www.sqlite.org/docs.html"
+          ]
+        }
+      ],
+      "evidence_text": "Sitemap probe status: absent; checked: https://www.sqlite.org/sitemap.xml (absent). No additional sitemap discovery was attempted by this check.",
+      "suggested_action": {
+        "summary": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "steps": [
+          "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+        "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect.",
+        "owner_roles": [
+          "infrastructure",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_performance.py",
+            "rule_id": "sitemap-unavailable"
+          }
+        ]
+      },
+      "check_id": "sitemap-unavailable",
+      "mechanism": "Without a discovered sitemap, this audit relies more heavily on sampled links.",
+      "implementation_detail": "If appropriate, publish a valid sitemap of canonical public pages and reference it in robots.txt.",
+      "expected_outcome": "Improves inventory discovery; absence is not a universal indexing defect.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 13,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-013",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_performance.py",
+              "rule_id": "sitemap-unavailable"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-014",
+      "category": "off_site_presence",
+      "finding_type": "proactive_improvement",
+      "title": "No review or directory profile is linked from the site",
+      "severity": "low",
+      "confidence": 0.55,
+      "status": "suspected",
+      "affected_pages": [
+        "https://sqlite.org/android/",
+        "https://www.sqlite.org/about.html",
+        "https://www.sqlite.org/docs.html"
+      ],
+      "root_cause": "Assistants answer 'is this brand any good?' from review and directory platforms; a brand with no linked review profile leaves them nothing to corroborate it with",
+      "evidence": [
+        {
+          "type": "review_platforms",
+          "description": "None of the 6 crawled page(s) or the sameAs links point to a review or directory profile; whether profiles exist off-site was not searched",
+          "urls": [
+            "https://www.sqlite.org/docs.html",
+            "https://www.sqlite.org/about.html",
+            "https://sqlite.org/android/"
+          ]
+        }
+      ],
+      "evidence_text": "None of the 6 crawled page(s) or the sameAs links point to a review or directory profile; whether profiles exist off-site was not searched",
+      "suggested_action": {
+        "summary": "Claim and link review profiles that fit the business, such as Trustpilot, the Better Business Bureau, Crunchbase or an industry directory",
+        "steps": [
+          "Claim or create profiles on review platforms that fit the business (Trustpilot, the Better Business Bureau, Crunchbase or an industry directory)",
+          "Link them from the site footer and list them in Organization sameAs",
+          "Ask real customers for reviews and answer them publicly"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Independent ratings and reviews corroborate the brand in assistant answers",
+        "verification": "Re-run the audit after the links or profiles change",
+        "implementation_detail": "Claim profiles on review and directory platforms that fit the business, link them from the site and list them in Organization sameAs.",
+        "expected_outcome": "Independent review profiles exist and are linked, so readers and assistants can check them; their use in answers is not measured here.",
+        "owner_roles": [
+          "content",
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "freshness-corroboration",
+            "script": "check_off_site_profiles.py",
+            "rule_id": "review-platform-missing"
+          }
+        ]
+      },
+      "check_id": "review-platform-missing",
+      "mechanism": "Assistants judge a brand partly from review and directory platforms; profiles the site does not link are harder to tie to the brand, and missing ones leave nothing to corroborate.",
+      "implementation_detail": "Claim profiles on review and directory platforms that fit the business, link them from the site and list them in Organization sameAs.",
+      "expected_outcome": "Independent review profiles exist and are linked, so readers and assistants can check them; their use in answers is not measured here.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "review-platform-missing"
+      ],
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 183
+      },
+      "priority_basis": {
+        "rank": 14,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.55,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-014",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "freshness-corroboration",
+              "script": "check_off_site_profiles.py",
+              "rule_id": "review-platform-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "R-001",
+      "finding_id": "F-003",
+      "check_id": "no-jsonld",
+      "check_ids": [
+        "no-jsonld"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No structured data (JSON-LD) found on any crawled page",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-002",
+      "finding_id": "F-004",
+      "check_id": "missing-description",
+      "check_ids": [
+        "missing-description"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No meta description on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-003",
+      "finding_id": "F-005",
+      "check_id": "social-metadata",
+      "check_ids": [
+        "social-metadata"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Open Graph tags missing: og:description on 6/6 sampled pages, og:image on 6/6 sampled pages, og:title on 6/6 sampled pages, og:url on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-004",
+      "finding_id": "F-006",
+      "check_id": "cwv-risk",
+      "check_ids": [
+        "cwv-risk"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Likely Largest Contentful Paint (LCP) risk, estimated from markup and not measured",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-005",
+      "finding_id": "F-007",
+      "check_id": "title-length",
+      "check_ids": [
+        "title-length"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 1/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-006",
+      "finding_id": "F-008",
+      "check_id": "long-paragraphs",
+      "check_ids": [
+        "long-paragraphs"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Dense paragraphs may obscure key answers",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-007",
+      "finding_id": "F-009",
+      "check_id": "h1",
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-008",
+      "finding_id": "F-010",
+      "check_id": "missing-landmarks",
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-009",
+      "finding_id": "F-011",
+      "check_id": "missing-canonical",
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-010",
+      "finding_id": "F-012",
+      "check_id": "twitter-card",
+      "check_ids": [
+        "twitter-card"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-011",
+      "finding_id": "F-013",
+      "check_id": "sitemap-unavailable",
+      "check_ids": [
+        "sitemap-unavailable"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No XML sitemap found",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-012",
+      "finding_id": "F-014",
+      "check_id": "review-platform-missing",
+      "check_ids": [
+        "review-platform-missing"
+      ],
+      "category": "off_site_presence",
+      "finding_type": "proactive_improvement",
+      "title": "No review or directory profile is linked from the site",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    }
+  ],
+  "execution_status": "completed",
+  "limitations": [
+    "177 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 183 discovered); findings reflect only the 6 page(s) actually crawled, not the whole site. The sample reached 6 of 129 site sections (first path segment).",
+    "Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.",
+    "No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as \"nothing found\").",
+    "Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not searched for the brand: they block automated clients, no search provider was configured, and the agent stage (AG-06) was not supplied. Only profiles linked from the site were considered.",
+    "Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and no PAGESPEED_API_KEY is configured. Web-vitals findings are estimates from markup patterns, not measurements.",
+    "Colour contrast and tap-target size were judged only where inline styles set them; colours and sizes from stylesheets need a browser to compute and were not assessed."
+  ],
+  "confidence": {
+    "score": 0.05,
+    "level": "low",
+    "method": "min(sample_representativeness, observation_completeness, execution_penalty), where sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)), capped at 0.9 unless discovery_reliable is true, and crawl_completeness = pages_analyzed / pages_discovered; observation_completeness = (pages read in full + half of pages read in part) / (pages analyzed + challenged, waiting-room, timed-out and failed fetches). A weak link caps the score rather than being averaged out. identity_confidence is reported beside the score, not in it: it gates only the checks that depend on the brand's identity",
+    "interpretation": "A heuristic rating of how far the report speaks for the whole site, not a calibrated probability. Each finding states its own confidence.",
+    "components": {
+      "crawl_completeness": 0.03,
+      "section_coverage": 0.05,
+      "sample_size": 0.2,
+      "sample_representativeness": 0.05,
+      "observation_completeness": 1.0,
+      "identity_confidence": 0.0,
+      "execution_penalty": 1.0
+    },
+    "limiting_factor": "sample_representativeness",
+    "reasons": {
+      "sample_representativeness": "The page sample is small or one-sided: the crawl analyzed 6 of 183 discovered page(s) and reached 6 of 129 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched).",
+      "observation_completeness": "Every page the audit tried to read was read in full.",
+      "identity_confidence": "No Organization or Product JSON-LD was found on the analyzed pages, so the audit could not confirm which brand the site belongs to. Adding Organization markup raises this part.",
+      "execution_penalty": "The audit run completed normally."
+    },
+    "explanation": "Confidence is low (0.05). The weakest of its parts sets the score, here the page sample. The page sample is small or one-sided: the crawl analyzed 6 of 183 discovered page(s) and reached 6 of 129 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched). Brand identity (reported separately, not part of the score): No Organization or Product JSON-LD was found on the analyzed pages, so the audit could not confirm which brand the site belongs to. Adding Organization markup raises this part. The score rates how far the report speaks for the whole site; each finding has its own confidence and status, and a problem seen on a page is still real on that page."
+  },
+  "coverage_limited": {
+    "sample_only": true,
+    "pages_not_analyzed": 177,
+    "unassessed_capabilities": [
+      "headless_rendering",
+      "external_search"
+    ]
+  },
+  "top_actions": [
+    {
+      "finding_id": "F-001",
+      "title": "Form fields have no label",
+      "summary": "Give every form field a visible label tied to it",
+      "priority": "medium",
+      "impact": "medium",
+      "effort": "low",
+      "quadrant": "quick_win",
+      "quick_win": true,
+      "start_here": true,
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 4,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_accessibility.py",
+              "rule_id": "form-label-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      },
+      "status": "confirmed"
+    },
+    {
+      "finding_id": "F-002",
+      "title": "Pages omit an explicit document language",
+      "summary": "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately.",
+      "priority": "low",
+      "impact": "medium",
+      "effort": "low",
+      "quadrant": "quick_win",
+      "quick_win": true,
+      "start_here": false,
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.95,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-language"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      },
+      "status": "confirmed"
+    }
+  ],
+  "quick_wins": [
+    {
+      "id": "F-001",
+      "title": "Form fields have no label",
+      "summary": "Give every form field a visible label tied to it",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 4,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_accessibility.py",
+              "rule_id": "form-label-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-002",
+      "title": "Pages omit an explicit document language",
+      "summary": "Set an accurate BCP 47 lang attribute on the html element; verify multilingual sections separately.",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.95,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-language"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "whats_working": [
+    {
+      "id": "W-001",
+      "check": "robots-txt",
+      "title": "robots.txt allows crawling",
+      "check_ids": [
+        "robots-block",
+        "robots-unreachable"
+      ],
+      "evidence": "robots.txt was read and lets crawlers fetch the start URL.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-002",
+      "check": "ai-crawler-access",
+      "title": "AI and search crawlers may fetch the site",
+      "check_ids": [
+        "ai-crawler-blocked",
+        "ai-crawler-section-blocked",
+        "ai-crawler-unchecked"
+      ],
+      "evidence": "robots.txt lets all 18 AI and search crawlers checked fetch the site, and closes no discovered site section to them (AI search: OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot, Applebot; user-requested fetch: ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User; model training: GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot, Bytespider).",
+      "pages_checked": null
+    },
+    {
+      "id": "W-003",
+      "check": "https",
+      "title": "Pages are served over HTTPS",
+      "check_ids": [
+        "http-transport",
+        "tls-health"
+      ],
+      "evidence": "All 6 pages checked were served over HTTPS.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-004",
+      "check": "http-status",
+      "title": "Fetched pages load without HTTP errors",
+      "check_ids": [
+        "broken-pages"
+      ],
+      "evidence": "None of the 6 pages fetched answered with an HTTP error (4xx or 5xx).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-005",
+      "check": "titles",
+      "title": "Every page has a title",
+      "check_ids": [
+        "missing-title"
+      ],
+      "evidence": "All 6 pages checked have a document title.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-006",
+      "check": "indexable",
+      "title": "Pages are open to indexing and snippets",
+      "check_ids": [
+        "noindex",
+        "nosnippet",
+        "snippet-suppression"
+      ],
+      "evidence": "None of the 6 pages checked carries a noindex, nosnippet or max-snippet:0 directive (meta robots or X-Robots-Tag).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-007",
+      "check": "raw-html",
+      "title": "Content is in the raw HTML",
+      "check_ids": [
+        "hash-routing",
+        "render-gap",
+        "render-gap-unconfirmed"
+      ],
+      "evidence": "All 6 pages checked carry their text in the raw HTML, so crawlers that do not run JavaScript can read it.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-008",
+      "check": "viewport",
+      "title": "Mobile viewport is declared and zoom is allowed",
+      "check_ids": [
+        "viewport",
+        "zoom"
+      ],
+      "evidence": "All 6 pages checked declare a mobile viewport, and none blocks zooming.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-009",
+      "check": "image-alt",
+      "title": "Images carry alt attributes",
+      "check_ids": [
+        "alt-text-quality",
+        "image-context-missing",
+        "missing-alt"
+      ],
+      "evidence": "All 4 images on the pages checked carry an alt attribute, and none was flagged as a file name or placeholder.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-010",
+      "check": "internal-links",
+      "title": "Every page links onward",
+      "check_ids": [
+        "dead-ends",
+        "no-internal-navigation"
+      ],
+      "evidence": "Each of the 6 pages crawled links to at least one other page on the site.",
+      "pages_checked": 6
+    }
+  ],
+  "timing": {
+    "workflow_target_s": 270.0,
+    "core_limit_s": 200.0,
+    "agent_stage_budget_s": 55.0,
+    "finalization_budget_s": 15.0,
+    "session_started_at": "2026-10-13T03:15:20.269159+00:00",
+    "agent_deadline_at": "2026-10-13T03:16:35.709824+00:00",
+    "session_deadline_at": "2026-10-13T03:19:50.269159+00:00",
+    "enforcement": {
+      "core": "enforced: the audit worker process is stopped at core_limit_s",
+      "agent_stage": "not enforced by this code: the host agent must stop by agent_deadline_at",
+      "merge": "local only, no network request; elapsed time is recorded"
+    },
+    "core_elapsed_s": 20.441,
+    "agent_time_left_s": 55.0,
+    "agent_stage_recommended": true
+  },
+  "packet_sha256": "4ad832219f0c23b3ece8e68ea02f49ab9374afb362af3f87b30233da3917c4dd"
+}

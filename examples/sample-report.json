@@ -1,9 +1,9 @@
 {
   "site": "https://www.python.org/",
-  "audit_id": "acf9d2a138a7454f96662b92b2749435",
-  "snapshot_sha256": "7d91d44a5ddf9b462703d4a1627ec549cf266f2ddaeed72994ffc0c395e9bcfa",
-  "code_version": "8.4.0+f3598e2683dc.dirty",
-  "audited_at": "2026-10-13T02:44:54.002857+00:00",
+  "audit_id": "d82ff54b60ae4538ad2b0c4d46f52096",
+  "snapshot_sha256": "ed6b8c82ec662f848e5e9ffb5e1220c9a121a69d6e083fa3dc012ea892371564",
+  "code_version": "8.4.0+ae61edfd60b4",
+  "audited_at": "2026-10-13T03:31:31.160877+00:00",
   "summary": {
     "total_findings": 10,
     "critical": 0,
@@ -314,8 +314,8 @@
     "external_fetches": 0,
     "identity_confidence": 0.6,
     "identity_resolution": "name_from_site_metadata",
-    "memory_budget_used_mb": 1.26,
-    "runtime_seconds": 4.989,
+    "memory_budget_used_mb": 2.156,
+    "runtime_seconds": 2.598,
     "deadline_reached": false,
     "capabilities": {
       "check_tiers": {
@@ -381,24 +381,24 @@
     "instrumentation": {
       "stage_timings_s": {
         "acquisition": {
-          "start": 60194.937173861,
-          "end": 60199.831737585,
-          "duration": 4.895
+          "start": 62994.491746257,
+          "end": 62996.988248971,
+          "duration": 2.497
         },
         "independent_batch": {
-          "start": 60199.835901695,
-          "end": 60199.875908259,
-          "duration": 0.04
+          "start": 62997.000498375,
+          "end": 62997.037194617,
+          "duration": 0.037
         },
         "identify_important_facts": {
-          "start": 60199.875918195,
-          "end": 60199.875962046,
+          "start": 62997.037206311,
+          "end": 62997.037255257,
           "duration": 0.0
         },
         "dependent_batch": {
-          "start": 60199.875971851,
-          "end": 60199.923277589,
-          "duration": 0.047
+          "start": 62997.03726625,
+          "end": 62997.087165665,
+          "duration": 0.05
         }
       },
       "requests_attempted": 11,
@@ -409,7 +409,7 @@
       "redirects_followed": 1,
       "responses_truncated": 0,
       "urls_deduplicated": 1,
-      "bytes_downloaded": 338872,
+      "bytes_downloaded": 339145,
       "pages_skipped": 1,
       "pages_skipped_reasons": [
         "acquisition_limit_reached"
@@ -419,8 +419,8 @@
       "external_fetches_completed": 0,
       "search_queries_attempted": 0,
       "worker_timeout_events": [],
-      "memory_peak_mb": 1.26,
-      "process_rss_mb": 40.5
+      "memory_peak_mb": 2.156,
+      "process_rss_mb": 41.902
     },
     "network_budget": {
       "accounting": "reserve before send; unused bytes refunded; bytes are the larger of wire and decoded bytes",
@@ -429,7 +429,7 @@
           "max_requests": 90,
           "max_bytes": 41943040,
           "requests": 11,
-          "bytes": 338872,
+          "bytes": 339145,
           "refused": 0
         },
         "external": {
@@ -449,7 +449,7 @@
         "pages": {
           "pool": "site",
           "requests": 7,
-          "bytes": 240783
+          "bytes": 241056
         },
         "robots": {
           "pool": "site",
@@ -463,7 +463,7 @@
         }
       },
       "total_requests": 11,
-      "total_bytes": 338872,
+      "total_bytes": 339145,
       "not_counted": [
         "host-agent tool calls (agent stage searches and page views)"
       ]
@@ -471,7 +471,7 @@
     "discovery_reliable": false,
     "coverage_scope": "sample",
     "agent_checks_assessed": [],
-    "evidence_packet_bytes": 36155,
+    "evidence_packet_bytes": 36145,
     "evidence_packet_ready": true
   },
   "warnings": [
@@ -2212,17 +2212,17 @@
     "core_limit_s": 200.0,
     "agent_stage_budget_s": 55.0,
     "finalization_budget_s": 15.0,
-    "session_started_at": "2026-10-13T02:44:48.911702+00:00",
-    "agent_deadline_at": "2026-10-13T02:49:03.911702+00:00",
-    "session_deadline_at": "2026-10-13T02:49:18.911702+00:00",
+    "session_started_at": "2026-10-13T03:31:28.458623+00:00",
+    "agent_deadline_at": "2026-10-13T03:32:26.170297+00:00",
+    "session_deadline_at": "2026-10-13T03:35:58.458623+00:00",
     "enforcement": {
       "core": "enforced: the audit worker process is stopped at core_limit_s",
       "agent_stage": "not enforced by this code: the host agent must stop by agent_deadline_at",
       "merge": "local only, no network request; elapsed time is recorded"
     },
-    "core_elapsed_s": 5.103,
+    "core_elapsed_s": 2.712,
     "agent_time_left_s": 55.0,
     "agent_stage_recommended": true
   },
-  "packet_sha256": "270f2aac99b084c04dc5f6d8c8c040013a294b66409323a96adc7a85f15e35d7"
+  "packet_sha256": "dbb05f0326b789bbf41a1cdc8fb7703586c41e2f747da097eea2a3f2d37af309"
 }

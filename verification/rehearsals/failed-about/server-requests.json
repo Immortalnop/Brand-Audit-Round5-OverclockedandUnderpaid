@@ -1,0 +1,26 @@
+[
+  [
+    "GET",
+    "/robots.txt"
+  ],
+  [
+    "GET",
+    "/sitemap.xml"
+  ],
+  [
+    "GET",
+    "/llms.txt"
+  ],
+  [
+    "GET",
+    "/llms-full.txt"
+  ],
+  [
+    "GET",
+    "/"
+  ],
+  [
+    "GET",
+    "/about"
+  ]
+]

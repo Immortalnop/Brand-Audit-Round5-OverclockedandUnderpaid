@@ -1,0 +1,134 @@
+{
+  "site_url": "https://www.rei.com/",
+  "normalized_origin": "https://www.rei.com",
+  "pages": [],
+  "robots_data": {
+    "allowed_general": false,
+    "status": "inaccessible",
+    "conservative_fail_closed": true,
+    "general_disallow": null,
+    "ai_crawler_directives": {},
+    "ai_crawler_section_blocks": {},
+    "fetch_outcome": "ok",
+    "attempt_outcomes": [
+      "ok"
+    ],
+    "challenge": [
+      "akamai_reference"
+    ]
+  },
+  "llms_txt_data": {
+    "present": false,
+    "status": "not_checked"
+  },
+  "sitemap_data": {
+    "discovered": false,
+    "status": "not_checked",
+    "urls": []
+  },
+  "acquisition_metadata": {
+    "transport_diagnostics": [
+      {
+        "url": "https://www.rei.com/robots.txt",
+        "category": "http_error",
+        "http_status": 403
+      }
+    ],
+    "transport_environment": {
+      "python_version": "3.14.8",
+      "openssl_version": "OpenSSL 3.6.5 29 Sep 2026",
+      "connection_route": "direct_validated_ip",
+      "extra_ca_bundle_configured": false,
+      "openssl_ca_override_configured": false,
+      "proxy_environment_present": false,
+      "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
+      "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
+    },
+    "probe_failures": [
+      {
+        "url": "https://www.rei.com/robots.txt",
+        "reason": "http_error",
+        "http_status": 403
+      }
+    ],
+    "https_probe": {
+      "status": "not_applicable"
+    },
+    "pages_crawled": 0,
+    "total_bytes": 377,
+    "total_requests": 1,
+    "coverage": {
+      "urls_discovered": 1,
+      "urls_fetched_attempted": 0,
+      "urls_fetched_ok": 0,
+      "urls_fetched_error": 0,
+      "urls_blocked": 0,
+      "urls_timed_out": 0,
+      "urls_failed_other": 0,
+      "urls_out_of_scope": 0,
+      "out_of_scope_pages": [],
+      "urls_challenged": 0,
+      "challenged_pages": [],
+      "crawl_stopped_by_challenge": false,
+      "urls_waiting_room": 0,
+      "waiting_room_pages": [],
+      "crawl_stopped_by_waiting_room": false,
+      "start_url_out_of_scope": false,
+      "urls_analyzed": 0,
+      "urls_partially_observed": 0,
+      "urls_fully_observed": 0,
+      "urls_redirect_duplicates": 0,
+      "url_aliases": 0,
+      "urls_never_attempted": 1,
+      "skip_reason_counts": {
+        "robots_permission_unknown": 1
+      },
+      "sitemap_status": "not_checked",
+      "sitemap_url_entries": 0,
+      "sitemap_candidates": 0,
+      "sitemap_partial": false,
+      "crawl_limit_reached": false,
+      "sections_discovered": 1,
+      "sections_analyzed": 0,
+      "page_types_analyzed": []
+    },
+    "url_aliases": {},
+    "observations": [],
+    "critical_fetch_timeout_ms": 10000,
+    "acquisition_failure": {
+      "reason": "blocked_by_challenge",
+      "stage": "robots_txt",
+      "url": "https://www.rei.com/robots.txt",
+      "http_status": 403,
+      "detail": "No page could be analyzed: the site answered with a bot-protection challenge instead of its content (HTTP 403 for robots.txt).",
+      "signals": [
+        "akamai_reference"
+      ]
+    }
+  },
+  "warnings": [
+    "robots_txt_inaccessible_conservative_crawl"
+  ],
+  "media_data": {
+    "images": [],
+    "pdfs": [],
+    "summary": {
+      "images_observed": 0,
+      "unique_image_urls": 0,
+      "fact_keyword_images": 0,
+      "image_fetches_attempted": 0,
+      "images_fetched_ok": 0,
+      "svg_text_read": 0,
+      "pdfs_discovered": 0,
+      "pdfs_fetch_attempted": 0,
+      "pdfs_text_extracted": 0,
+      "image_fetch_cap": 6,
+      "pdf_fetch_cap": 3,
+      "image_weight_candidates": 0,
+      "image_weight_probes": 0,
+      "image_weight_probe_cap": 4,
+      "image_fetch_outcomes": {},
+      "pdf_outcomes": []
+    }
+  }
+}

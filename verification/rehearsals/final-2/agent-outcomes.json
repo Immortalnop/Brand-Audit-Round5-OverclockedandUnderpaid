@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.1",
+  "audit_id": "6d6fb89171a143a099cf8936dda4742c",
+  "snapshot_sha256": "ed6b8c82ec662f848e5e9ffb5e1220c9a121a69d6e083fa3dc012ea892371564",
+  "packet_sha256": "b0cdde8b2f4ea67f09e5f0a221b5927259b5fce6980bd5397572871dfe73af5e",
+  "capabilities": {
+    "local_reading": true,
+    "search": false,
+    "vision": false
+  },
+  "checks": [
+    {
+      "check": "AG-01",
+      "outcome": "finding",
+      "source_refs": [
+        "E002"
+      ],
+      "reason": "The selected raw opening names Python and its novice/experienced audience, but its offering and language category are implicit. Review this exact acquired opening, which includes a fallback notice; no whole-site absence is claimed.",
+      "observation": {
+        "passage": "Notice: This page displays a fallback because interactive scripts did not run. Possible causes include disabled JavaScript or failure to load scripts or stylesheets. Python can be easy to pick up whether you're a first time programmer or you're experienced with other languages. The following pages are a useful first step to get on your way writing programs with Python!",
+        "unanswered": [
+          "offering",
+          "category"
+        ]
+      }
+    },
+    {
+      "check": "AG-02",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-03",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-05",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-06",
+      "outcome": "not_assessed",
+      "reason": "External search was not performed."
+    },
+    {
+      "check": "AG-04",
+      "outcome": "not_assessed",
+      "reason": "No image was viewed."
+    }
+  ]
+}

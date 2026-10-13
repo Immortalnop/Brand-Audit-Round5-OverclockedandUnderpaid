@@ -1,0 +1,6 @@
+[audit] started; total limit 200.0s
+[audit] acquiring https://www.powells.com/
+[audit] acquired 0 page(s); running analysis
+[audit] analysis complete; merging and validating report
+[audit] evidence packet written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/local_business/evidence.json (UTF-8; not ready: No eligible page was analyzed for the agent evidence packet.)
+[audit] report written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/review-set/local_business/base-report.json (UTF-8)

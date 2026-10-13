@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.1",
+  "audit_id": "3b871f4bf9124433a757aa83a9a550e1",
+  "snapshot_sha256": "ebf5d4b82269cede35d686e20972b85e2af3b3f4704a5abf3b49b7303db7aa4e",
+  "site": "https://www.khanacademy.org/",
+  "ready_for_assessment": false,
+  "pages": [],
+  "claims": [],
+  "image_candidates": [],
+  "identity": {
+    "source_refs": []
+  },
+  "budget": {
+    "pages_eligible": 0,
+    "pages_selected": 0,
+    "pages_omitted": 0,
+    "claims_selected": 0,
+    "images_selected": 0,
+    "metadata_truncated": 0,
+    "metadata_omitted": 0,
+    "pages_text_truncated": 0
+  },
+  "limitations": [
+    "No eligible page was analyzed for the agent evidence packet."
+  ],
+  "timing": {
+    "agent_deadline_at": "2026-10-13T03:16:36.251173+00:00",
+    "agent_stage_budget_s": 55.0,
+    "agent_time_left_s": 55.0,
+    "agent_stage_recommended": true
+  },
+  "packet_sha256": "e25e0d23044fe7dd64cc6d36cba5e0ff76a63926cf55e74a58e70197c8b69835"
+}

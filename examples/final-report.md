@@ -1,9 +1,9 @@
 # Brand AI-Readiness Audit: https://www.python.org/
 
-- **Audited at:** 2026-10-13T02:44:54.002857+00:00
+- **Audited at:** 2026-10-13T03:31:31.160877+00:00
 - **Run:** Completed
 - **Pages:** 6 analyzed of 77 discovered; 2 of 15 site sections reached
-- **Run time:** 5.0 seconds
+- **Run time:** 2.6 seconds
 - **Time limits:** audit worker stopped at 200 seconds (enforced); 55 seconds left for the optional agent stage (not enforced by the audit)
 - **Requests to the site:** 11 of at most 90
 
@@ -615,12 +615,12 @@ Received: outcome envelope. Assessed: 1 of 6 (partial). A check that was not ass
 
 | Check | Outcome | Reason |
 | --- | --- | --- |
-| AG-01 About-page concreteness | finding reported | The acquired About opening names Python and first-time/experienced programmers, but leaves the offering and programming-language category implicit. This is a scoped editorial review of that opening, not a claim about the full website. |
-| AG-02 Independent mentions | not assessed | External search was not performed in this bounded local-reading rehearsal. |
-| AG-03 Independent contradiction | not assessed | External search was not performed in this bounded local-reading rehearsal. |
-| AG-04 Facts drawn inside images | not assessed | No candidate image was viewed in this rehearsal; visual comparison is unassessed. |
-| AG-05 Namesake ambiguity | not assessed | External search was not performed in this bounded local-reading rehearsal. |
-| AG-06 Review and profile opportunity | not assessed | External search was not performed in this bounded local-reading rehearsal. |
+| AG-01 About-page concreteness | finding reported | The acquired raw About opening names Python and novice/experienced programmers, but offering and programming-language category are left implicit. Review this passage only, including its leading fallback notice. |
+| AG-02 Independent mentions | not assessed | External search was not performed. |
+| AG-03 Independent contradiction | not assessed | External search was not performed. |
+| AG-04 Facts drawn inside images | not assessed | No image was viewed; visual comparison remains unassessed. |
+| AG-05 Namesake ambiguity | not assessed | External search was not performed. |
+| AG-06 Review and profile opportunity | not assessed | External search was not performed. |
 
 ## What this audit could not check
 
@@ -630,11 +630,11 @@ Received: outcome envelope. Assessed: 1 of 6 (partial). A check that was not ass
 - Review and directory platforms (Trustpilot, G2, Google Business Profile and others) were not searched for the brand: they block automated clients, no search provider was configured, and the agent stage (AG-06) was not supplied. Only profiles linked from the site were considered.
 - Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and no PAGESPEED\_API\_KEY is configured. Web-vitals findings are estimates from markup patterns, not measurements.
 - Colour contrast and tap-target size were judged only where inline styles set them; colours and sizes from stylesheets need a browser to compute and were not assessed.
-- Agent check AG-02 (Independent mentions) was not assessed: External search was not performed in this bounded local-reading rehearsal.
-- Agent check AG-03 (Independent contradiction) was not assessed: External search was not performed in this bounded local-reading rehearsal.
-- Agent check AG-04 (Facts drawn inside images) was not assessed: No candidate image was viewed in this rehearsal; visual comparison is unassessed.
-- Agent check AG-05 (Namesake ambiguity) was not assessed: External search was not performed in this bounded local-reading rehearsal.
-- Agent check AG-06 (Review and profile opportunity) was not assessed: External search was not performed in this bounded local-reading rehearsal.
+- Agent check AG-02 (Independent mentions) was not assessed: External search was not performed.
+- Agent check AG-03 (Independent contradiction) was not assessed: External search was not performed.
+- Agent check AG-04 (Facts drawn inside images) was not assessed: No image was viewed; visual comparison remains unassessed.
+- Agent check AG-05 (Namesake ambiguity) was not assessed: External search was not performed.
+- Agent check AG-06 (Review and profile opportunity) was not assessed: External search was not performed.
 
 ## Notes from the run
 

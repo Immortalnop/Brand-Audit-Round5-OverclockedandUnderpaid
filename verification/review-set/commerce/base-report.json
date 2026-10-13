@@ -1,0 +1,2942 @@
+{
+  "site": "https://www.adafruit.com/",
+  "audit_id": "e87f8857fa464741bef69d01b1993bd8",
+  "snapshot_sha256": "af47740bb29aad82c730b4a347cf693e6746534ea1cc9f6b23b4f517ae5e79b2",
+  "code_version": "8.4.0+ae61edfd60b4",
+  "audited_at": "2026-10-13T03:29:06.715222+00:00",
+  "summary": {
+    "total_findings": 14,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 13,
+    "proactive_improvements": 13,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 14
+  },
+  "coverage": {
+    "pages_discovered": 120,
+    "pages_fetched_attempted": 6,
+    "pages_fetched_ok": 6,
+    "pages_analyzed": 6,
+    "pages_blocked": 0,
+    "pages_out_of_scope": 0,
+    "out_of_scope_pages": [],
+    "start_url_out_of_scope": false,
+    "pages_challenged": 0,
+    "challenged_pages": [],
+    "crawl_stopped_by_challenge": false,
+    "pages_waiting_room": 0,
+    "waiting_room_pages": [],
+    "crawl_stopped_by_waiting_room": false,
+    "pages_fully_observed": 6,
+    "pages_partially_observed": 0,
+    "pages_redirect_duplicates": 0,
+    "url_aliases": 0,
+    "sitemap_status": "blocked",
+    "sitemap_url_entries": 0,
+    "sitemap_candidates": 0,
+    "sitemap_partial": false,
+    "crawl_limit_reached": true,
+    "acquisition_failure": null,
+    "sections_discovered": 23,
+    "sections_analyzed": 4,
+    "page_types_analyzed": [
+      "about",
+      "home",
+      "other",
+      "product"
+    ],
+    "start_redirect": null,
+    "audited_url": "https://www.adafruit.com/",
+    "robots_permission": "evaluated",
+    "transport_diagnostics": [
+      {
+        "url": "https://www.adafruit.com/llms.txt",
+        "category": "http_error",
+        "http_status": 404
+      },
+      {
+        "url": "https://www.adafruit.com/llms-full.txt",
+        "category": "http_error",
+        "http_status": 404
+      }
+    ],
+    "transport_environment": {
+      "python_version": "3.14.8",
+      "openssl_version": "OpenSSL 3.6.5 29 Sep 2026",
+      "connection_route": "direct_validated_ip",
+      "extra_ca_bundle_configured": false,
+      "openssl_ca_override_configured": false,
+      "proxy_environment_present": false,
+      "proxy_policy": "Environment proxies are not used by this pinned transport. Their presence does not prove interception.",
+      "verification_policy": "Default certificate-chain and hostname verification; no insecure fallback."
+    },
+    "robots_attempt_outcomes": [
+      "ok"
+    ],
+    "pages_timed_out": 0,
+    "pages_failed_other": 0,
+    "pages_never_attempted": 114,
+    "pages_skipped": 2,
+    "skip_reason_counts": {
+      "cross_origin_redirect_blocked": 1,
+      "acquisition_limit_reached": 1
+    },
+    "rendered_pages": 0,
+    "non_text_media": {
+      "images_observed": 194,
+      "unique_image_urls": 92,
+      "fact_keyword_images": 0,
+      "image_fetches_attempted": 4,
+      "images_fetched_ok": 4,
+      "svg_text_read": 0,
+      "pdfs_discovered": 0,
+      "pdfs_fetch_attempted": 0,
+      "pdfs_text_extracted": 0,
+      "image_fetch_cap": 6,
+      "pdf_fetch_cap": 3,
+      "image_weight_candidates": 17,
+      "image_weight_probes": 4,
+      "image_weight_probe_cap": 4,
+      "image_fetch_outcomes": {
+        "ok": 4
+      },
+      "pdf_outcomes": []
+    },
+    "external_claims_checked": 0,
+    "external_footprint_queries": 0,
+    "knowledge_graph": {
+      "lookup": "not_applicable",
+      "organization_pages": 0
+    },
+    "llms_txt": {
+      "llms_txt_present": false,
+      "llms_txt_scope": "optional supplied artifact; intended reader must be identified",
+      "llms_txt_status": "absent",
+      "llms_txt_links": 0,
+      "llms_txt_optional_format_advice": [],
+      "llms_txt_links_checked": 0,
+      "llms_txt_link_outcomes": {},
+      "llms_full_txt_status": "absent",
+      "llms_full_txt_present": false
+    },
+    "off_site_profiles": {
+      "same_as_links": 0,
+      "review_platforms_linked": [
+        "Better Business Bureau"
+      ],
+      "business_kind": "general",
+      "lookup": "disabled",
+      "profiles": [
+        {
+          "url": "https://www.bbb.org/us/ny/new-york/profile/electronic-educational-kits/adafruit-industries-llc-0121-157875/",
+          "source": "https://www.adafruit.com/about",
+          "verdict": "unverified",
+          "detail": "lookup_disabled",
+          "http_status": null
+        }
+      ],
+      "profile_outcomes": {
+        "unverified": 1
+      },
+      "profiles_unverified": 1,
+      "review_platform_search": "not_run"
+    },
+    "web_vitals": {
+      "web_vitals_mode": "static_estimate",
+      "web_vitals_pages_estimated": 6,
+      "web_vitals_estimate_pages": {
+        "LCP": 0,
+        "CLS": 0,
+        "INP": 0
+      },
+      "web_vitals_estimates_suppressed_by_field_data": [],
+      "web_vitals_field_lookup": "not_configured"
+    },
+    "freshness_update_signals": {
+      "sitemap_lastmod_entries": 0,
+      "sitemap_lastmod_trusted": false,
+      "sitemap_lastmod_invalid": 0,
+      "sitemap_lastmod_uniform": null,
+      "update_dates_from_sitemap_lastmod": 0,
+      "update_dates_from_last_modified": 0,
+      "last_modified_header": {
+        "absent": 6
+      },
+      "pages_with_update_date": 0
+    },
+    "hreflang": {
+      "hreflang_pages": 0,
+      "hreflang_annotations": 0,
+      "hreflang_sitemap_entries": 0,
+      "hreflang_alternates_unverified": 0,
+      "html_languages": [
+        "en"
+      ]
+    },
+    "noscript": {
+      "noscript_js_required_pages": 0,
+      "noscript_fallback_pages": []
+    },
+    "graphics_text": {
+      "canvases_observed": 0,
+      "canvas_pages_without_text": 0,
+      "inline_svg_fact_pages": 0,
+      "icon_font_pages": 0
+    },
+    "image_context": {
+      "image_context_content_images": 87,
+      "image_context_with_alt": 87,
+      "image_context_context_only": 0,
+      "image_context_no_context": 0,
+      "image_context_with_caption": 0
+    },
+    "image_weight": {
+      "image_weight_measured": 4,
+      "image_weight_probes": 4,
+      "image_weight_problems": 0,
+      "image_weight_bytes_largest": 0,
+      "responsive_image_gaps": 2
+    },
+    "accessibility": {
+      "accessibility_pages_analyzed": 6,
+      "accessibility_form_fields": 28,
+      "accessibility_unlabeled_fields": 0,
+      "accessibility_placeholder_only_fields": 0,
+      "accessibility_controls": 781,
+      "accessibility_unnamed_controls": 0,
+      "accessibility_contrast_pairs_checked": 0,
+      "accessibility_stylesheet_styles_measured": false
+    },
+    "overlays": {
+      "overlay_pages_analyzed": 6,
+      "overlay_blocking_pages": 0,
+      "overlay_class_only_pages": 0,
+      "consent_platform_pages": 0,
+      "consent_text_summary_pages": 0,
+      "consent_text_opening_pages": 0,
+      "overlay_timing_measured": false
+    },
+    "answer_format": {
+      "answer_format_pages_analyzed": 6,
+      "answer_format_script_dependent_pages": 0,
+      "answer_format_question_headings_checked": 3,
+      "answer_format_indirect_answers": 0,
+      "answer_format_data_tables": 9,
+      "answer_format_english_pages": 6
+    },
+    "context_signals": {
+      "context_pages_analyzed": 6,
+      "context_script_dependent_pages": 0,
+      "context_location_markup_pages": 0,
+      "context_location_evidence_pages": 0,
+      "context_location_evidence_kinds": [],
+      "context_commercial_site": true,
+      "context_audience_pages": 0,
+      "context_contact_pages": 0,
+      "context_contact_markup_pages": 0
+    },
+    "context_retention": {
+      "context_retention_pages_analyzed": 6,
+      "context_retention_site_urls": 120,
+      "context_retention_script_dependent_pages": 0,
+      "context_retention_saved_state_hints": [
+        "wishlist"
+      ],
+      "context_retention_search_present": true,
+      "context_retention_shop_pages": 3,
+      "context_retention_query_urls": 0
+    },
+    "offer_expiry": {
+      "offer_expiry_pages_scanned": 6,
+      "offer_deadlines_found": 0,
+      "expired_offer_pages": 0,
+      "offer_expiry_reference_date": "2026-10-13"
+    },
+    "fact_consistency": {
+      "facts_compared_with_text": 0,
+      "markup_text_mismatches": 0,
+      "cross_page_conflicts": 0,
+      "fact_consistency_pages": 6
+    },
+    "ai_crawler_purposes": {
+      "OAI-SearchBot": "search",
+      "ChatGPT-User": "user_fetch",
+      "GPTBot": "training",
+      "Claude-SearchBot": "search",
+      "Claude-User": "user_fetch",
+      "ClaudeBot": "training",
+      "PerplexityBot": "search",
+      "Perplexity-User": "user_fetch",
+      "Googlebot": "search",
+      "Google-Extended": "training",
+      "Applebot": "search",
+      "Applebot-Extended": "training",
+      "Amazonbot": "training",
+      "Meta-ExternalAgent": "training",
+      "Meta-ExternalFetcher": "user_fetch",
+      "MistralAI-User": "user_fetch",
+      "CCBot": "training",
+      "Bytespider": "training"
+    },
+    "agent_corroboration_stage": "not_supplied",
+    "agent_stage": {
+      "submission_status": "not_supplied",
+      "assessment_status": "not_run",
+      "checks_assessed": [],
+      "checks_not_assessed": [
+        "AG-01",
+        "AG-02",
+        "AG-03",
+        "AG-04",
+        "AG-05",
+        "AG-06"
+      ],
+      "assessed_count": 0,
+      "not_assessed_count": 6,
+      "checks_with_errors": [],
+      "checks": {
+        "AG-01": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-02": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-03": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-04": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-05": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        },
+        "AG-06": {
+          "outcome": "not_assessed",
+          "reason": "The agent stage was not supplied."
+        }
+      }
+    },
+    "external_fetches": 0,
+    "identity_confidence": 0.0,
+    "identity_resolution": "no_organization_markup",
+    "memory_budget_used_mb": 4.119,
+    "runtime_seconds": 11.877,
+    "deadline_reached": false,
+    "capabilities": {
+      "check_tiers": {
+        "robots_and_ai_crawler_access": "executable",
+        "crawlability": "executable",
+        "machine_readability_jsonld": "executable",
+        "llms_txt_presence": "executable",
+        "sitemap_discovery": "executable",
+        "claim_extraction_heuristic": "executable",
+        "entity_resolution_from_jsonld": "executable",
+        "site_graph_engagement": "executable",
+        "freshness_from_dated_facts": "executable",
+        "dedup_merge_prioritize_validate": "executable",
+        "rendering_gap_heuristic": "executable",
+        "non_text_svg_and_pdf_text": "executable",
+        "structured_date_freshness": "executable",
+        "sitemap_lastmod_and_last_modified_freshness": "executable",
+        "knowledge_graph_link_check": "executable",
+        "knowledge_graph_entity_verification": "fallback",
+        "alt_text_quality": "executable",
+        "media_transcripts_and_schema": "executable",
+        "citation_schema_types": "executable",
+        "author_eeat_signals": "executable",
+        "llms_txt_structure_and_links": "executable",
+        "llms_full_txt_probe": "executable",
+        "same_as_static_validation": "executable",
+        "review_platform_links": "executable",
+        "web_vitals_static_estimate": "executable",
+        "hreflang_annotations": "executable",
+        "noscript_fallback": "executable",
+        "canvas_svg_icon_font_text": "executable",
+        "image_caption_context": "executable",
+        "image_weight_measurement": "executable",
+        "accessibility_html_checks": "executable",
+        "overlay_and_consent_detection": "executable",
+        "answer_format_checks": "executable",
+        "location_and_audience_signals": "executable",
+        "context_retention_checks": "executable",
+        "expired_offer_dates": "executable",
+        "on_site_fact_consistency": "executable",
+        "ai_crawler_purpose_labels": "executable",
+        "fix_snippets": "executable",
+        "impact_effort_matrix": "executable",
+        "same_as_profile_verification": "fallback",
+        "review_platform_search": "fallback",
+        "web_vitals_field_data": "fallback",
+        "rendering_headless_browser": "fallback",
+        "external_corroboration": "fallback",
+        "external_footprint_search": "fallback",
+        "agent_entity_corroboration": "optional",
+        "agent_image_vision": "optional",
+        "agent_knowledge_graph_search": "optional",
+        "agent_review_platform_search": "optional"
+      },
+      "capabilities_detected": {
+        "headless_rendering": false,
+        "external_search": false
+      },
+      "rendering_mode": "heuristic_only",
+      "external_analysis_mode": "unavailable",
+      "web_vitals_mode": "static_estimate"
+    },
+    "instrumentation": {
+      "stage_timings_s": {
+        "acquisition": {
+          "start": 62840.767113917,
+          "end": 62852.514564933,
+          "duration": 11.747
+        },
+        "independent_batch": {
+          "start": 62852.531842361,
+          "end": 62852.588272582,
+          "duration": 0.056
+        },
+        "identify_important_facts": {
+          "start": 62852.588283876,
+          "end": 62852.58835539,
+          "duration": 0.0
+        },
+        "dependent_batch": {
+          "start": 62852.588363375,
+          "end": 62852.64062734,
+          "duration": 0.052
+        }
+      },
+      "requests_attempted": 13,
+      "requests_completed": 13,
+      "requests_failed": 0,
+      "requests_timed_out": 0,
+      "requests_retried": 0,
+      "redirects_followed": 0,
+      "responses_truncated": 3,
+      "urls_deduplicated": 0,
+      "bytes_downloaded": 600380,
+      "pages_skipped": 2,
+      "pages_skipped_reasons": [
+        "cross_origin_redirect_blocked",
+        "acquisition_limit_reached"
+      ],
+      "safety_blocks": [],
+      "external_fetches_attempted": 0,
+      "external_fetches_completed": 0,
+      "search_queries_attempted": 0,
+      "worker_timeout_events": [],
+      "memory_peak_mb": 4.119,
+      "process_rss_mb": 43.652
+    },
+    "network_budget": {
+      "accounting": "reserve before send; unused bytes refunded; bytes are the larger of wire and decoded bytes",
+      "pools": {
+        "site": {
+          "max_requests": 90,
+          "max_bytes": 41943040,
+          "requests": 13,
+          "bytes": 600380,
+          "refused": 0
+        },
+        "external": {
+          "max_requests": 40,
+          "max_bytes": 16777216,
+          "requests": 0,
+          "bytes": 0,
+          "refused": 0
+        }
+      },
+      "stages": {
+        "llms_txt": {
+          "pool": "site",
+          "requests": 2,
+          "bytes": 65508
+        },
+        "media": {
+          "pool": "site",
+          "requests": 4,
+          "bytes": 102999
+        },
+        "pages": {
+          "pool": "site",
+          "requests": 6,
+          "bytes": 431563
+        },
+        "robots": {
+          "pool": "site",
+          "requests": 1,
+          "bytes": 310
+        }
+      },
+      "total_requests": 13,
+      "total_bytes": 600380,
+      "not_counted": [
+        "host-agent tool calls (agent stage searches and page views)"
+      ]
+    },
+    "discovery_reliable": false,
+    "coverage_scope": "sample",
+    "agent_checks_assessed": [],
+    "evidence_packet_bytes": 37311,
+    "evidence_packet_ready": true
+  },
+  "warnings": [
+    "No dated facts found; freshness cannot be assessed (absence is not proof of staleness).",
+    "Entity identity unresolved; corroboration suppressed.",
+    "External footprint not assessed: identity unresolved or below confidence threshold.",
+    "No Organization markup on the crawled pages; the knowledge-graph link was not assessed.",
+    "Off-site profile lookup disabled (OFF_SITE_LOOKUP=0); linked profiles were not fetched or verified.",
+    "Orphan pages and isolated page clusters were not assessed: the crawl analyzed a sample, and a page the sample does not link to may be linked from a page that was not fetched.",
+    "Agent corroboration stage not supplied (no AGENT_FINDINGS_PATH); the qualitative About-concreteness and cross-web corroboration checks were not run this audit (not checked, not \"no corroboration found\"). See skills/entity-corroboration-agent/SKILL.md."
+  ],
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "ai_discoverability",
+      "finding_type": "defect",
+      "title": "Sampled content page carries noindex indexing controls",
+      "severity": "medium",
+      "confidence": 0.85,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.adafruit.com/contact_us"
+      ],
+      "root_cause": "The observed noindex directive (meta robots) limits indexing or snippets for this page within that crawler scope; intentional exclusions should be retained.",
+      "evidence": [
+        {
+          "type": "indexing_directive",
+          "description": "meta robots",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        }
+      ],
+      "evidence_text": "meta robots",
+      "suggested_action": {
+        "summary": "Review whether noindex is intentional on this page",
+        "steps": [
+          "Confirm each page is intended for search discovery",
+          "Remove the directive only where unintended; preserve private/duplicate-page controls"
+        ],
+        "priority": "medium",
+        "effort": "low",
+        "expected_benefit": "Restores eligibility within the affected crawler scope, without guaranteeing citations",
+        "verification": "Refetch HTML and headers and confirm the intended noindex policy",
+        "implementation_detail": "Confirm indexing is intended before removing noindex or none from meta and response headers.",
+        "expected_outcome": "Restores indexing eligibility for the specified crawler, without guaranteeing indexing.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_directives.py",
+            "rule_id": "noindex"
+          }
+        ]
+      },
+      "check_id": "noindex",
+      "mechanism": "A scoped noindex instruction can exclude a page from the affected search index.",
+      "implementation_detail": "Confirm indexing is intended before removing noindex or none from meta and response headers.",
+      "expected_outcome": "Restores indexing eligibility for the specified crawler, without guaranteeing indexing.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "noindex"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_directives.py",
+              "rule_id": "noindex"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-002",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "About pages are missing Organization/AboutPage structured data",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.adafruit.com/about"
+      ],
+      "root_cause": "1 page(s) classified as 'about' carry no Organization/AboutPage JSON-LD, so explicit machine-readable context may be improved",
+      "evidence": [
+        {
+          "type": "structured_data",
+          "description": "1 'about' page(s) missing Organization/AboutPage markup",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        }
+      ],
+      "evidence_text": "1 'about' page(s) missing Organization/AboutPage markup",
+      "suggested_action": {
+        "summary": "Add Organization/AboutPage JSON-LD to about pages",
+        "steps": [
+          "Add Organization/AboutPage schema.org JSON-LD matching each about page's content",
+          "Validate with a schema.org/Rich Results validator"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "About facts are also stated as explicit structured data; no ranking, rich-result or citation gain is implied",
+        "verification": "Re-crawl and confirm the expected @type is present",
+        "implementation_detail": "Review the about classification, then add truthful AboutPage or Organization markup only where applicable and validate it.",
+        "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
+        "owner_roles": [
+          "content",
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.adafruit.com/about -->\n<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"AboutPage\",\n  \"url\": \"https://www.adafruit.com/about\",\n  \"name\": \"Products navigation\",\n  \"description\": \"REPLACE_WITH_PAGE_DESCRIPTION\",\n  \"about\": {\n    \"@id\": \"https://www.adafruit.com/#organization\"\n  }\n}\n</script>",
+          "filled_from": {
+            "url": "audited origin",
+            "page fields": "the page's H1 or title, meta description and URL"
+          },
+          "placeholders": [
+            "REPLACE_WITH_PAGE_DESCRIPTION"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_machine_readability.py",
+            "rule_id": "page-type-schema-gap:about"
+          }
+        ]
+      },
+      "check_id": "page-type-schema-gap:about",
+      "mechanism": "Page-appropriate structured data can make visible facts more explicit to supporting consumers.",
+      "implementation_detail": "Review the about classification, then add truthful AboutPage or Organization markup only where applicable and validate it.",
+      "expected_outcome": "Improves explicit context without asserting that schema is mandatory for indexing or citations.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "page-type-schema-gap:about"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 2,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.9
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-002",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_machine_readability.py",
+              "rule_id": "page-type-schema-gap:about"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-003",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio is embedded without complete VideoObject or AudioObject markup",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "confirmed",
+      "affected_pages": [
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Without VideoObject or AudioObject markup, search engines and assistants have no machine-readable title, description, thumbnail or date for the media",
+      "evidence": [
+        {
+          "type": "structured_data",
+          "description": "video with no VideoObject markup",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "structured_data",
+          "description": "video with no VideoObject markup",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "structured_data",
+          "description": "video with no VideoObject markup",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "video with no VideoObject markup; video with no VideoObject markup; video with no VideoObject markup",
+      "suggested_action": {
+        "summary": "Describe each video and audio clip with VideoObject or AudioObject JSON-LD",
+        "steps": [
+          "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration",
+          "Use AudioObject or PodcastEpisode markup for audio",
+          "Add the transcript property where a transcript exists"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Media becomes eligible for video results and its details are quotable",
+        "verification": "Re-run the audit and confirm the affected pages are no longer listed",
+        "implementation_detail": "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration, or AudioObject or PodcastEpisode markup for audio.",
+        "expected_outcome": "Each video and audio clip has a machine-readable title, description, thumbnail and date.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "medium",
+        "quadrant": "quick_win",
+        "quadrant_label": "Quick win: real value for little work; start here",
+        "quick_win": true
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_media_text.py",
+            "rule_id": "media-schema-missing"
+          }
+        ]
+      },
+      "check_id": "media-schema-missing",
+      "mechanism": "Search engines and assistants rely on VideoObject and AudioObject markup to identify and describe embedded media.",
+      "implementation_detail": "Add VideoObject markup with name, description, thumbnailUrl, uploadDate and duration, or AudioObject or PodcastEpisode markup for audio.",
+      "expected_outcome": "Each video and audio clip has a machine-readable title, description, thumbnail and date.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "media-schema-missing"
+      ],
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 3,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-003",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_media_text.py",
+              "rule_id": "media-schema-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-004",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Open Graph tags missing: og:description on 6/6 sampled pages, og:image on 3/6 sampled pages, og:title on 3/6 sampled pages, og:url on 3/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about",
+        "https://www.adafruit.com/contact_us",
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Incomplete Open Graph metadata limits available shared-link preview hints.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:title, og:description, og:image, og:url",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:description",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:description",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Missing nonempty fields: og:description",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:title, og:description, og:image, og:url; Missing nonempty fields: og:description; Missing nonempty fields: og:description; Missing nonempty fields: og:description",
+      "suggested_action": {
+        "summary": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+        "steps": [
+          "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides preview candidates; image availability and platform rendering still need verification.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+        "expected_outcome": "Provides preview candidates; image availability and platform rendering still need verification.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.adafruit.com/ -->\n<meta property=\"og:title\" content=\"Adafruit Industries, Unique &amp; fun DIY electronics and kits\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"https://cdn-shop.adafruit.com/310x233/6526-00.jpg\">\n<meta property=\"og:url\" content=\"https://www.adafruit.com/\">\n\n<!-- https://www.adafruit.com/about -->\n<meta property=\"og:title\" content=\"About : Adafruit Industries, Unique &amp; fun DIY electronics and kits\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"https://www.adafruit.com/includes/templates/shop2019/images/about/bbb-seal.png\">\n<meta property=\"og:url\" content=\"https://www.adafruit.com/about\">\n\n<!-- https://www.adafruit.com/contact_us -->\n<meta property=\"og:title\" content=\"Contact Us : Adafruit Industries, Unique &amp; fun DIY electronics and kits\">\n<meta property=\"og:description\" content=\"REPLACE_WITH_PAGE_DESCRIPTION\">\n<meta property=\"og:image\" content=\"https://cdn-shop.adafruit.com/static/apple-touch-icon-57x57.png\">\n<meta property=\"og:url\" content=\"https://www.adafruit.com/contact_us\">",
+          "filled_from": {
+            "logo": "<link rel=\"apple-touch-icon\"> on the home page (prefer a square logo of 112 px or more)",
+            "values": "each page's title, meta description, final URL and lead image"
+          },
+          "placeholders": [
+            "REPLACE_WITH_PAGE_DESCRIPTION"
+          ],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "social-metadata"
+          }
+        ]
+      },
+      "check_id": "social-metadata",
+      "mechanism": "Incomplete Open Graph metadata limits available shared-link preview hints.",
+      "implementation_detail": "Set accurate og:title, og:description, og:image and og:url values on shareable pages; verify the actual preview.",
+      "expected_outcome": "Provides preview candidates; image availability and platform rendering still need verification.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 6,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 6,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "social-metadata"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 4,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 6,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 6,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-004",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "social-metadata"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-005",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 3/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Skipped heading levels can make section relationships less clear.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 1, 4]",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 1, 4]; Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]; Observed heading levels: [2, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]",
+      "suggested_action": {
+        "summary": "Review the outline and nest headings according to the document hierarchy.",
+        "steps": [
+          "Review the outline and nest headings according to the document hierarchy."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves outline consistency without requiring an arbitrary visual style.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+        "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "heading-hierarchy"
+          }
+        ]
+      },
+      "check_id": "heading-hierarchy",
+      "mechanism": "Skipped heading levels can make section relationships less clear.",
+      "implementation_detail": "Review the outline and nest headings according to the document hierarchy.",
+      "expected_outcome": "Improves outline consistency without requiring an arbitrary visual style.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 5,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-005",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "heading-hierarchy"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-006",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No meta description on 3/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about",
+        "https://www.adafruit.com/contact_us"
+      ],
+      "root_cause": "An absent description removes an optional page summary hint.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No nonempty meta description was observed; a search engine can still extract a summary.",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        }
+      ],
+      "evidence_text": "No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.; No nonempty meta description was observed; a search engine can still extract a summary.",
+      "suggested_action": {
+        "summary": "Write a concise page-specific meta description that matches visible content.",
+        "steps": [
+          "Write a concise page-specific meta description that matches visible content."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides a summary candidate; search engines may choose other text.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Write a concise page-specific meta description that matches visible content.",
+        "expected_outcome": "Provides a summary candidate; search engines may choose other text.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-description"
+          }
+        ]
+      },
+      "check_id": "missing-description",
+      "mechanism": "An absent description removes an optional page summary hint.",
+      "implementation_detail": "Write a concise page-specific meta description that matches visible content.",
+      "expected_outcome": "Provides a summary candidate; search engines may choose other text.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 6,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 6,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "missing-description"
+      ],
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 6,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 6,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 6,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-006",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-description"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-007",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "The main image of a page has no responsive variants",
+      "severity": "low",
+      "confidence": 0.9,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about"
+      ],
+      "root_cause": "Without srcset or <picture> sources, phones download the same large file as desktops, which delays the largest paint on mobile",
+      "evidence": [
+        {
+          "type": "responsive_images",
+          "description": "First content image https://cdn-shop.adafruit.com/310x233/6526-00.jpg has no srcset and no <picture> source; actual file size was not measured unless listed under image-weight",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "responsive_images",
+          "description": "First content image https://www.adafruit.com/includes/templates/shop2019/images/about/bbb-seal.png has no srcset and no <picture> source; actual file size was not measured unless listed under image-weight",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        }
+      ],
+      "evidence_text": "First content image https://cdn-shop.adafruit.com/310x233/6526-00.jpg has no srcset and no <picture> source; actual file size was not measured unless listed under image-weight; First content image https://www.adafruit.com/includes/templates/shop2019/images/about/bbb-seal.png has no srcset and no <picture> source; actual file size was not measured unless listed under image-weight",
+      "suggested_action": {
+        "summary": "Add srcset and sizes to the main image of each page",
+        "steps": [
+          "Generate the image at several widths and list them in srcset with a sizes attribute",
+          "Use <picture> with AVIF or WebP sources where the format matters"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Each screen downloads an image no larger than it needs",
+        "verification": "Re-run the audit and confirm the pages are no longer listed",
+        "implementation_detail": "Add srcset and sizes, or picture sources, to the main image of each page.",
+        "expected_outcome": "Each screen downloads an image no larger than it needs.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_image_weight.py",
+            "rule_id": "responsive-images"
+          }
+        ]
+      },
+      "check_id": "responsive-images",
+      "mechanism": "Without responsive variants, phones download the same large file as desktops.",
+      "implementation_detail": "Add srcset and sizes, or picture sources, to the main image of each page.",
+      "expected_outcome": "Each screen downloads an image no larger than it needs.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 5,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 0,
+        "sites": 5,
+        "evidence_class": "observed_fact",
+        "base_value": 0.9
+      },
+      "check_ids": [
+        "responsive-images"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 7,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.9,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 5,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 0,
+          "sites": 5,
+          "evidence_class": "observed_fact",
+          "base_value": 0.9
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-007",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_image_weight.py",
+              "rule_id": "responsive-images"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-008",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 4/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.8,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/contact_us",
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 71 characters: Contact Us : Adafruit Industries, Unique & fun DIY electronics and kits. Display width was not measured.",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 106 characters: Adafruit Sparkle Motion Stick + Enclosure Kit : Adafruit Industries, Unique & fun DIY electronics an. Display width was not measured.",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 115 characters: Adafruit STSPIN220 Stepper Motor Driver Breakout Board : Adafruit Industries, Unique & fun DIY elect. Display width was not measured.",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "Title has 120 characters: Adafruit TPS61169 Constant Current Boost Converter for LEDs : Adafruit Industries, Unique & fun DIY . Display width was not measured.",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "Title has 71 characters: Contact Us : Adafruit Industries, Unique & fun DIY electronics and kits. Display width was not measured.; Title has 106 characters: Adafruit Sparkle Motion Stick + Enclosure Kit : Adafruit Industries, Unique & fun DIY electronics an. Display width was not measured.; Title has 115 characters: Adafruit STSPIN220 Stepper Motor Driver Breakout Board : Adafruit Industries, Unique & fun DIY elect. Display width was not measured.; Title has 120 characters: Adafruit TPS61169 Constant Current Boost Converter for LEDs : Adafruit Industries, Unique & fun DIY . Display width was not measured.",
+      "suggested_action": {
+        "summary": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "steps": [
+          "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves title usefulness; pixel width and platform behavior vary.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+        "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "title-length"
+          }
+        ]
+      },
+      "check_id": "title-length",
+      "mechanism": "Unusually short or long titles may be uninformative or truncated on some displays.",
+      "implementation_detail": "Review outlier titles for clarity; place distinguishing terms early rather than enforcing a character quota.",
+      "expected_outcome": "Improves title usefulness; pixel width and platform behavior vary.",
+      "confidence_basis": {
+        "dataset": "benchmark_runs/dev/findings.csv",
+        "dataset_sha256_prefix": "97807eaac874f7ea",
+        "scored_on": "2026-10-12",
+        "split": "dev",
+        "labels_reviewed_by_person": false,
+        "method": "heuristic",
+        "labelled": 6,
+        "tp": 5,
+        "fp": 0,
+        "irrelevant": 1,
+        "sites": 6,
+        "evidence_class": "heuristic_applicability",
+        "base_value": 0.8
+      },
+      "check_ids": [
+        "title-length"
+      ],
+      "coverage": {
+        "affected_pages": 4,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 8,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "dataset": "benchmark_runs/dev/findings.csv",
+          "dataset_sha256_prefix": "97807eaac874f7ea",
+          "scored_on": "2026-10-12",
+          "split": "dev",
+          "labels_reviewed_by_person": false,
+          "method": "heuristic",
+          "labelled": 6,
+          "tp": 5,
+          "fp": 0,
+          "irrelevant": 1,
+          "sites": 6,
+          "evidence_class": "heuristic_applicability",
+          "base_value": 0.8
+        },
+        "supported_page_count": 4,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-008",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "title-length"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-009",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "severity": "low",
+      "confidence": 0.7,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about"
+      ],
+      "root_cause": "No H1 was found on these sampled pages.",
+      "evidence": [
+        {
+          "type": "html_observation",
+          "description": "No H1 was found on these sampled pages.",
+          "urls": [
+            "https://www.adafruit.com/",
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "html_observation",
+          "description": "Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        }
+      ],
+      "evidence_text": "No H1 was found on these sampled pages.; Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.",
+      "suggested_action": {
+        "summary": "Add a descriptive primary heading where a clear page title is missing",
+        "steps": [
+          "Add a descriptive primary heading where a clear page title is missing"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves orientation, readability or the relevant next step when the observed issue affects visitors",
+        "verification": "Inspect the affected pages on mobile and desktop; re-crawl after changes",
+        "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+        "expected_outcome": "Makes the page topic easier to identify.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "h1"
+          },
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_experience.py",
+            "rule_id": "page-orientation"
+          }
+        ]
+      },
+      "check_id": "h1",
+      "mechanism": "An absent primary heading can weaken page orientation.",
+      "implementation_detail": "Add a descriptive page heading when the template lacks an equivalent accessible title.",
+      "expected_outcome": "Makes the page topic easier to identify.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "coverage": {
+        "affected_pages": 2,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 9,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.7,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 2,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-009",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "h1"
+            },
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_experience.py",
+              "rule_id": "page-orientation"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-010",
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Visible breadcrumbs lack matching BreadcrumbList structured data",
+      "severity": "low",
+      "confidence": 0.65,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Breadcrumb navigation is visible but not machine-readable",
+      "evidence": [
+        {
+          "type": "breadcrumb",
+          "description": "Visible breadcrumb without schema",
+          "urls": [
+            "https://www.adafruit.com/product/6333",
+            "https://www.adafruit.com/product/6353",
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "Visible breadcrumb without schema",
+      "suggested_action": {
+        "summary": "Add BreadcrumbList JSON-LD matching visible breadcrumbs",
+        "steps": [
+          "Add BreadcrumbList schema to pages with visible breadcrumbs"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves machine understanding of site structure",
+        "verification": "Validate BreadcrumbList JSON-LD",
+        "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+        "expected_outcome": "Improves machine understanding of site structure",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "engagement-audit",
+            "script": "analyze_engagement.py",
+            "rule_id": "breadcrumb-mismatch"
+          }
+        ]
+      },
+      "check_id": "breadcrumb-mismatch",
+      "mechanism": "Breadcrumb navigation is visible but not machine-readable",
+      "implementation_detail": "Add BreadcrumbList schema to pages with visible breadcrumbs",
+      "expected_outcome": "Improves machine understanding of site structure",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "breadcrumb-mismatch"
+      ],
+      "status_note": "Reported as suspected: its confidence (0.65) is below the 0.7 a confirmed finding needs.",
+      "coverage": {
+        "affected_pages": 3,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 10,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.65,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-010",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "engagement-audit",
+              "script": "analyze_engagement.py",
+              "rule_id": "breadcrumb-mismatch"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-011",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about",
+        "https://www.adafruit.com/contact_us",
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No main or article landmark observed on a page with substantial text.",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.; No main or article landmark observed on a page with substantial text.",
+      "suggested_action": {
+        "summary": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "steps": [
+          "Mark the main content semantically and keep navigation outside it when appropriate."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Improves structural clarity for supporting readers and extractors.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+        "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-landmarks"
+          }
+        ]
+      },
+      "check_id": "missing-landmarks",
+      "mechanism": "Content without a main or article landmark may be harder to distinguish from boilerplate.",
+      "implementation_detail": "Mark the main content semantically and keep navigation outside it when appropriate.",
+      "expected_outcome": "Improves structural clarity for supporting readers and extractors.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 11,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-011",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-landmarks"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-012",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about",
+        "https://www.adafruit.com/contact_us",
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No rel=canonical declaration observed. Duplicate content was not established.",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.; No rel=canonical declaration observed. Duplicate content was not established.",
+      "suggested_action": {
+        "summary": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "steps": [
+          "Assess real duplicates before declaring the correct absolute canonical URL."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+        "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.adafruit.com/ -->\n<link rel=\"canonical\" href=\"https://www.adafruit.com/\">\n\n<!-- https://www.adafruit.com/about -->\n<link rel=\"canonical\" href=\"https://www.adafruit.com/about\">\n\n<!-- https://www.adafruit.com/contact_us -->\n<link rel=\"canonical\" href=\"https://www.adafruit.com/contact_us\">",
+          "filled_from": {
+            "href": "each page's final URL, without fragments or tracking parameters"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "missing-canonical"
+          }
+        ]
+      },
+      "check_id": "missing-canonical",
+      "mechanism": "A missing canonical declaration provides no explicit preferred-URL hint.",
+      "implementation_detail": "Assess real duplicates before declaring the correct absolute canonical URL.",
+      "expected_outcome": "Helps supporting consumers consolidate duplicate URLs when applicable.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 12,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-012",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "missing-canonical"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-013",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 6/6 sampled pages",
+      "severity": "low",
+      "confidence": 0.6,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/",
+        "https://www.adafruit.com/about",
+        "https://www.adafruit.com/contact_us",
+        "https://www.adafruit.com/product/6333",
+        "https://www.adafruit.com/product/6353",
+        "https://www.adafruit.com/product/6354"
+      ],
+      "root_cause": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "evidence": [
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/about"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/contact_us"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/product/6333"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/product/6353"
+          ]
+        },
+        {
+          "type": "snapshot_observation",
+          "description": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+          "urls": [
+            "https://www.adafruit.com/product/6354"
+          ]
+        }
+      ],
+      "evidence_text": "No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.; No supported nonempty twitter:card declaration observed. Platform fallback was not tested.",
+      "suggested_action": {
+        "summary": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "steps": [
+          "Choose an appropriate supported twitter:card value and verify the target platform preview."
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "verification": "Repeat the affected observation and verify the intended behavior.",
+        "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+        "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+        "owner_roles": [
+          "developer",
+          "seo"
+        ],
+        "snippet": {
+          "format": "html",
+          "placement": "Inside <head> of each page named in the comments",
+          "code": "<!-- https://www.adafruit.com/ -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.adafruit.com/about -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n\n<!-- https://www.adafruit.com/contact_us -->\n<meta name=\"twitter:card\" content=\"summary\">",
+          "filled_from": {
+            "card": "summary_large_image when the page has a lead image, otherwise summary"
+          },
+          "placeholders": [],
+          "note": "Generated from the audited pages. Check every value against the live page, replace each REPLACE_WITH_ placeholder, and validate before publishing."
+        },
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_metadata.py",
+            "rule_id": "twitter-card"
+          }
+        ]
+      },
+      "check_id": "twitter-card",
+      "mechanism": "Absent or unsupported Twitter Card metadata may limit card selection.",
+      "implementation_detail": "Choose an appropriate supported twitter:card value and verify the target platform preview.",
+      "expected_outcome": "Provides an explicit card hint, without guaranteeing a rendered card.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "twitter-card"
+      ],
+      "coverage": {
+        "affected_pages": 6,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 13,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.6,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 6,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-013",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_metadata.py",
+              "rule_id": "twitter-card"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-014",
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No page or link names an audience segment across 6 sampled pages",
+      "severity": "low",
+      "confidence": 0.5,
+      "status": "suspected",
+      "affected_pages": [
+        "https://www.adafruit.com/"
+      ],
+      "root_cause": "Assistants weight answers toward the asker's stated role or need; a site with no page for a named audience gives them nothing to match \"for small businesses\" or \"for students\" to",
+      "evidence": [
+        {
+          "type": "audience_segments",
+          "description": "Checked 6 page titles and headings and 405 internal links; none names an audience (\"for teams\", /industries/, /use-cases/)",
+          "urls": [
+            "https://www.adafruit.com/"
+          ]
+        }
+      ],
+      "evidence_text": "Checked 6 page titles and headings and 405 internal links; none names an audience (\"for teams\", /industries/, /use-cases/)",
+      "suggested_action": {
+        "summary": "Publish one page per main audience and link it from the navigation",
+        "steps": [
+          "List the two to four audiences the offer serves best",
+          "Give each a page that states the audience in its title and H1, with the use cases, proof and pricing that matter to it",
+          "Link those pages from the main navigation and the home page"
+        ],
+        "priority": "low",
+        "effort": "medium",
+        "expected_benefit": "Assistants can match the brand to questions that state who is asking",
+        "verification": "Re-run the audit and confirm audience pages are detected",
+        "implementation_detail": "Publish one page per main audience, naming it in the title and H1, and link those pages from the navigation.",
+        "expected_outcome": "Assistants have a page to match to the asker's stated role or need.",
+        "owner_roles": [
+          "content",
+          "developer",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "deprioritize",
+        "quadrant_label": "Deprioritize: more work than the value it brings for now",
+        "quick_win": false
+      },
+      "provenance": {
+        "contributing_skills": [
+          {
+            "skill": "crawl-render-audit",
+            "script": "analyze_context_signals.py",
+            "rule_id": "audience-segment-missing"
+          }
+        ]
+      },
+      "check_id": "audience-segment-missing",
+      "mechanism": "Assistants weight answers toward who is asking; without pages for named audiences there is nothing to match that context to.",
+      "implementation_detail": "Publish one page per main audience, naming it in the title and H1, and link those pages from the navigation.",
+      "expected_outcome": "Assistants have a page to match to the asker's stated role or need.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "check_ids": [
+        "audience-segment-missing"
+      ],
+      "coverage": {
+        "affected_pages": 1,
+        "pages_analyzed": 6,
+        "pages_discovered": 120
+      },
+      "priority_basis": {
+        "rank": 14,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "suspected",
+        "confidence": 0.5,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "medium",
+        "stable_id": "F-014",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_context_signals.py",
+              "rule_id": "audience-segment-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "R-001",
+      "finding_id": "F-002",
+      "check_id": "page-type-schema-gap:about",
+      "check_ids": [
+        "page-type-schema-gap:about"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "About pages are missing Organization/AboutPage structured data",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-002",
+      "finding_id": "F-003",
+      "check_id": "media-schema-missing",
+      "check_ids": [
+        "media-schema-missing"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Video or audio is embedded without complete VideoObject or AudioObject markup",
+      "status": "confirmed",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-003",
+      "finding_id": "F-004",
+      "check_id": "social-metadata",
+      "check_ids": [
+        "social-metadata"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Open Graph tags missing: og:description on 6/6 sampled pages, og:image on 3/6 sampled pages, og:title on 3/6 sampled pages, og:url on 3/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-004",
+      "finding_id": "F-005",
+      "check_id": "heading-hierarchy",
+      "check_ids": [
+        "heading-hierarchy"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Heading levels are skipped on 3/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-005",
+      "finding_id": "F-006",
+      "check_id": "missing-description",
+      "check_ids": [
+        "missing-description"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No meta description on 3/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-006",
+      "finding_id": "F-007",
+      "check_id": "responsive-images",
+      "check_ids": [
+        "responsive-images"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "The main image of a page has no responsive variants",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-007",
+      "finding_id": "F-008",
+      "check_id": "title-length",
+      "check_ids": [
+        "title-length"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "Title shorter than 15 or longer than 70 characters on 4/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-008",
+      "finding_id": "F-009",
+      "check_id": "h1",
+      "check_ids": [
+        "h1",
+        "page-orientation"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Pages lack a descriptive primary heading (H1) that says what the page is about",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-009",
+      "finding_id": "F-010",
+      "check_id": "breadcrumb-mismatch",
+      "check_ids": [
+        "breadcrumb-mismatch"
+      ],
+      "category": "engagement",
+      "finding_type": "proactive_improvement",
+      "title": "Visible breadcrumbs lack matching BreadcrumbList structured data",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-010",
+      "finding_id": "F-011",
+      "check_id": "missing-landmarks",
+      "check_ids": [
+        "missing-landmarks"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No main or article landmark on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-011",
+      "finding_id": "F-012",
+      "check_id": "missing-canonical",
+      "check_ids": [
+        "missing-canonical"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No rel=canonical tag on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-012",
+      "finding_id": "F-013",
+      "check_id": "twitter-card",
+      "check_ids": [
+        "twitter-card"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No valid twitter:card tag on 6/6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-013",
+      "finding_id": "F-014",
+      "check_id": "audience-segment-missing",
+      "check_ids": [
+        "audience-segment-missing"
+      ],
+      "category": "ai_discoverability",
+      "finding_type": "proactive_improvement",
+      "title": "No page or link names an audience segment across 6 sampled pages",
+      "status": "suspected",
+      "provenance": {
+        "source": "finding_reference"
+      }
+    },
+    {
+      "id": "R-014",
+      "check_id": "baseline:off_site_presence",
+      "category": "off_site_presence",
+      "finding_type": "proactive_improvement",
+      "title": "Continue building independent, identity-matched off-site mentions",
+      "severity": "low",
+      "confidence": 0.4,
+      "status": "insufficient_evidence",
+      "evidence_status": "The check could not be completed on this run; this is the absence of a result, not evidence of a defect, so it is reported as advisory only.",
+      "affected_pages": [],
+      "root_cause": "Off-site presence is cumulative; even a well-corroborated brand benefits from continued, diverse independent mentions.",
+      "evidence": [],
+      "evidence_text": "",
+      "suggested_action": {
+        "summary": "Continue building independent, identity-matched off-site mentions",
+        "steps": [
+          "List the brand on relevant, reputable directories",
+          "Keep sameAs and social profiles active and identity-consistent",
+          "Encourage independent, identity-matched mentions over time"
+        ],
+        "priority": "low",
+        "effort": "low",
+        "expected_benefit": "Maintains current AI-readiness posture",
+        "verification": "Periodically confirm off-site profiles resolve to the same canonical identity as the site.",
+        "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+        "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source.",
+        "owner_roles": [
+          "content",
+          "seo"
+        ],
+        "impact": "low",
+        "quadrant": "fill_in",
+        "quadrant_label": "Fill-in: small value, small work; do when convenient",
+        "quick_win": false
+      },
+      "provenance": {
+        "source": "baseline_calibrated"
+      },
+      "mechanism": "Off-site presence is cumulative, so it benefits from continued diverse independent mentions.",
+      "implementation_detail": "Maintain a small set of authoritative, identity-consistent off-site profiles and pursue diverse independent mentions over time.",
+      "expected_outcome": "Corroboration of the brand identity grows more robust and less dependent on any single source.",
+      "confidence_basis": {
+        "method": "script_rule"
+      },
+      "priority_basis": {
+        "rank": null,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "insufficient_evidence",
+        "confidence": 0.4,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 0,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "R-014",
+        "provenance": {
+          "source": "baseline_calibrated"
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "execution_status": "completed",
+  "limitations": [
+    "114 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 120 discovered); findings reflect only the 6 page(s) actually crawled, not the whole site. The sample reached 4 of 23 site sections (first path segment).",
+    "Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.",
+    "No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as \"nothing found\").",
+    "Linked sameAs and review profiles were not fetched (OFF_SITE_LOOKUP=0), so whether they resolve and belong to the brand was not checked.",
+    "Core Web Vitals (LCP, CLS, INP) were not measured: the audit runs no browser and no PAGESPEED_API_KEY is configured. Web-vitals findings are estimates from markup patterns, not measurements.",
+    "Colour contrast and tap-target size were judged only where inline styles set them; colours and sizes from stylesheets need a browser to compute and were not assessed.",
+    "13 same-origin content image(s) were not measured for file size (per-audit cap of 4 or remaining budget); cross-origin images are never requested, so their weight is unassessed.",
+    "sitemap.xml could not be checked (status: 'blocked'); crawl coverage may be incomplete relative to a site that publishes one."
+  ],
+  "confidence": {
+    "score": 0.17,
+    "level": "low",
+    "method": "min(sample_representativeness, observation_completeness, execution_penalty), where sample_representativeness = max(crawl_completeness, min(section_coverage, sample_size)), capped at 0.9 unless discovery_reliable is true, and crawl_completeness = pages_analyzed / pages_discovered; observation_completeness = (pages read in full + half of pages read in part) / (pages analyzed + challenged, waiting-room, timed-out and failed fetches). A weak link caps the score rather than being averaged out. identity_confidence is reported beside the score, not in it: it gates only the checks that depend on the brand's identity",
+    "interpretation": "A heuristic rating of how far the report speaks for the whole site, not a calibrated probability. Each finding states its own confidence.",
+    "components": {
+      "crawl_completeness": 0.05,
+      "section_coverage": 0.17,
+      "sample_size": 0.2,
+      "sample_representativeness": 0.17,
+      "observation_completeness": 1.0,
+      "identity_confidence": 0.0,
+      "execution_penalty": 1.0
+    },
+    "limiting_factor": "sample_representativeness",
+    "reasons": {
+      "sample_representativeness": "The page sample is small or one-sided: the crawl analyzed 6 of 120 discovered page(s) and reached 4 of 23 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched).",
+      "observation_completeness": "Every page the audit tried to read was read in full.",
+      "identity_confidence": "No Organization or Product JSON-LD was found on the analyzed pages, so the audit could not confirm which brand the site belongs to. Adding Organization markup raises this part.",
+      "execution_penalty": "The audit run completed normally."
+    },
+    "explanation": "Confidence is low (0.17). The weakest of its parts sets the score, here the page sample. The page sample is small or one-sided: the crawl analyzed 6 of 120 discovered page(s) and reached 4 of 23 site section(s); the crawl is known to have missed URLs (a crawl or sitemap read limit, or URLs left unfetched). Brand identity (reported separately, not part of the score): No Organization or Product JSON-LD was found on the analyzed pages, so the audit could not confirm which brand the site belongs to. Adding Organization markup raises this part. The score rates how far the report speaks for the whole site; each finding has its own confidence and status, and a problem seen on a page is still real on that page."
+  },
+  "coverage_limited": {
+    "sample_only": true,
+    "pages_not_analyzed": 114,
+    "unassessed_capabilities": [
+      "headless_rendering",
+      "external_search"
+    ]
+  },
+  "top_actions": [
+    {
+      "finding_id": "F-001",
+      "title": "Sampled content page carries noindex indexing controls",
+      "summary": "Review whether noindex is intentional on this page",
+      "priority": "medium",
+      "impact": "medium",
+      "effort": "low",
+      "quadrant": "quick_win",
+      "quick_win": true,
+      "start_here": true,
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_directives.py",
+              "rule_id": "noindex"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      },
+      "status": "confirmed"
+    }
+  ],
+  "quick_wins": [
+    {
+      "id": "F-001",
+      "title": "Sampled content page carries noindex indexing controls",
+      "summary": "Review whether noindex is intentional on this page",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 1,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "medium",
+        "status": "confirmed",
+        "confidence": 0.85,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 1,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-001",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_directives.py",
+              "rule_id": "noindex"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    },
+    {
+      "id": "F-003",
+      "title": "Video or audio is embedded without complete VideoObject or AudioObject markup",
+      "summary": "Describe each video and audio clip with VideoObject or AudioObject JSON-LD",
+      "impact": "medium",
+      "effort": "low",
+      "owner_roles": [
+        "developer",
+        "seo"
+      ],
+      "priority_basis": {
+        "rank": 3,
+        "order": [
+          "severity descending",
+          "status descending",
+          "confidence descending",
+          "supported page count descending",
+          "lower effort first",
+          "title, affected URLs, root cause, then stable ID ascending"
+        ],
+        "severity": "low",
+        "status": "confirmed",
+        "confidence": 0.8,
+        "confidence_basis": {
+          "method": "script_rule"
+        },
+        "supported_page_count": 3,
+        "assessed_page_denominator": null,
+        "sample_pages_analyzed": 6,
+        "effort": "low",
+        "stable_id": "F-003",
+        "provenance": {
+          "contributing_skills": [
+            {
+              "skill": "crawl-render-audit",
+              "script": "analyze_media_text.py",
+              "rule_id": "media-schema-missing"
+            }
+          ]
+        },
+        "note": "Provenance explains confidence; it is not an additional score. The sample is not the whole site."
+      }
+    }
+  ],
+  "whats_working": [
+    {
+      "id": "W-001",
+      "check": "robots-txt",
+      "title": "robots.txt allows crawling",
+      "check_ids": [
+        "robots-block",
+        "robots-unreachable"
+      ],
+      "evidence": "robots.txt was read and lets crawlers fetch the start URL.",
+      "pages_checked": null
+    },
+    {
+      "id": "W-002",
+      "check": "ai-crawler-access",
+      "title": "AI and search crawlers may fetch the site",
+      "check_ids": [
+        "ai-crawler-blocked",
+        "ai-crawler-section-blocked",
+        "ai-crawler-unchecked"
+      ],
+      "evidence": "robots.txt lets all 18 AI and search crawlers checked fetch the site, and closes no discovered site section to them (AI search: OAI-SearchBot, Claude-SearchBot, PerplexityBot, Googlebot, Applebot; user-requested fetch: ChatGPT-User, Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User; model training: GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot, Bytespider).",
+      "pages_checked": null
+    },
+    {
+      "id": "W-003",
+      "check": "https",
+      "title": "Pages are served over HTTPS",
+      "check_ids": [
+        "http-transport",
+        "tls-health"
+      ],
+      "evidence": "All 6 pages checked were served over HTTPS.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-004",
+      "check": "http-status",
+      "title": "Fetched pages load without HTTP errors",
+      "check_ids": [
+        "broken-pages"
+      ],
+      "evidence": "None of the 6 pages fetched answered with an HTTP error (4xx or 5xx).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-005",
+      "check": "titles",
+      "title": "Every page has a title",
+      "check_ids": [
+        "missing-title"
+      ],
+      "evidence": "All 6 pages checked have a document title.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-006",
+      "check": "language",
+      "title": "Every page declares its language",
+      "check_ids": [
+        "missing-language"
+      ],
+      "evidence": "All 6 pages checked declare their language (html lang).",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-007",
+      "check": "structured-data",
+      "title": "Structured data parses cleanly",
+      "check_ids": [
+        "malformed-jsonld",
+        "no-jsonld"
+      ],
+      "evidence": "JSON-LD structured data is on 6 of the 6 pages checked, and every block parsed.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-008",
+      "check": "raw-html",
+      "title": "Content is in the raw HTML",
+      "check_ids": [
+        "hash-routing",
+        "render-gap",
+        "render-gap-unconfirmed"
+      ],
+      "evidence": "All 6 pages checked carry their text in the raw HTML, so crawlers that do not run JavaScript can read it.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-009",
+      "check": "viewport",
+      "title": "Mobile viewport is declared and zoom is allowed",
+      "check_ids": [
+        "viewport",
+        "zoom"
+      ],
+      "evidence": "All 6 pages checked declare a mobile viewport, and none blocks zooming.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-010",
+      "check": "image-alt",
+      "title": "Images carry alt attributes",
+      "check_ids": [
+        "alt-text-quality",
+        "image-context-missing",
+        "missing-alt"
+      ],
+      "evidence": "All 194 images on the pages checked carry an alt attribute, and none was flagged as a file name or placeholder.",
+      "pages_checked": 6
+    },
+    {
+      "id": "W-011",
+      "check": "internal-links",
+      "title": "Every page links onward",
+      "check_ids": [
+        "dead-ends",
+        "no-internal-navigation"
+      ],
+      "evidence": "Each of the 6 pages crawled links to at least one other page on the site.",
+      "pages_checked": 6
+    }
+  ],
+  "timing": {
+    "workflow_target_s": 270.0,
+    "core_limit_s": 200.0,
+    "agent_stage_budget_s": 55.0,
+    "finalization_budget_s": 15.0,
+    "session_started_at": "2026-10-13T03:28:54.732485+00:00",
+    "agent_deadline_at": "2026-10-13T03:30:01.725065+00:00",
+    "session_deadline_at": "2026-10-13T03:33:24.732485+00:00",
+    "enforcement": {
+      "core": "enforced: the audit worker process is stopped at core_limit_s",
+      "agent_stage": "not enforced by this code: the host agent must stop by agent_deadline_at",
+      "merge": "local only, no network request; elapsed time is recorded"
+    },
+    "core_elapsed_s": 11.993,
+    "agent_time_left_s": 55.0,
+    "agent_stage_recommended": true
+  },
+  "packet_sha256": "ad632da5e3575700f6930918763bbe3292bc369f3955b8eaed7caa88b711586d"
+}
