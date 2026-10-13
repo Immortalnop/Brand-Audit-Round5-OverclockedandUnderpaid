@@ -315,7 +315,7 @@ The scorer reports precision, high-severity precision, per-check precision and e
 
 ## Packaging
 
-`python3 tools/package_release.py` builds `dist/brand-ai-readiness-audit-<version>.zip` from an allowlist (`marketplace.json`, `README.md`, `skills/`, `common/`, `examples/`, `tests/`) with a `RELEASE.json` naming the version, the commit and whether the tree was clean. Planning PDFs and notes, `data/store.sqlite` (no code reads it), `benchmark_runs/` and `.env` files are left out of the archive but never deleted.
+`python3 tools/package_release.py --committed` builds the exact committed HEAD snapshot, preserving local source assets and edits. Without that flag the tool reports the working tree state. The builder writes `dist/brand-ai-readiness-audit-<version>.zip` from an allowlist (`marketplace.json`, `README.md`, `skills/`, `common/`, `examples/`, `tests/`) with a `RELEASE.json` naming the version, the commit and whether the tree was clean. Planning PDFs and notes, `data/store.sqlite` (no code reads it), `benchmark_runs/` and `.env` files are left out of the archive but never deleted.
 
 Google Search ignores llms.txt for visibility and ranking, including generative
 Search. FAQ rich results ended on 7 May 2026. Useful Q&A and generic FAQPage

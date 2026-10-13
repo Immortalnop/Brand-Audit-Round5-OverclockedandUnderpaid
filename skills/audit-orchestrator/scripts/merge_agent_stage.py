@@ -110,9 +110,13 @@ def workflow_elapsed(timing, now):
     except (KeyError, TypeError, ValueError):
         return None
     elapsed = (now - started).total_seconds()
+    core = timing.get('core_elapsed_s')
+    agent_elapsed = max(0., elapsed - core) if type(core) in (int, float) and math.isfinite(core) else None
     return {"workflow_elapsed_s": round(elapsed, 3), "workflow_target_s": target,
             "within_workflow_target": elapsed <= target,
             "after_agent_deadline": now > agent_deadline,
+            'agent_elapsed_s': round(agent_elapsed, 3) if agent_elapsed is not None else None,
+            'within_agent_deadline': now <= agent_deadline,
             "core_elapsed_s": timing.get("core_elapsed_s"),
             "measured": "from the audit start to this merge; the host agent's time is included but not enforced"}
 

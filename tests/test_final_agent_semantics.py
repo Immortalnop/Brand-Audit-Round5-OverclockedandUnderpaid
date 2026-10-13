@@ -200,3 +200,23 @@ def test_search_pass_needs_relevant_queries_and_actual_matching_outcomes():
     entry['queries'][0]['query'] = 'Unrelated company'
     with pytest.raises(EnvelopeError, match='not relevant'):
         validate(entry, state)
+
+
+def test_quote_cannot_be_created_by_stitching_disjoint_exported_passages():
+    state=setup(page('<p>Acme makes payroll software for small teams.</p><div>'+'Later narrative. '*500+'</div>'))
+    report,packet,envelope=state
+    item=packet['pages'][0]
+    item['text']='Unrelated ending.'
+    packet['packet_sha256']=packet_digest(packet)
+    report['packet_sha256']=envelope['packet_sha256']=packet['packet_sha256']
+    entry=ag03(packet)
+    entry['observation']['site_quote']='ending. Acme makes'
+    with pytest.raises(EnvelopeError,match='site_quote is not bound'):
+        validate(entry,state)
+
+
+def test_case_changes_in_quoted_content_are_not_identity_normalization():
+    state=setup();entry=ag03(state[1])
+    entry['observation']['site_quote']=entry['observation']['site_quote'].upper()
+    with pytest.raises(EnvelopeError,match='site_quote is not bound'):
+        validate(entry,state)

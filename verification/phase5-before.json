@@ -1,0 +1,28 @@
+{
+  "source_commit": "2c6acbd2a2da7e15710a6f66b86181dcba238336",
+  "scope": "Production functions from exact baseline archive with baseline fixture helpers; no candidate imports.",
+  "A14": {
+    "emitted_checks": [
+      "malformed-jsonld",
+      "no-jsonld",
+      "no-headings"
+    ]
+  },
+  "A15": {
+    "emitted_checks": [
+      "fact-markup-mismatch"
+    ],
+    "evidence": [
+      [
+        {
+          "type": "markup_text_mismatch",
+          "description": "JSON-LD Offer price 49 USD; the page shows USD 9 but never that price",
+          "urls": [
+            "https://shop.example/products/mug"
+          ],
+          "fact": "price"
+        }
+      ]
+    ]
+  }
+}

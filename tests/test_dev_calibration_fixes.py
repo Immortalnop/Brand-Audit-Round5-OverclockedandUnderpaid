@@ -105,7 +105,7 @@ def test_real_questions_on_the_page_are_still_judged():
     assert not any(qa["teaser"] for qa in p.features["question_answers"])
     assert "question-answer-indirect" in rule_ids(analyze_answer_format(snapshot(p), deadline()))
     citation = analyze_citation_schema(snapshot(p), deadline())
-    assert any("FAQPage" in e["description"] for f in citation["findings"] for e in f["evidence"])
+    assert not citation["findings"]  # missing optional FAQPage is no website defect
 
 
 # ---------------------------------------------------------------------------

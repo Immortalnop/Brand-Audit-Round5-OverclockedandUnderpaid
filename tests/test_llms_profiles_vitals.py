@@ -95,6 +95,7 @@ def test_parse_llms_txt_issues(text, issue):
 
 def test_check_llms_txt_reports_broken_links_format_and_llms_full():
     llms = {"present": True, "status": "ok", "structure_issues": ["the file does not start with an H1 title"],
+            'links': [SITE + '/llms-full.txt'],
             "link_count": 3,
             "link_checks": [{"url": SITE + "/a", "status": "ok", "http_status": 200},
                             {"url": SITE + "/gone", "status": "broken", "http_status": 404},
@@ -138,11 +139,12 @@ def test_acquisition_checks_llms_links_within_cap_and_never_off_origin():
     finally:
         stop()
     llms = artifacts.llms_txt_data
-    assert llms["title"] == "Rich Brand" and llms["link_count"] == 3
+    assert llms["title"] == "Rich Brand" and llms["link_count"] == 4
     outcomes = {c["url"].rsplit("/", 1)[-1]: c for c in llms["link_checks"]}
     assert outcomes["gallery"]["status"] == "ok" and outcomes["gallery"]["source"] == "crawl"
     assert outcomes["old-catalogue"]["status"] == "broken" and outcomes["old-catalogue"]["http_status"] == 404
     assert outcomes["tools"]["status"] == "cross_origin_not_checked"
+    assert outcomes['llms-full.txt']['source'] == 'companion_probe'
     assert llms["full"]["status"] == "malformed" and llms["full"]["served_html"] is True
     # The crawled page is not fetched again for the check; the dead one once per acquisition.
     assert seen.count("/gallery") == 2 and seen.count("/old-catalogue") == 1 and seen.count("/llms-full.txt") == 2

@@ -54,6 +54,8 @@ def _number(value):
     converted = float(number)
     if not math.isfinite(converted):
         raise JSONLimitError("number is outside finite range")
+    if Decimal(str(converted)) != number:
+        raise JSONLimitError('number exceeds supported lossless JSON float representation')
     return converted
 
 

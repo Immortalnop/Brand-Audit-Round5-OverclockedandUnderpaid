@@ -9,10 +9,9 @@
 - sitemap.xml: actually fetched and parsed (present/absent/inaccessible/malformed
   are distinguished; URLs are capped and available in `sitemap_data`).
 - llms.txt: actually fetched (present/absent/inaccessible/blocked are
-  distinguished; absence is `proactive_improvement` only, never a defect).
-  - `llms-txt-invalid` (low): no H1 title, more than one H1, no links, pages
-    listed as bare URLs, links not grouped under H2 sections, or
-    `/llms-full.txt` answering with an HTML page.
+  distinguished; absence is observation only).
+  - `llms-txt-invalid` (medium): no H1 title, more than one H1, or an explicitly
+    linked `/llms-full.txt` answering with an HTML page. Lists and sections are optional.
   - `llms-txt-broken-links` (medium, confirmed): listed same-origin pages that
     answer 404 or 410. Crawled pages reuse their crawl result; at most 8 others
     get a robots-checked GET. Links on other domains, robots-disallowed links and

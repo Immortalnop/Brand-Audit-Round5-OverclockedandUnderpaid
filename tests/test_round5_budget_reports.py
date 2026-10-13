@@ -210,6 +210,7 @@ def test_default_core_limit_is_270_and_a_fast_audit_leaves_agent_time():
     assert plan["core_limit_s"] == 270 and plan["workflow_target_s"] == 270
     assert plan["agent_stage_budget_s"] == 55 and plan["agent_time_left_s"] == 55
     assert plan["agent_stage_recommended"]
+    assert datetime.fromisoformat(plan['agent_deadline_at']).timestamp() == 1_000_000 + 60 + 55
     assert "not enforced" in plan["enforcement"]["agent_stage"]
     # 230 seconds in: 25 left before the agent deadline (270 - 15).
     assert timing_plan(LIMITS, 0.0, 230.0)["agent_time_left_s"] == 25
@@ -225,6 +226,7 @@ def test_merge_records_measured_workflow_time():
     plan = timing_plan(LIMITS, started.timestamp(), started.timestamp() + 100)
     on_time = workflow_elapsed(plan, started + timedelta(seconds=200))
     assert on_time["workflow_elapsed_s"] == 200 and on_time["within_workflow_target"]
+    assert on_time['after_agent_deadline'] and on_time['agent_elapsed_s'] == 100
     late = workflow_elapsed(plan, started + timedelta(seconds=300))
     assert not late["within_workflow_target"] and late["after_agent_deadline"]
     assert workflow_elapsed(None, started) is None

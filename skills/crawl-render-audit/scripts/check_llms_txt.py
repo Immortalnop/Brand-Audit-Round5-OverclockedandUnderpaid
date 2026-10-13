@@ -38,7 +38,8 @@ def check_llms_txt(artifacts, deadline):
     # The companion file is judged only beside a published llms.txt: a site that
     # answers every unknown path with its HTML home page publishes neither file,
     # which is not a malformed one.
-    if full.get("status") == "malformed" and present:
+    declared_full = _url(artifacts, '/llms-full.txt') in (data.get('links') or ())
+    if full.get("status") == "malformed" and present and declared_full:
         format_problems.append("/llms-full.txt answers with an HTML page instead of a text file"
                                if full.get("served_html") else
                                "/llms-full.txt is empty or redirects to a different path")
@@ -47,8 +48,8 @@ def check_llms_txt(artifacts, deadline):
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
             status="confirmed", confidence=0.8,
             title="llms.txt does not follow the llms.txt format",
-            root_cause="Tools that read llms.txt expect an H1 title and sections of Markdown links; a file "
-                       "without them, or an HTML page served as llms-full.txt, gives them nothing to follow",
+            root_cause="The supplied optional artifact lacks a unique H1 project title or explicitly links "
+                       "to a companion that serves HTML instead of text. File lists and H2 sections are optional.",
             evidence=[{"type": "llms_txt", "description": problem,
                        "urls": [_url(artifacts, "/llms-full.txt" if "llms-full" in problem else "/llms.txt")]}
                       for problem in format_problems],

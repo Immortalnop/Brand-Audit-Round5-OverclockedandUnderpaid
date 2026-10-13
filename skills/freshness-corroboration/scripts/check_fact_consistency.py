@@ -8,6 +8,7 @@ region and offer conditions; full supported URL sets are retained.
 """
 import re
 from money import markup_money, visible_money
+from decimal import Decimal
 from html_features import find_contact_details
 from schema_values import date_value_state
 
@@ -39,6 +40,7 @@ def _strings(value):
     """String values of a property that may hold one value or a list."""
     values = value if isinstance(value, (list, tuple)) else [value]
     return [str(v).strip() for v in values if isinstance(v, (str, int, float)) and not isinstance(v, bool)
+            and not (isinstance(v, int) and v.bit_length() > 336)
             and str(v).strip()]
 
 
@@ -57,7 +59,10 @@ def postal_key(value):
 def parse_price(value):
     """A price as a float: '1,299.00', '1.299,00', '49', 49.5. None when unreadable."""
     number = visible_money(value)
-    return float(number) if number is not None else None
+    if number is None:
+        return None
+    converted = float(number)
+    return converted if Decimal(str(converted)) == number else None
 
 
 def price_shown(price, text):
@@ -184,7 +189,7 @@ def _postal_codes(node):
 def _offers(node):
     offers = node.get("offers")
     return [o for o in (offers if isinstance(offers, (list, tuple)) else [offers])
-            if hasattr(o, "get") and "Offer" in types_of(o)]
+            if hasattr(o, "get") and "Offer" in _fact_types(o)]
 
 
 def _page_prices(page):
@@ -220,7 +225,8 @@ def markup_mismatches(pages):
         name = (_strings(node.get('name')) or [''])[0]
         passages = _named_passages(p, name)
         phones = _strings(node.get('telephone'))
-        shown = {value for text in passages for value in find_contact_details(text)['phones']}
+        shown = {value for text in passages if re.search(re.escape(name) + r'\s*[-:]?\s*(?:main\s+)?(?:phone|tel(?:ephone)?|call)\b', text, re.I)
+                 for value in find_contact_details(text)['phones']}
         if len(phones) == 1 and phone_key(phones[0]) and len({phone_key(x) for x in shown}) == 1:
             compared += 1
             key = phone_key(phones[0])
@@ -281,6 +287,10 @@ def markup_mismatches(pages):
                     r'\b(?:support|subscription|discount|coupon|tax|variant|size|colou?r|bundle|range|from)\b|per\s+(?:month|year)', passage, re.I):
                 continue
             for match in _PRICE_TEXT.finditer(passage):
+                if not re.search(r'(?<!\w)' + re.escape(names[0]) +
+                        r'\s*(?:costs?|price(?:\s+is)?[:]?|is\s+priced\s+at|sells\s+for|is\s+available\s+for|[:=-])\s*$',
+                        passage[:match.start()], re.I):
+                    continue  # Mere co-occurrence does not bind a price to this product.
                 token = match.group(0)
                 if any(marker in token for marker in markers):
                     # $ is ambiguous for USD/AUD/CAD: compare only if the page
@@ -362,14 +372,15 @@ def cross_page_conflicts(pages):
             address = node.get('address')
             region = tuple(str(address.get(k, '')) for k in ('addressCountry', 'addressLocality', 'streetAddress')) if hasattr(address, 'get') else str(address or '')
             for prop, value_key, written in _entity_facts(node):
-                slot = seen.setdefault((key, lang, str(node.get('areaServed', '')), region, prop), {})
+                temporal = tuple(str(node.get(k, '')) for k in ('validFrom', 'validThrough', 'startDate', 'endDate', 'datePublished', 'dateModified'))
+                slot = seen.setdefault((key, lang, str(node.get('areaServed', '')), region, temporal, prop), {})
                 slot.setdefault(value_key, (written, []))
                 if p.url not in slot[value_key][1]:
                     slot[value_key][1].append(p.url)
-                per_page.setdefault((key, lang, str(node.get('areaServed', '')), region, prop), {}).setdefault(p.url, set()).add(value_key)
+                per_page.setdefault((key, lang, str(node.get('areaServed', '')), region, temporal, prop), {}).setdefault(p.url, set()).add(value_key)
     evidence = []
     for slot_key, values in sorted(seen.items(), key=lambda item: str(item[0])):
-        (kind, ident), _, _, _, prop = slot_key
+        (kind, ident), _, _, _, _, prop = slot_key
         prop_label = prop[0] if isinstance(prop, tuple) else prop
         if len(values) < 2:
             continue

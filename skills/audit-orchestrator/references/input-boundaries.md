@@ -48,3 +48,7 @@ These choices follow JSON's allowance for processor range limits and Python's
 explicit hooks for constants and object pairs. They do not claim full JSON-LD
 conformance. See [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) and
 [Python JSON documentation](https://docs.python.org/3.14/library/json.html).
+
+JSON floating literals must also round-trip through their retained float string
+without changing the Decimal value; otherwise they are a processing limitation.
+Textual monetary values retain the bounded Decimal precision directly.

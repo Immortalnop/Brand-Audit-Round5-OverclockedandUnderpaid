@@ -1,4 +1,4 @@
-# Search policy scope — checked 13 October 2026
+# Search policy scope - checked 13 October 2026
 
 Google Search ignores llms.txt for visibility/ranking, including its generative
 Search features. Absence creates no Google defect or penalty; presence proves no

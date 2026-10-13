@@ -221,3 +221,16 @@ def test_malformed_cli_merge_is_atomic_without_traceback(tmp_path):
     assert 'Traceback' not in result.stderr
     assert output.read_text() == 'previous output'
     assert [path.read_bytes() for path in paths] == before
+
+@pytest.mark.parametrize('literal',['0.10000000000000001','49.99999999999999999','1.234567890123456789e3'])
+def test_json_float_conversion_cannot_manufacture_a_different_decimal(literal):
+    with pytest.raises(JSONLimitError,match='lossless'):
+        loads('{"price":'+literal+'}')
+    assert markup_money(literal) is not None  # textual monetary representation remains exact
+    assert parse_price(literal) is None
+
+
+def test_supported_round_trip_json_numbers_and_large_integers_are_preserved():
+    assert loads('{"a":1e3,"b":-49.5,"c":0.1}') == {'a':1000.0,'b':-49.5,'c':.1}
+    assert loads('{"n":123456789012345678901234567890}')['n'] == 123456789012345678901234567890
+    assert markup_money(10**10000) is None

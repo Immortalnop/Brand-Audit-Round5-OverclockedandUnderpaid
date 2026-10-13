@@ -532,6 +532,9 @@ def timing_plan(limits, started_wall, core_finished_wall=None):
         plan["core_elapsed_s"] = round(core_finished_wall - started_wall, 3)
         left = agent_deadline - core_finished_wall
         plan["agent_time_left_s"] = round(max(0., min(left, plan["agent_stage_budget_s"])), 3)
+        # The absolute deadline must also express the 55-second maximum. A
+        # fast core cannot leave the host an accidental 200+ second allowance.
+        plan['agent_deadline_at'] = _iso(min(agent_deadline, core_finished_wall + plan['agent_time_left_s']))
         plan["agent_stage_recommended"] = plan["agent_time_left_s"] >= _MIN_AGENT_STAGE_S
     return plan
 

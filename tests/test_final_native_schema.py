@@ -177,3 +177,19 @@ def test_confirmed_and_suspected_native_groups_stay_separate():
     suspected = result['findings'][0]
     confirmed = dict(suspected,status='confirmed',confidence=.9)
     assert len(merge_findings([dict(result,findings=[suspected,confirmed])])) == 2
+
+
+def test_named_product_cooccurrence_does_not_assign_another_products_price():
+    for passage in ('Mug is displayed beside Saucer, which costs USD 9.', 'Mugwort costs USD 9.'):
+        assert not facts(page('/products/mug','<p>'+passage+'</p>',head=_product('49')))['findings']
+
+
+def test_named_contact_cooccurrence_does_not_assign_another_companys_number():
+    org={'@type':'Organization','name':'Acme','telephone':'+1 555 010 0100'}
+    assert not facts(page('/contact','<p>Acme sponsors Othercorp. Othercorp phone: (555) 010-0199</p>',head=jsonld(org)))['findings']
+
+
+def test_differently_dated_entity_facts_are_not_assumed_simultaneously_current():
+    a={'@type':'Organization','name':'Acme','telephone':'+1 555 010 0100','validFrom':'2020-01-01'}
+    b=dict(a,telephone='+1 555 010 0199',validFrom='2026-01-01')
+    assert not facts(page('/old',head=jsonld(a)),page('/new',head=jsonld(b)))['findings']

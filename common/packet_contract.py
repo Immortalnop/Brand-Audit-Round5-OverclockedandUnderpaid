@@ -187,6 +187,12 @@ def validate_registry(packet):
     if not isinstance(identity, dict) or not isinstance(identity.get('source_refs', []), list) or any(
             not isinstance(r, str) or r not in by_page for r in identity.get('source_refs', [])):
         raise ValueError('identity source reference is not an exported page')
+    for key in ('name', 'entity_type', 'ambiguity_type'):
+        if identity.get(key) is not None and not isinstance(identity[key], str):
+            raise ValueError('packet identity ' + key + ' must be a string')
+    for key in ('aliases', 'same_as_urls'):
+        if key in identity and (not isinstance(identity[key], list) or any(not isinstance(v, str) for v in identity[key])):
+            raise ValueError('packet identity ' + key + ' must be a list of strings')
     if 'focus' in packet and not isinstance(packet['focus'], dict):
         raise ValueError('packet.focus must be an object')
     focus = (packet.get('focus') or {}).get('ag01')

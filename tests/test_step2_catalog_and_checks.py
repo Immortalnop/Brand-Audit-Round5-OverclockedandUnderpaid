@@ -89,7 +89,7 @@ def test_metadata_positive_cases(markup,expected):
     for f in result['findings']:
         entry=get_entry(f['check_id'])
         for field in entry:
-            assert f[field]==entry[field]
+            assert set(entry[field]) <= set(f["suggested_action"][field]) if field == "owner_roles" else f[field]==entry[field]
         assert f['affected_pages'] and f['evidence']
 
 def test_complete_metadata_relative_canonical_and_decorative_alt_are_accepted():
@@ -198,7 +198,8 @@ def test_every_emitted_check_id_resolves_after_merge_and_recommendations():
                 assert f['finding_id'] in finding_ids
                 assert not {'mechanism','implementation_detail','expected_outcome'}&f.keys()
                 continue
-            for key,value in get_entry(f['check_id']).items():assert f[key]==value
+            for key,value in get_entry(f['check_id']).items():
+                assert set(value) <= set(f["suggested_action"][key]) if key == "owner_roles" else f[key]==value
         assert not any('Dropped' in w for w in report['warnings'])
         json.dumps(report,allow_nan=False)
     finally:stop()
@@ -224,7 +225,10 @@ def _read_text(p):
 
 def test_no_em_dash_or_second_skill_orchestrator():
     for p in _project_files():
-        if p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
+        # Acquired examples and user-supplied research must preserve source
+        # Unicode and content hashes; this style rule applies to authored code.
+        owned = p.relative_to(ROOT).parts[0] in ('common','skills','tests') or p.name in ('README.md','marketplace.json')
+        if owned and p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
             assert chr(0x2014) not in _read_text(p),str(p)
     entry=(ROOT/'skills/audit-orchestrator/scripts/run_audit.py').read_text()
     assert 'subprocess.run(' not in entry and '--workdir' not in entry

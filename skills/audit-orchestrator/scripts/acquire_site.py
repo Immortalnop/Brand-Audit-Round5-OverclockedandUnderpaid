@@ -337,13 +337,13 @@ def _probe_text_file(tr,url,max_bytes):
     """Presence of a plain-text companion file such as /llms-full.txt. Only the
     start is read: the file can be large, and presence and type need no more."""
     r,st=tr.get(url,max_bytes=max_bytes)
-    if st!='ok':return {'present':False,'status':'blocked' if st in ('blocked','robots_disallowed','cross_origin_redirect_blocked') else 'inaccessible','fetch_status':st}
-    if r.status_code in (404,410):return {'present':False,'status':'absent','http_status':r.status_code}
-    if not r.ok or _is_challenge(r):return {'present':False,'status':'inaccessible','http_status':r.status_code}
+    if st!='ok':return {'requested_url':url,'present':False,'status':'blocked' if st in ('blocked','robots_disallowed','cross_origin_redirect_blocked') else 'inaccessible','fetch_status':st}
+    if r.status_code in (404,410):return {'requested_url':url,'present':False,'status':'absent','http_status':r.status_code}
+    if not r.ok or _is_challenge(r):return {'requested_url':url,'present':False,'status':'inaccessible','http_status':r.status_code}
     head=r.text[:2048].lstrip().lower()
     html='html' in r.headers.get('Content-Type','').lower() or head.startswith(('<html','<!doctype'))
     valid=not html and len(r.text.strip())>=10 and urlsplit(r.final_url).path==urlsplit(url).path
-    return {'present':valid,'status':'ok' if valid else 'malformed','bytes_read':len(r.content),'truncated':r.truncated,
+    return {'requested_url':url,'http_status':r.status_code,'present':valid,'status':'ok' if valid else 'malformed','bytes_read':len(r.content),'truncated':r.truncated,
             'served_html':html}
 
 def _verify_llms_links(tr,llms,pages,origin,limits):
@@ -363,6 +363,10 @@ def _verify_llms_links(tr,llms,pages,origin,limits):
         elif not same_origin(url,origin):item['status']='cross_origin_not_checked'
         elif url in crawled:
             code=crawled[url];item.update(status='ok' if code and 200<=code<300 else 'broken' if code in (404,410) else 'unverified',http_status=code,source='crawl')
+        elif url == (llms.get('full') or {}).get('requested_url'):
+            full=llms['full'];code=full.get('http_status')
+            item.update(status='ok' if code and 200<=code<300 and full.get('status') in ('ok','malformed') else 'broken' if code in (404,410) else 'unverified',
+                        http_status=code,source='companion_probe')
         elif tr.robots is not None and not tr.robots.can_fetch(USER_AGENT,url):item['status']='robots_disallowed'
         elif _SENSITIVE_ROUTE.search(urlsplit(url).path):item['status']='sensitive_route_not_checked'
         elif stopped or fetched>=limits.MAX_LLMS_LINK_CHECKS:item['status']=stopped or 'check_cap_reached'

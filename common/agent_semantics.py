@@ -15,16 +15,20 @@ def norm(value):
     return ' '.join(unicodedata.normalize('NFC', value or '').split()).casefold()
 
 
+def quote_norm(value):
+    return ' '.join(unicodedata.normalize('NFC', value or '').split())
+
+
 def _quote_support(quote, refs, ids, observation):
     if not quote:
         return []
     supporting = []
     for ref in refs:
         item = ids[ref]
-        if item['ref_kind'] == 'page' and norm(quote) in norm(item.get('text', '') + ' ' + item.get('focus_text', '')):
+        if item['ref_kind'] == 'page' and any(quote_norm(quote) in quote_norm(item.get(field, '')) for field in ('text', 'focus_text')):
             supporting.append(ref)
-        elif item['ref_kind'] == 'claim' and not item.get('value_truncated') and norm(quote) == norm(item.get('value')):
-            if item.get('subject') and item.get('predicate') and norm(observation.get('subject')) == norm(item['subject']) and norm(observation.get('predicate')) == norm(item['predicate']):
+        elif item['ref_kind'] == 'claim' and not item.get('value_truncated') and quote_norm(quote) == quote_norm(item.get('value')):
+            if item.get('subject') and item.get('predicate') and quote_norm(observation.get('subject')) == quote_norm(item['subject']) and quote_norm(observation.get('predicate')) == quote_norm(item['predicate']):
                 supporting.append(item['page_evidence_id'])
     return supporting
 
@@ -50,7 +54,7 @@ def validate_semantics(check, outcome, refs, sources, queries, obs, packet, ids,
             errors.append('AG-01 selected focused opening is not assessable/complete; record not_assessed')
         if selected not in page_refs or len(page_refs) != 1:
             errors.append('AG-01 must assess only the selected focused page reference')
-        if norm(obs.get('passage')) != norm(focus.get('opening_passage')) or not obs.get('passage'):
+        if quote_norm(obs.get('passage')) != quote_norm(focus.get('opening_passage')) or not obs.get('passage'):
             errors.append('observation.passage is not the complete selected focused opening in the referenced packet page')
         support = [selected] if selected in ids else []
     if check in ('AG-02', 'AG-03', 'AG-05', 'AG-06'):

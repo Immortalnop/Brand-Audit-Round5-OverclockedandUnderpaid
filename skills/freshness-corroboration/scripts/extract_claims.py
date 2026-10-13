@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 from structured_data import iter_nodes, types_of
 from models import intermediate_artifact
-from schema_values import date_value_state
+from schema_values import date_value_state, value_excerpt
 
 # Strict ISO 8601 calendar date with an optional time and offset, the form
 # schema.org expects for datePublished and dateModified. Parsed by hand so the
@@ -144,7 +144,7 @@ def structured_date_claims(pages, today=None):
                     continue
                 values = node[key] if isinstance(node[key], (list, tuple)) else [node[key]]
                 for raw in values[:3]:
-                    shown = str(raw).strip()[:80]
+                    shown = value_excerpt(raw).strip()[:80]
                     parsed_date = _parse_iso_date(raw)
                     if parsed_date is None:
                         issues.append({"source": page.url, "subject": subject, "field": key,

@@ -11,7 +11,7 @@ directory platforms for the brand's profiles (AG-06).
 
 Two handoff shapes are read:
 
-  - The outcome envelope (schema_version 1.0, ROUND5_PLAN T4.1): one outcome per
+  - The outcome envelope (schema_version 1.1, final content binding): one outcome per
     AG check (pass, finding, not_assessed or error), bound to one audit by
     audit_id and snapshot_sha256, with source references into the evidence
     packet that audit exported (common/agent_evidence.py). validate_envelope

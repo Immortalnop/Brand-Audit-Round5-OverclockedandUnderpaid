@@ -155,3 +155,12 @@ def test_registry_rejects_dangling_or_unrelated_support(mutation):
         packet['identity']['source_refs'] = ['E999']
     with pytest.raises(ValueError):
         validate_registry(packet)
+
+@pytest.mark.parametrize('key,value',[('name',{}),('aliases',[{}]),('same_as_urls','wrong')])
+def test_identity_shapes_are_rejected_even_with_consistent_hashes(key,value):
+    packet=packet_for()
+    packet['identity'][key]=value
+    packet['packet_sha256']=packet_digest(packet)
+    report,envelope=assess(packet)
+    with pytest.raises(EnvelopeError,match='identity'):
+        validate_envelope(envelope,report,packet)

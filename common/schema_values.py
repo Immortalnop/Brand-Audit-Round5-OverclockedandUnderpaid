@@ -18,6 +18,12 @@ _BAD_IRI = re.compile(r'[\s\x00-\x1f<>"{}|\\^`]')
 _DATE = re.compile(r'\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?)?\Z')
 
 
+def value_excerpt(value):
+    if isinstance(value, int) and value.bit_length() > 336:
+        return 'integer outside supported processor range'
+    return str(value)[:100]
+
+
 def date_value_state(value):
     if not isinstance(value, str) or not _DATE.fullmatch(value):
         return 'unsupported'
@@ -157,6 +163,8 @@ def value_observations(page):
             if key in _NUMBERS:
                 if isinstance(value, (Mapping, list, tuple)):
                     limitations.append('Unsupported structured numeric value for ' + key)
+                elif isinstance(value, int) and value.bit_length() > 336:
+                    limitations.append('Numeric value exceeds supported processing range for ' + key)
                 elif markup_money(value) is None:
                     text = str(value).strip()
                     if not isinstance(value, bool) and re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?', text):
@@ -166,18 +174,18 @@ def value_observations(page):
             elif key in _DATES:
                 state = date_value_state(value)
                 if state == 'invalid':
-                    invalid.append((key, str(value)[:100], 'a valid calendar Date/DateTime in the supported ISO form'))
+                    invalid.append((key, value_excerpt(value), 'a valid calendar Date/DateTime in the supported ISO form'))
                 elif state == 'unsupported':
                     limitations.append('Unsupported date form for ' + key)
             elif key == 'priceCurrency':
                 if not isinstance(value, str) or not re.fullmatch('[A-Z]{3}', value):
-                    invalid.append((key, str(value)[:100], 'a three-letter uppercase currency code format; ISO membership is not verified'))
+                    invalid.append((key, value_excerpt(value), 'a three-letter uppercase currency code format; ISO membership is not verified'))
             elif key in _IRIS:
                 values = value if isinstance(value, (list, tuple)) else [value]
                 for entry in values:
                     _, state = resolve_iri_value(entry, ctx, raw_key)
                     if state == 'invalid':
-                        invalid.append((key, str(entry)[:100], 'a supported IRI value/coercion without invalid characters'))
+                        invalid.append((key, value_excerpt(entry), 'a supported IRI value/coercion without invalid characters'))
                     elif state == 'unsupported':
                         limitations.append('Unsupported IRI value/context form for ' + key)
     return invalid, sorted(set(limitations))

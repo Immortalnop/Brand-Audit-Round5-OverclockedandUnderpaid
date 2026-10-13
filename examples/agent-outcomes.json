@@ -1,7 +1,8 @@
 {
-  "schema_version": "1.0",
-  "audit_id": "94f90d32c928419a86b534ed1eb566b6",
-  "snapshot_sha256": "d4a0f4f37c6df4fd84365eb37479d5f511f249427653fd3d70dfa556424b8897",
+  "schema_version": "1.1",
+  "audit_id": "acf9d2a138a7454f96662b92b2749435",
+  "snapshot_sha256": "7d91d44a5ddf9b462703d4a1627ec549cf266f2ddaeed72994ffc0c395e9bcfa",
+  "packet_sha256": "270f2aac99b084c04dc5f6d8c8c040013a294b66409323a96adc7a85f15e35d7",
   "capabilities": {
     "local_reading": true,
     "search": false,
@@ -10,36 +11,43 @@
   "checks": [
     {
       "check": "AG-01",
-      "outcome": "pass",
+      "outcome": "finding",
       "source_refs": [
-        "E001"
+        "E002"
       ],
-      "reason": "The About page was not discovered, so the home page passage was judged. It names the project (Svelte), what it offers (a UI framework that uses a compiler to build components) and its category (web development framework)."
+      "reason": "The acquired About opening names Python and first-time/experienced programmers, but leaves the offering and programming-language category implicit. This is a scoped editorial review of that opening, not a claim about the full website.",
+      "observation": {
+        "passage": "Notice: This page displays a fallback because interactive scripts did not run. Possible causes include disabled JavaScript or failure to load scripts or stylesheets. Python can be easy to pick up whether you're a first time programmer or you're experienced with other languages. The following pages are a useful first step to get on your way writing programs with Python!",
+        "unanswered": [
+          "offering",
+          "category"
+        ]
+      }
     },
     {
       "check": "AG-02",
       "outcome": "not_assessed",
-      "reason": "No search tool was run in this invocation."
+      "reason": "External search was not performed in this bounded local-reading rehearsal."
     },
     {
       "check": "AG-03",
       "outcome": "not_assessed",
-      "reason": "No search tool was run in this invocation."
+      "reason": "External search was not performed in this bounded local-reading rehearsal."
     },
     {
       "check": "AG-05",
       "outcome": "not_assessed",
-      "reason": "No search tool was run in this invocation."
+      "reason": "External search was not performed in this bounded local-reading rehearsal."
     },
     {
       "check": "AG-06",
       "outcome": "not_assessed",
-      "reason": "No search tool was run in this invocation."
+      "reason": "External search was not performed in this bounded local-reading rehearsal."
     },
     {
       "check": "AG-04",
       "outcome": "not_assessed",
-      "reason": "Image viewing was not used in this invocation."
+      "reason": "No candidate image was viewed in this rehearsal; visual comparison is unassessed."
     }
   ]
 }

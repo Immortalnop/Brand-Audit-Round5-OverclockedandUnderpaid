@@ -76,8 +76,8 @@ def features(html):
 
 # check ID -> paths it must name (None: any).
 EXPECTED = {
-    "news": {"citation-schema-opportunity": {"/faq"}, "question-answer-indirect": {"/faq"}, "no-llms-txt": None},
-    "splash": {"render-gap-unconfirmed": {"/"}, "no-llms-txt": None},
+    "news": {"question-answer-indirect": {"/faq"}},
+    "splash": {"render-gap-unconfirmed": {"/"}},
     "store": {"location-markup-missing": None, "context-retention-missing": None,
               "review-platform-missing": None},
 }

@@ -112,3 +112,10 @@ def test_portable_version_validates_record_and_keeps_dirty_unknown(tmp_path,reco
 def test_valid_checkout_provenance_is_honest_and_overrides_portable_record():
     result=code_version(ROOT)
     assert re.fullmatch(re.escape(RELEASE_VERSION)+r'\+[a-f0-9]{12}(?:\.dirty|\.state-unknown)?',result)
+
+
+def test_unrequested_optional_companion_html_fallback_is_not_a_defect():
+    data={'present':True,'status':'ok','structure_issues':[],'links':['https://s.example/docs'],
+          'full':{'status':'malformed','served_html':True}}
+    art=replace(snapshot(page()),llms_txt_data=freeze_value(data))
+    assert not check_llms_txt(art,deadline())['findings']

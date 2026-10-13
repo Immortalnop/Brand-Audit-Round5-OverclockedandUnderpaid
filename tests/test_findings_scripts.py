@@ -107,11 +107,11 @@ def test_check_ai_crawler_access_missing_directives_defaults_safely():
     _assert_invariant(result)
 
 
-def test_check_llms_txt_absent_is_proactive_only():
+def test_check_llms_txt_absent_is_observation_only():
     deadline = make_deadline(_LIMITS)
     result = check_llms_txt(_empty_artifacts(), deadline)
-    assert result["findings"][0]["finding_type"] == "proactive_improvement"
-    assert result["findings"][0]["severity"] == "low"
+    assert not result["findings"]
+    assert result["metrics"]["llms_txt_present"] is False
 
 
 def test_assess_freshness_no_dates_is_insufficient_evidence():
