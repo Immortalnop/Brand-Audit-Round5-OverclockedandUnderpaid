@@ -306,6 +306,9 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                                      'every important landing page a clear next step.',
                             'mechanism': 'Visitors landing on the sampled pages have no observed internal '
                                          'link path to related content'},
+ 'schema-value-invalid': {'expected_outcome': 'Supported consumers can interpret the corrected values; no visibility gain is measured.',
+                          'implementation_detail': 'Repair the cited numeric, calendar or IRI value in its acquired block. Preserve the subject, base/context and real facts. Validate against the named schema.org property use.',
+                          'mechanism': 'A positively identified schema.org property has an invalid value under the documented limited value rules; unsupported contexts/forms are not defects.'},
  'no-jsonld': {'expected_outcome': 'Key facts are also stated as explicit structured data that parsers can '
                                     'read without inferring them from layout; no ranking, rich-result or '
                                     'citation gain is implied.',

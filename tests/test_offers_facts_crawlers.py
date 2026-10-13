@@ -106,7 +106,7 @@ def test_live_past_tense_yearless_and_ambiguous_deadlines_are_not_expired():
                  "Offer ends 31 August.",                   # no year
                  "Offer valid until 05/11/2026.",           # 5 Nov (future) or 11 May (past)
                  "Offers and free delivery through our partners in 2020."):  # no date after the deadline
-        result = expired(page("/products/mug", f"<p>{text}</p>"))
+        result = expired(page("/products/mug", f"<p>Acme Bakery {text}</p>"))
         assert not result["findings"], text
     # Both readings of an ambiguous numeric date are past: expired.
     assert ids(expired(page("/products/mug", "<p>Offer valid until 05/06/2026.</p>"))) == {"expired-offer"}
@@ -153,7 +153,7 @@ ORG_PHONE = jsonld({"@type": "Organization", "name": "Acme", "telephone": "+1 55
 
 
 def test_markup_telephone_shown_nowhere_while_the_page_shows_another_is_a_mismatch():
-    result = facts(page("/contact", "<p>Phone: (555) 010-0199</p>", head="<title>Contact</title>" + ORG_PHONE))
+    result = facts(page("/contact", "<p>Acme Phone: (555) 010-0199</p>", head="<title>Contact</title>" + ORG_PHONE))
     (item,) = evidence_of(result, "fact-markup-mismatch")
     assert item["fact"] == "telephone" and "+1 555 010 0100" in item["description"]
     (finding,) = result["findings"]
@@ -162,13 +162,13 @@ def test_markup_telephone_shown_nowhere_while_the_page_shows_another_is_a_mismat
 
 
 def test_the_same_telephone_written_differently_or_only_as_a_link_matches():
-    shown = facts(page("/contact", "<p>Phone: (555) 010-0100</p>", head="<title>C</title>" + ORG_PHONE))
+    shown = facts(page("/contact", "<p>Acme Phone: (555) 010-0100</p>", head="<title>C</title>" + ORG_PHONE))
     assert not shown["findings"] and shown["metrics"]["facts_compared_with_text"] == 1
-    linked = facts(page("/contact", '<p>Phone: (555) 010-0199</p><a href="tel:+15550100100">Call sales</a>',
+    linked = facts(page("/contact", '<p>Acme Phone: (555) 010-0199</p><a href="tel:+15550100100">Call sales</a>',
                         head="<title>C</title>" + ORG_PHONE))
     assert not linked["findings"]
     # Shown on another sampled page (a head-office number in the footer of the about page).
-    other = facts(page("/contact", "<p>Phone: (555) 010-0199</p>", head="<title>C</title>" + ORG_PHONE),
+    other = facts(page("/contact", "<p>Acme Phone: (555) 010-0199</p>", head="<title>C</title>" + ORG_PHONE),
                   page("/about", "<p>Head office: +1 555-010-0100</p>"))
     assert not other["findings"]
 
@@ -192,7 +192,7 @@ def test_postal_code_mismatch_and_match():
 def test_opening_hours_mismatch_match_and_24_hour_markup():
     def hours(spec, text):
         org = jsonld({"@type": "Bakery", "name": "Acme Bakery", "openingHours": spec})
-        return facts(page("/visit", f"<p>{text}</p>", head="<title>Visit</title>" + org))
+        return facts(page("/visit", f"<p>Acme Bakery {text}</p>", head="<title>Visit</title>" + org))
     wrong = hours("Mo-Fr 09:00-17:00", "Opening hours: Monday to Friday 10am - 6pm")
     assert [e["fact"] for e in evidence_of(wrong, "fact-markup-mismatch")] == ["opening_hours"]
     assert not hours("Mo-Fr 09:00-17:00", "Opening hours: Monday to Friday 9am - 5pm")["findings"]
@@ -200,7 +200,7 @@ def test_opening_hours_mismatch_match_and_24_hour_markup():
     assert not hours("Mo-Su 00:00-23:59", "Opening hours: every day 10am - 6pm")["findings"]
     spec = jsonld({"@type": "Bakery", "name": "Acme Bakery", "openingHoursSpecification": [
         {"@type": "OpeningHoursSpecification", "dayOfWeek": "Monday", "opens": "08:00:00", "closes": "16:00:00"}]})
-    result = facts(page("/visit", "<p>Hours: Monday 8am to 4pm</p>", head="<title>Visit</title>" + spec))
+    result = facts(page("/visit", "<p>Acme Bakery Hours: Monday 8am to 4pm</p>", head="<title>Visit</title>" + spec))
     assert not result["findings"] and result["metrics"]["facts_compared_with_text"] == 1
 
 
@@ -210,11 +210,11 @@ def _product(price, currency="USD", extra_offer=None):
 
 
 def test_price_mismatch_only_with_one_offer_in_a_currency_the_page_shows():
-    wrong = facts(page("/products/mug", "<p>Now $59.99. Pair it with a saucer for $12.00.</p>", head=_product("49.99")))
+    wrong = facts(page("/products/mug", "<p>Mug costs USD 59.99.</p><p>Pair it with a saucer for $12.00.</p>", head=_product("49.99")))
     (item,) = evidence_of(wrong, "fact-markup-mismatch")
     assert item["fact"] == "price" and "49.99" in item["description"]
-    assert not facts(page("/products/mug", "<p>Now $49.99.</p>", head=_product("49.99")))["findings"]
-    assert not facts(page("/products/mug", "<p>Now $1,299.00.</p>", head=_product("1299")))["findings"]
+    assert not facts(page("/products/mug", "<p>Mug costs USD 49.99.</p>", head=_product("49.99")))["findings"]
+    assert not facts(page("/products/mug", "<p>Mug costs USD 1,299.00.</p>", head=_product("1299")))["findings"]
     # Geo-pricing: the page shows rupees, the markup dollars. Nothing to compare.
     assert not facts(page("/products/mug", "<p>Now \u20b94,150.</p>", head=_product("49.99")))["findings"]
     # Variants with two prices: nothing single to compare.
@@ -227,7 +227,7 @@ def test_pages_built_by_javascript_or_cut_short_are_not_compared():
     shell = page("/products/mug", '<div id="root"></div><script src="/app.js"></script>', head=_product("49.99"))
     shell = replace(shell, visible_text="", features=freeze_value(dict(shell.features, full_visible_chars=0)))
     assert not facts(shell)["findings"]
-    short = page("/contact", "<p>Phone: (555) 010-0199</p>", head="<title>C</title>" + ORG_PHONE,
+    short = page("/contact", "<p>Acme Phone: (555) 010-0199</p>", head="<title>C</title>" + ORG_PHONE,
                  limits=replace(LIMITS, VISIBLE_TEXT_MAX_CHARS=50))
     assert not facts(short)["findings"]
 

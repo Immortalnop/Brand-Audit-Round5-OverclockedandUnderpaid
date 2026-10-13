@@ -13,6 +13,8 @@ _NUMBER = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\Z')
 def markup_money(value):
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
         return None
+    if isinstance(value, int) and value.bit_length() > 336:
+        return None
     text = str(value).strip()
     if len(text) > 128 or not _NUMBER.fullmatch(text):
         return None

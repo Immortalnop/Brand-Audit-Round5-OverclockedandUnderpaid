@@ -26,6 +26,7 @@ def dedup_key(finding: dict) -> tuple:
         finding["category"],
         normalized_cause,
         tuple(sorted(finding.get("affected_pages") or [])) or ("site-wide",),
+        finding.get("status"),
     )
 
 
@@ -57,7 +58,7 @@ def _is_robots_inaccessible_finding(finding: dict) -> bool:
 
 def find_matching_bucket(finding: dict, buckets: dict, similarity_threshold: float = 0.85):
     if _is_robots_inaccessible_finding(finding):
-        cascade_key = ("ai_discoverability", "robots-inaccessible-cascade", ("site-wide",))
+        cascade_key = ("ai_discoverability", "robots-inaccessible-cascade", ("site-wide",), finding.get("status"))
         return cascade_key if cascade_key in buckets else None
     key = dedup_key(finding)
     if key in buckets:
@@ -66,8 +67,8 @@ def find_matching_bucket(finding: dict, buckets: dict, similarity_threshold: flo
     scope = tuple(sorted(finding.get("affected_pages") or [])) or ("site-wide",)
     norm_cause = normalize_text(finding["root_cause"])
     for existing_key in buckets:
-        e_cat, e_cause, e_scope = existing_key
-        if e_cat == cat and e_scope == scope and similarity(norm_cause, e_cause) >= similarity_threshold:
+        e_cat, e_cause, e_scope, e_status = existing_key
+        if e_status == finding.get("status") and e_cat == cat and e_scope == scope and similarity(norm_cause, e_cause) >= similarity_threshold:
             return existing_key
     return None
 
@@ -98,7 +99,7 @@ def _family_key(finding: dict):
     family = _FAMILIES.get(cid)
     # The first element never equals a real category, so a family bucket is
     # matched only through this key.
-    return ("family", family, ("site-wide",)) if family else None
+    return ("family", family, ("site-wide",), finding.get("status")) if family else None
 
 
 def _evidence_key(item: dict) -> tuple:
@@ -164,6 +165,8 @@ def fold_finding(base: dict, addition: dict) -> dict:
     IDs and provenance of both are kept. As in merge_evidence, the more
     confident of the two sets status, confidence and finding type; severity is
     the higher of the two, so a fold never lowers what the reader sees."""
+    if base.get("status") != addition.get("status"):
+        raise ValueError("Cannot fold confirmed and suspected assessment groups")
     from models import apply_invariant_i1, make_evidence_text
     merged = dict(base)
     evidence = [e for e in base.get("evidence") or () if isinstance(e, dict)]
@@ -217,7 +220,7 @@ def fold_into(findings: list, additions: list, strict_pages: bool = False) -> tu
         ids = _check_ids_of(addition)
         pages = set(addition.get("affected_pages") or ())
         same_check = [i for i in range(originals)
-                      if out[i].get("category") == addition.get("category") and ids & _check_ids_of(out[i])]
+                      if out[i].get("category") == addition.get("category") and out[i].get("status") == addition.get("status") and ids & _check_ids_of(out[i])]
         strict = strict_pages and bool(pages)
         if strict:
             same_check = [i for i in same_check if pages & set(out[i].get("affected_pages") or ())]
@@ -247,7 +250,7 @@ def merge_findings(results: list) -> list:
     all_findings = [f for r in results for f in r["findings"]]
     for finding in all_findings:
         if _is_robots_inaccessible_finding(finding):
-            key = ("ai_discoverability", "robots-inaccessible-cascade", ("site-wide",))
+            key = ("ai_discoverability", "robots-inaccessible-cascade", ("site-wide",), finding.get("status"))
         elif _family_key(finding):
             key = _family_key(finding)
         else:

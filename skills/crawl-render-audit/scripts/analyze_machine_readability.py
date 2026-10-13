@@ -18,6 +18,7 @@ from models import skill_result, make_finding, coverage_ratio, scale_confidence,
 # structured data. Types not listed here (e.g. "other", "category") are not held
 # to any expectation -- absence there is not evidence of anything.
 from structured_data import iter_nodes, types_of, ORGANIZATION_TYPES
+from schema_values import value_observations
 
 # Organization and LocalBusiness are matched with their subtypes (Plumber,
 # CollegeOrUniversity...), which are Organizations too. A gap is an improvement
@@ -106,7 +107,8 @@ def _malformed_jsonld(pages):
 
 def analyze_machine_readability(artifacts, deadline):
     pages = tuple(p for p in artifacts.pages if p.status_code == 200 and "html_parse_incomplete" not in p.warnings and "non_html_content" not in p.warnings and "response_truncated_at_byte_budget" not in p.warnings)
-    no_jsonld = [p for p in pages if not p.jsonld_blocks and not (p.features or {}).get("alternative_structured_markup")]
+    no_jsonld = [p for p in pages if not p.jsonld_blocks and not (p.features or {}).get("alternative_structured_markup")
+                and (p.features or {}).get('jsonld_block_count', 0) == 0]
     # A page built by JavaScript has its headings added after load; its raw HTML
     # cannot show that the page lacks them.
     no_headings = [p for p in pages if not p.headings and not script_dependent(p)]
@@ -126,6 +128,27 @@ def analyze_machine_readability(artifacts, deadline):
     malformed = _malformed_jsonld(pages)
     if malformed:
         findings.append(malformed)
+    value_errors, processing_limits = [], []
+    for page in pages:
+        invalid, limits = value_observations(page)
+        if invalid:
+            value_errors.append((page, invalid))
+        for limitation in limits:
+            processing_limits.append(f'{page.url}: {limitation}')
+        for limitation in (page.features or {}).get('jsonld_limitations') or ():
+            processing_limits.append(f"{page.url}: JSON-LD block {limitation['block_index']} {limitation['state']}: {limitation['message']}")
+    if value_errors:
+        findings.append(make_finding(category='ai_discoverability', finding_type='defect', severity='medium',
+            status='confirmed', confidence=0.8, title='Some schema.org values cannot be interpreted under supported value rules',
+            root_cause='Acquired schema.org numeric, calendar or IRI property values fail the documented limited interpretation rules.',
+            evidence=[{'type': 'structured_value', 'description': '; '.join(f'{key}={value!r}: expected {expected}' for key,value,expected in invalid[:5]),
+                       'urls': [page.url]} for page,invalid in value_errors[:10]],
+            affected_pages=[page.url for page,_ in value_errors],
+            suggested_action={'summary':'Repair the cited values while preserving their actual subjects and context',
+                              'steps':['Use finite monetary numbers rather than booleans or junk', 'Use valid calendar dates',
+                                       'Keep supported IRI base/vocabulary/coercion semantics'],
+                              'priority':'medium','effort':'low','verification':'Validate the corrected block and re-audit'},
+            provenance={'skill':'crawl-render-audit','script':'analyze_machine_readability.py','rule_id':'schema-value-invalid'}))
 
     if pages and len(no_jsonld) == len(pages):
         # No structured data anywhere -- the coarsest, most severe version of this
@@ -161,6 +184,8 @@ def analyze_machine_readability(artifacts, deadline):
         # data for each page's role, per type.
         by_type_gaps = {}
         for page in pages:
+            if (page.features or {}).get('jsonld_block_count', 0) and not page.jsonld_blocks:
+                continue  # Present malformed/unsupported/ambiguous is not absence.
             spec = _EXPECTED_SCHEMA.get(page.page_type)
             if not spec or (page.features or {}).get("alternative_structured_markup"):
                 continue
@@ -221,5 +246,8 @@ def analyze_machine_readability(artifacts, deadline):
     return skill_result(
         "crawl-render-audit", findings=findings,
         metrics={"pages_with_jsonld": len(pages) - len(no_jsonld), "pages_without_headings": len(no_headings),
+                 'schema_value_invalid_pages': len(value_errors), 'schema_value_limitations': len(processing_limits),
+                 'currency_membership': 'not_verified; supported format is not ISO membership proof',
                  "crawl_coverage_ratio": round(crawl_ratio, 3)},
+        warnings=sorted(set(processing_limits))[:20],
     )

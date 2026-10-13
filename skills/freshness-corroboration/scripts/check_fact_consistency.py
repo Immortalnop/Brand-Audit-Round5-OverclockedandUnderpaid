@@ -1,32 +1,15 @@
-"""check_fact_consistency.py -- one fact stated two ways on the site itself.
+"""Compare explicit acquired facts for the same subject and conditions.
 
-Two checks over the acquisition snapshot, with no request:
-
-fact-markup-mismatch: structured data states a fact the visible text
-contradicts. A mismatch needs both sides: the text shows a fact of the same
-kind, and never the value the markup states.
-  - telephone and postal code of an organization: the marked-up value appears
-    on no sampled page, while the pages that carry the markup show another
-    telephone or postal address (a head-office number in the markup and a store
-    number on the page is fine as long as the head-office number is shown
-    somewhere);
-  - opening hours: no time in the markup appears in the opening hours the site
-    shows;
-  - price: a product page with one Offer price that the page never shows,
-    while it shows other prices.
-Only pages whose whole visible text was read and that do not build their text
-with JavaScript are used, so a fact cut off or rendered later is never read as
-missing.
-
-fact-inconsistent-across-pages: one entity has two values for one property on
-two pages: the same absolute @id, the same name for a (non-local)
-organization, or the same GTIN for a product (a SKU or MPN often names a
-product family whose variants are priced differently, so it is not used). Pages in different languages are compared only
-with pages in the same language, since a regional page may list a regional
-number or currency.
+Markup/text comparisons need a named single entity or product, same street/day
+schedule or explicit currency, complete raw text and an actual conflicting value.
+Absence, unrelated support offers, multiple variants and unknown scopes do not
+establish conflict. Cross-page comparisons require supported identity, language,
+region and offer conditions; full supported URL sets are retained.
 """
 import re
 from money import markup_money, visible_money
+from html_features import find_contact_details
+from schema_values import date_value_state
 
 from check_helpers import contact_details, eligible_pages, page_share, script_dependent
 from models import make_finding, skill_result
@@ -34,8 +17,8 @@ from structured_data import LOCAL_BUSINESS_TYPES, ORGANIZATION_TYPES, iter_nodes
 
 _PRODUCT_TYPES = frozenset({"Product", "ProductGroup", "IndividualProduct", "ProductModel"})
 _NAMED_ORG_TYPES = ORGANIZATION_TYPES - LOCAL_BUSINESS_TYPES
-_PRICE_TEXT = re.compile(r"(?:[$\u20ac\u00a3\u00a5\u20b9]|\b(?:USD|EUR|GBP|INR|AUD|CAD|Rs\.?))\s?\d[\d,.]*\d|"
-                         r"(?:[$\u20ac\u00a3\u00a5\u20b9]|\b(?:USD|EUR|GBP|INR|AUD|CAD|Rs\.?))\s?\d")
+_PRICE_TEXT = re.compile(r"(?:[$€£¥₹]|\b(?:USD|EUR|GBP|INR|JPY|AUD|CAD|Rs\.?))\s*[+-]?\d(?:[\d,.]*\d)?"
+                         r"(?:[eE][+-]?\d+)?(?!\w|[.,]\d)")
 _POSTAL_TOKEN = re.compile(r"\b\d{4,6}(?:-\d{4})?\b|\b[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}\b|\b[A-Z]\d[A-Z] ?\d[A-Z]\d\b")
 _HOURS_CUE = re.compile(r"\b(?:opening\s+hours|opening\s+times|business\s+hours|office\s+hours|store\s+hours"
                         r"|hours|open)\b", re.I)
@@ -82,11 +65,9 @@ def price_shown(price, text):
     parsed = markup_money(price)
     if parsed is None:
         return False
-    whole = int(parsed) if parsed == int(parsed) else None
-    forms = {f"{price:.2f}", f"{price:,.2f}", f"{price:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")}
-    if whole is not None:
-        forms |= {str(whole), f"{whole:,}", f"{whole:,}".replace(",", ".")}
-    return any(re.search(r"(?<![\d.,])" + re.escape(form) + r"(?![\d]|[.,]\d)", text) for form in forms)
+    tokens = re.finditer(r'(?<!\w)[+-]?\d(?:[\d,.]*\d)?(?:[eE][+-]?\d+)?(?!\w|[.,]\d)', text or '')
+    return any(visible_money(token.group(0)) == parsed for token in tokens)
+
 
 
 def _minutes(hour, minute, meridiem=None):
@@ -142,7 +123,53 @@ def _postal_address_shown(page):
 # -- Markup facts -------------------------------------------------------------
 
 def _org_nodes(page):
-    return [n for n in iter_nodes(page.jsonld_blocks) if types_of(n) & ORGANIZATION_TYPES]
+    return [n for n in iter_nodes(page.jsonld_blocks) if _fact_types(n) & ORGANIZATION_TYPES]
+
+
+def _fact_types(node):
+    # Existing bare-type compatibility; foreign absolute namespaces cannot
+    # establish a schema.org organization/product for these comparisons.
+    raw = node.get('@type', ())
+    raw = raw if isinstance(raw, (list, tuple)) else [raw]
+    if any(isinstance(t, str) and ':' in t and not t.startswith(
+            ('https://schema.org/', 'http://schema.org/')) for t in raw):
+        return set()
+    return types_of(node)
+
+
+def _named_passages(page, name):
+    return [p for p in (page.features or {}).get('opening_paragraphs') or ()
+            if name and re.search(r'(?<!\w)' + re.escape(name) + r'(?!\w)', p, re.I)
+            and not re.search(r'\b(?:branch|department|support|holiday|seasonal|temporary|until|effective)\b', p, re.I)]
+
+
+def _days(text):
+    # Conservative supported day identity. Unsupported/ambiguous schedules are
+    # left unassessed instead of comparing just their clock times.
+    short = {'mo': 0, 'tu': 1, 'we': 2, 'th': 3, 'fr': 4, 'sa': 5, 'su': 6}
+    if re.search(r'\b(?:daily|every day)\b', text, re.I):
+        return frozenset(range(7))
+    normalized = re.sub(r'\b(Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)\b',
+                        lambda m: m.group(0)[:2], text, flags=re.I)
+    found = re.search(r'\b(Mo|Tu|We|Th|Fr|Sa|Su)\s*(?:-|to)\s*(Mo|Tu|We|Th|Fr|Sa|Su)\b', normalized, re.I)
+    if found:
+        a, b = (short[x.lower()] for x in found.groups())
+        return frozenset(range(a, b + 1)) if a <= b else None
+    tokens = re.findall(r'\b(?:Mo|Tu|We|Th|Fr|Sa|Su)\b', normalized, re.I)
+    return frozenset(short[x.lower()] for x in tokens) if tokens else None
+
+
+def _hours_days(node):
+    values = _strings(node.get('openingHours'))
+    if len(values) == 1:
+        return _days(values[0])
+    specs = node.get('openingHoursSpecification')
+    specs = specs if isinstance(specs, (list, tuple)) else [specs]
+    if len(specs) == 1 and hasattr(specs[0], 'get') and not any(
+            key in specs[0] for key in ('validFrom', 'validThrough')):
+        days = _strings(specs[0].get('dayOfWeek'))
+        return _days(' '.join(value.rsplit('/', 1)[-1] for value in days))
+    return None
 
 
 def _postal_codes(node):
@@ -184,86 +211,94 @@ def markup_mismatches(pages):
     site_digits = " ".join(_digit_text(p.visible_text) for p in readable)
     site_text = re.sub(r"[\s-]", "", " ".join(p.visible_text for p in readable)).upper()
 
-    # Telephone and postal code: the value is shown nowhere, the carrying pages show others.
-    phones, postals = {}, {}
-    for p in readable:
-        for node in _org_nodes(p):
-            for value in _strings(node.get("telephone")):
-                key = phone_key(value)
-                if key:
-                    phones.setdefault(key, (value, []))[1].append(p)
-            for value in _postal_codes(node):
-                key = postal_key(value)
-                if key:
-                    postals.setdefault(key, (value, []))[1].append(p)
-    # Numbers a visitor can see or tap anywhere in the sample (tel: links included).
     site_phone_keys = {phone_key(ph) for p in readable for ph in contact_details(p)[1]}
-    for key, (value, carriers) in sorted(phones.items()):
-        shown = {ph for p in carriers for ph in contact_details(p)[1] if phone_key(ph)}
-        if not shown:
-            continue
-        compared += 1
-        if key not in site_digits and key not in site_phone_keys:
-            urls = sorted({p.url for p in carriers})
-            evidence.append({"type": "markup_text_mismatch",
-                             "description": f"JSON-LD telephone {value} appears on no sampled page; the pages "
-                                            f"that carry it show {', '.join(sorted(shown)[:3])}",
-                             "urls": urls[:10], "fact": "telephone"})
-    for key, (value, carriers) in sorted(postals.items()):
-        shown = [a for p in carriers if _postal_address_shown(p) for a in _addresses(p)]
-        if not shown:
-            continue
-        compared += 1
-        if key not in site_text:
-            urls = sorted({p.url for p in carriers})
-            evidence.append({"type": "markup_text_mismatch",
-                             "description": f"JSON-LD postal code {value} appears on no sampled page; the pages "
-                                            f"that carry it show the address {shown[0][:120]}",
-                             "urls": urls[:10], "fact": "postal_code"})
-
-    # Opening hours: no marked-up time is among the times the site shows.
-    stated, carriers = set(), set()
     for p in readable:
-        for node in _org_nodes(p):
-            times = markup_hours(node)
-            if times:
-                stated |= times
-                carriers.add(p.url)
-    # A 24-hour business marks 00:00 or 23:59, which no page writes as opening hours.
-    if stated and not stated & {0, 1439}:
-        shown = set().union(*(visible_hours(p.visible_text) for p in readable))
-        if len(shown) >= 2:
+        nodes = _org_nodes(p)
+        if len(nodes) != 1:
+            continue
+        node = nodes[0]
+        name = (_strings(node.get('name')) or [''])[0]
+        passages = _named_passages(p, name)
+        phones = _strings(node.get('telephone'))
+        shown = {value for text in passages for value in find_contact_details(text)['phones']}
+        if len(phones) == 1 and phone_key(phones[0]) and len({phone_key(x) for x in shown}) == 1:
             compared += 1
-            if not stated & shown:
-                fmt = lambda ts: ", ".join(f"{t // 60:02d}:{t % 60:02d}" for t in sorted(ts)[:6])
-                evidence.append({"type": "markup_text_mismatch",
-                                 "description": f"JSON-LD opening hours use {fmt(stated)}; the opening hours "
-                                                f"shown on the site use {fmt(shown)}",
-                                 "urls": sorted(carriers)[:10], "fact": "opening_hours"})
+            key = phone_key(phones[0])
+            if key not in site_digits and key not in site_phone_keys:
+                evidence.append({'type': 'markup_text_mismatch', 'fact': 'telephone', 'urls': [p.url],
+                    'description': f"JSON-LD telephone {phones[0]} for {name}; the acquired same-entity contact passage explicitly shows {next(iter(shown))}"})
+        addresses = node.get('address')
+        addresses = addresses if isinstance(addresses, (list, tuple)) else [addresses]
+        if len(addresses) == 1 and hasattr(addresses[0], 'get'):
+            address = addresses[0]
+            codes = _strings(address.get('postalCode'))
+            street = (_strings(address.get('streetAddress')) or [''])[0]
+            # Street identity establishes which address is being compared. Another
+            # store/address is not evidence that this postal code is wrong.
+            shown = [text for text in _addresses(p) if street and street.casefold() in text.casefold()
+                     and _POSTAL_TOKEN.search(text)]
+            keys = {postal_key(token) for text in shown for token in _POSTAL_TOKEN.findall(text)}
+            if len(codes) == 1 and postal_key(codes[0]) and len(keys) == 1:
+                compared += 1
+                if postal_key(codes[0]) not in keys and postal_key(codes[0]) not in site_text:
+                    evidence.append({'type': 'markup_text_mismatch', 'fact': 'postal_code', 'urls': [p.url],
+                        'description': f"JSON-LD postal code {codes[0]} for {street}; the acquired same-street address explicitly shows {shown[0][:160]}"})
+        stated = markup_hours(node)
+        days = _hours_days(node)
+        matching_hours = [visible_hours(text) for text in passages if days and _days(text) == days]
+        # One entity, same day schedule, one opening/closing pair. Seasonal,
+        # multi-shift and 24-hour cases remain unassessed here.
+        if len(stated) == 2 and not stated & {0, 1439} and len(matching_hours) == 1 and len(matching_hours[0]) == 2:
+            shown = matching_hours[0]
+            compared += 1
+            if stated != shown:
+                fmt = lambda ts: ', '.join(f'{t // 60:02d}:{t % 60:02d}' for t in sorted(ts))
+                evidence.append({'type': 'markup_text_mismatch', 'fact': 'opening_hours', 'urls': [p.url],
+                    'description': f"JSON-LD opening hours for {name} use {fmt(stated)}; the acquired same-entity/day passage explicitly uses {fmt(shown)}"})
 
-    # Price: one Offer price on a product page that the page never shows.
+    # Price needs an explicit acquired conflicting value for the same named
+    # product and offer conditions. An unrelated price is never a contradiction.
     for p in readable:
-        if p.page_type != "product" and not any(types_of(n) & _PRODUCT_TYPES for n in iter_nodes(p.jsonld_blocks)):
+        products = [n for n in iter_nodes(p.jsonld_blocks) if _fact_types(n) & _PRODUCT_TYPES]
+        if len(products) != 1 or 'ProductGroup' in types_of(products[0]):
             continue
-        prices = _page_prices(p)
-        if len(prices) != 1:
-            continue  # no price, or several (variants, bundles, currencies): nothing single to compare
-        (currency, price), = prices
+        product = products[0]
+        names = _strings(product.get('name'))
+        offers = _offers(product)
+        if len(names) != 1 or len(offers) != 1 or any(k in offers[0] for k in
+                ('priceSpecification', 'eligibleRegion', 'validFrom', 'priceValidUntil', 'itemCondition', 'eligibleQuantity')):
+            continue
+        price = markup_money(offers[0].get('price'))
+        currency = (_strings(offers[0].get('priceCurrency')) or [''])[0].upper()
+        if price is None:
+            continue
         markers = _CURRENCY_MARKERS.get(currency)
         if not markers:
             continue  # a currency the page's price text cannot be matched against
-        # Only prices in the markup's currency: a page that shows the visitor's
-        # local currency (geo-pricing) is not contradicting a USD Offer.
-        visible = [m.group(0) for m in _PRICE_TEXT.finditer(p.visible_text or "")
-                   if any(marker in m.group(0) for marker in markers)]
-        if not visible:
+        visible = []
+        for passage in (p.features or {}).get('opening_paragraphs') or ():
+            if names[0].casefold() not in passage.casefold() or re.search(
+                    r'\b(?:support|subscription|discount|coupon|tax|variant|size|colou?r|bundle|range|from)\b|per\s+(?:month|year)', passage, re.I):
+                continue
+            for match in _PRICE_TEXT.finditer(passage):
+                token = match.group(0)
+                if any(marker in token for marker in markers):
+                    # $ is ambiguous for USD/AUD/CAD: compare only if the page
+                    # positively uses that ISO code or has no competing currency.
+                    if currency in ('USD', 'AUD', 'CAD', 'JPY') and currency not in passage.upper():
+                        continue
+                    number = visible_money(token)
+                    if number is not None:
+                        visible.append((number, token))
+        values = {number for number, _ in visible}
+        if len(values) != 1:
             continue
         compared += 1
-        if not price_shown(price, p.visible_text):
+        if next(iter(values)) != price:
             evidence.append({"type": "markup_text_mismatch",
                              "description": f"JSON-LD Offer price {price:g} {currency}".rstrip()
-                                            + f"; the page shows {', '.join(dict.fromkeys(visible))[:120]} "
-                                              "but never that price",
+                                            + f" for {names[0]}; the acquired same-product passage explicitly shows "
+                                              f"{', '.join(dict.fromkeys(token for _,token in visible))[:120]}",
                              "urls": [p.url], "fact": "price"})
     return evidence, compared
 
@@ -272,7 +307,7 @@ def markup_mismatches(pages):
 
 def _entity_key(node, page):
     """Identity of a structured entity across pages, or None."""
-    types = types_of(node)
+    types = _fact_types(node)
     node_id = node.get("@id")
     if isinstance(node_id, str) and node_id.strip().startswith(("http://", "https://")) \
             and types & (ORGANIZATION_TYPES | _PRODUCT_TYPES):
@@ -295,39 +330,47 @@ def _entity_key(node, page):
 def _entity_facts(node):
     """[(property, comparable key, value as written)] for one node."""
     facts = []
-    if types_of(node) & ORGANIZATION_TYPES:
+    if _fact_types(node) & ORGANIZATION_TYPES:
         facts += [("telephone", phone_key(v), v) for v in _strings(node.get("telephone"))]
         facts += [("email", v.lower(), v) for v in _strings(node.get("email"))]
-        facts += [("foundingDate", v[:4], v) for v in _strings(node.get("foundingDate")) if re.match(r"\d{4}", v)]
+        facts += [("foundingDate", v[:4], v) for v in _strings(node.get("foundingDate")) if date_value_state(v) == "valid"]
         facts += [("postalCode", postal_key(v), v) for v in _postal_codes(node)]
-    if types_of(node) & _PRODUCT_TYPES:
+    if _fact_types(node) & _PRODUCT_TYPES and 'ProductGroup' not in _fact_types(node) and len(_offers(node)) == 1:
         for offer in _offers(node):
             price = markup_money(offer.get("price"))
             if price is not None:
                 currency = (_strings(offer.get("priceCurrency")) or [""])[0].upper()
-                facts.append(("price " + currency if currency else "price", f"{price:.2f}", f"{price:g}"))
-    return [f for f in facts if f[1]]
+                conditions = tuple((key, str(offer.get(key, ''))) for key in
+                    ('@id', 'sku', 'itemCondition', 'eligibleRegion', 'validFrom', 'priceValidUntil',
+                     'availabilityStarts', 'availabilityEnds', 'eligibleQuantity', 'priceSpecification'))
+                variant = tuple((key, str(node.get(key, ''))) for key in ('color', 'size', 'model'))
+                facts.append((("price " + currency if currency else "price", conditions, variant),
+                              price, f"{price:g}"))
+    return [f for f in facts if f[1] is not None]
 
 
 def cross_page_conflicts(pages):
     """Evidence entries for an entity property with different values on two pages."""
     seen, per_page, names = {}, {}, {}
     for p in pages:
-        lang = ((p.features or {}).get("lang") or "").lower()[:2]
+        lang = ((p.features or {}).get("lang") or "").lower()
         for node in iter_nodes(p.jsonld_blocks):
             key = _entity_key(node, p)
             if not key:
                 continue
             names.setdefault(key, (_strings(node.get("name")) or [""])[0])
+            address = node.get('address')
+            region = tuple(str(address.get(k, '')) for k in ('addressCountry', 'addressLocality', 'streetAddress')) if hasattr(address, 'get') else str(address or '')
             for prop, value_key, written in _entity_facts(node):
-                slot = seen.setdefault((key, lang, prop), {})
+                slot = seen.setdefault((key, lang, str(node.get('areaServed', '')), region, prop), {})
                 slot.setdefault(value_key, (written, []))
                 if p.url not in slot[value_key][1]:
                     slot[value_key][1].append(p.url)
-                per_page.setdefault((key, lang, prop), {}).setdefault(p.url, set()).add(value_key)
+                per_page.setdefault((key, lang, str(node.get('areaServed', '')), region, prop), {}).setdefault(p.url, set()).add(value_key)
     evidence = []
     for slot_key, values in sorted(seen.items(), key=lambda item: str(item[0])):
-        (kind, ident), _, prop = slot_key
+        (kind, ident), _, _, _, prop = slot_key
+        prop_label = prop[0] if isinstance(prop, tuple) else prop
         if len(values) < 2:
             continue
         # A property one page states with several values (two telephones, one
@@ -341,8 +384,8 @@ def cross_page_conflicts(pages):
         described = "; ".join(f"'{written}' on {urls[0]}" + (f" and {len(urls) - 1} more" if len(urls) > 1 else "")
                               for written, urls in variants[:3])
         evidence.append({"type": "cross_page_fact",
-                         "description": f"{label} {prop}: {described}",
-                         "urls": sorted(set().union(*pages_of))[:10], "fact": prop})
+                         "description": f"{label} {prop_label}: {described}",
+                         "urls": sorted(set().union(*pages_of)), "fact": prop_label})
     return evidence
 
 

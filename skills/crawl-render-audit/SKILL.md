@@ -175,3 +175,5 @@ reports files of 300 KB or more (medium at 1 MB, or 500 KB for the likely LCP
 image), images twice their displayed width with no srcset, and 100 KB or larger
 files still served as JPEG, PNG or GIF. `responsive-images` (suspected) reports a
 page whose first content image has no srcset or `<picture>` source.
+
+Limited value interpretation: see [schema value scope](references/schema-value-scope.md).

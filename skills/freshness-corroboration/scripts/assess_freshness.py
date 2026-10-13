@@ -52,7 +52,7 @@ _CATEGORY_CALIBRATION = {
 _EXCLUDED_FROM_STALENESS = {"historical", "unclassified"}
 _STALE_AFTER_YEARS = 3
 _ISSUE_TEXT = {
-    "unparseable": "is not an ISO 8601 date",
+    "invalid_calendar": "is an impossible calendar date or time in the supported ISO form",
     "future": "is in the future",
     "modified_before_published": "is earlier than datePublished",
 }
@@ -103,6 +103,7 @@ def _invalid_dates_finding(issues):
         root_cause="Structured datePublished/dateModified values are unparseable, in the future, "
                    "or inverted, so they cannot serve as a reliable freshness signal",
         evidence=evidence,
+        affected_pages=sorted({i['source'] for i in unique}),
         suggested_action={
             "summary": "Correct the invalid datePublished and dateModified values",
             "steps": ["Emit both dates in ISO 8601 form, for example 2026-03-01 or 2026-03-01T09:00:00Z",
@@ -175,6 +176,9 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
         pool += claims.get("data", {}).get("claims", [])
     text_dates = _dedupe([f for f in pool if f.get("type") == "date" and f.get("origin") != "jsonld"])
     structured, issues = structured_date_claims(artifacts.pages)
+    limitations = [i for i in issues if i['issue'] == 'unsupported_format']
+    issues = [i for i in issues if i['issue'] != 'unsupported_format']
+    limitation_warnings = [f"Unsupported date format on {i['source']}: {i['field']}; not assessed as invalid." for i in limitations[:10]]
     structured = _dedupe(structured)
     page_updates, update_metrics, lastmod_quality = page_update_claims(
         artifacts.pages, artifacts.sitemap_data)
@@ -188,10 +192,11 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
     lastmod_finding = _sitemap_lastmod_finding(artifacts.sitemap_data, lastmod_quality)
 
     if not date_facts and not issues and lastmod_finding is None:
-        return insufficient_evidence_result(
+        return skill_result(
             "freshness-corroboration",
-            "No dated facts found; freshness cannot be assessed (absence is not proof of staleness).",
-            metrics=update_metrics,
+            status='insufficient_evidence',
+            metrics=dict(update_metrics, structured_date_limitations=len(limitations)),
+            warnings=['No dated facts found; freshness cannot be assessed (absence is not proof of staleness).'] + limitation_warnings,
         )
 
     current_year = datetime.now(timezone.utc).year
@@ -253,10 +258,12 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
 
     return skill_result(
         "freshness-corroboration", findings=findings,
+        warnings=limitation_warnings,
         metrics={"date_facts_found": len(date_facts), "stale_facts": len(stale_assessable),
                  "text_date_facts": len(text_dates), "structured_date_facts": len(structured),
                  "page_update_date_facts": len(page_updates), **update_metrics,
                  "structured_date_issues": len(issues),
+                 "structured_date_limitations": len(limitations),
                  "text_dates_superseded_by_structured_update": len(superseded),
                  "stale_facts_excluded_as_historical": excluded_count,
                  "stale_facts_by_category": {k: len(v) for k, v in by_category.items()}},

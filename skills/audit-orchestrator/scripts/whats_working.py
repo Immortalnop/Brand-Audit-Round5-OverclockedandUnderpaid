@@ -140,7 +140,8 @@ def _indexable(ctx):
 def _structured_data(ctx):
     pages = ctx["pages"]
     with_jsonld = [p for p in pages if p.jsonld_blocks]
-    if not with_jsonld or any("malformed_jsonld_block" in p.warnings for p in ctx["artifacts"].pages):
+    if not with_jsonld or any('malformed_jsonld_block' in p.warnings or (p.features or {}).get('jsonld_limitations')
+                             for p in ctx['artifacts'].pages):
         return None
     return (f"JSON-LD structured data is on {len(with_jsonld)} of the {_plural(len(pages), 'page')} checked, "
             "and every block parsed.", len(pages))

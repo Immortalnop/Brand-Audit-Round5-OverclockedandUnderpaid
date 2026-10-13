@@ -29,7 +29,7 @@ are preserved outside the release package.
 | 2 packet 1.1 | Targeted checks passed | Exact emitted bounds, final references, final-content digest and current non-ready exports |
 | 3 focused About | Targeted checks passed | Acquired body opening, exact fragments, aliases, unread targets and labeled fallback |
 | 4 semantic AG validation | Targeted checks passed | Actual acquired quotations, eligible page scope and explicit search/vision support |
-| 5 native/schema | Pending | Extraction states, money, facts, limited context semantics |
+| 5 native/schema | Targeted checks passed | 43 new native/schema controls; 297 combined regressions passed |
 | 6 reporting/policy/docs | Pending | Roles, explanations, Google policy, portable version |
 | 7 integration/release | Pending | Full suite, host workflow, extraction and evaluation limits |
 
@@ -112,3 +112,26 @@ generated from the candidate in Phase 6, rather than manually changing digests.
 
 Phase 5 native/schema repairs are now in progress. These targeted results do not
 establish independent precision, recall, calibration or host budget enforcement.
+
+## Phase 5 checkpoint
+
+A14 now diagnoses present malformed markup once, retaining usable mixed blocks;
+unsupported/ambiguous extraction remains a limitation. A15/D06 comparisons require
+actual same-subject facts and supported currency, variant, day, region or offer
+conditions. Contact comparisons require named entity or same-street support.
+Full cross-page support survives evidence sampling. Confirmed and suspected
+findings stay separate through merging/folding.
+
+Corrected donor subset: D02 adds no universal Organization url/@id requirement;
+D03 validates calendar/time/offsets while leaving other forms unassessed; D04
+excludes monetary booleans; D05 supports external bases, vocabulary, prefixes and
+IRI coercion. New validation requires schema.org namespace proof and does not
+fetch contexts. Currency format does not assert ISO membership. A11–A13 retain
+bounded finite/sign/exponent semantics through native comparisons and rating
+conversions. Existing schema/date IDs handle overlapping mechanisms.
+
+Production regressions: `tests/test_final_native_schema.py` **43 passed**;
+combined native, schema, handoff, merge and boundary modules **297 passed in
+6.74s**. Positive same-product/contact conflicts remain covered, alongside traps.
+Adapted old conflict fixtures now state the subject explicitly; the old legacy
+AG-04 fixture correctly remains suspected. Full integration remains pending.

@@ -25,6 +25,7 @@ from collections.abc import Mapping
 from check_helpers import eligible_pages
 from models import make_finding, skill_result
 from structured_data import normalize_type
+from money import markup_money
 
 _ITEM_TYPES = frozenset({"Product", "Service", "SoftwareApplication", "MobileApplication", "WebApplication",
                          "Organization", "LocalBusiness", "Corporation", "Restaurant", "Book", "Course",
@@ -74,17 +75,10 @@ def _text(value):
 
 
 def _number(value):
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if re.fullmatch(r"-?\d+(?:\.\d+)?", text):
-            return float(text)
-        if re.fullmatch(r"-?\d+,\d+", text):  # decimal comma, as in "4,5"
-            return float(text.replace(",", "."))
-    return None
+    if isinstance(value, str) and re.fullmatch(r'-?\d+,\d+', value.strip()):
+        value = value.replace(',', '.')
+    number = markup_money(value)
+    return number
 
 
 def _count(value):

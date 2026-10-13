@@ -178,7 +178,7 @@ def _finding(check_id, pages, severity="low", status="suspected", confidence=0.6
 
 def test_fold_joins_the_same_check_sharing_most_pages_and_keeps_inputs():
     a = _finding("facts-in-images", ["https://s.example/"])
-    b = _finding("facts-in-images", ["https://s.example/pricing"])
+    b = _finding("facts-in-images", ["https://s.example/pricing"], status="confirmed")
     other = _finding("no-jsonld", ["https://s.example/pricing"])
     vision = _finding("facts-in-images", ["https://s.example/pricing"], severity="medium", status="confirmed",
                       confidence=0.7, skill="entity-corroboration-agent")
@@ -198,9 +198,10 @@ def test_fold_joins_the_same_check_sharing_most_pages_and_keeps_inputs():
 def test_fold_never_lowers_severity_and_less_confident_addition_keeps_status():
     base = _finding("review-platform-missing", [], severity="medium", status="confirmed", confidence=0.9)
     weak = _finding("review-platform-missing", [], severity="low", status="suspected", confidence=0.55)
-    [joined], folded = fold_into([base], [weak])
-    assert folded == 1 and joined["severity"] == "medium" and joined["status"] == "confirmed"
-    assert joined["confidence"] == 0.9
+    out, folded = fold_into([base], [weak])
+    assert folded == 0 and len(out) == 2
+    assert out[0] == base and out[1]["status"] == "suspected"
+    assert out[0]["confidence"] == 0.9
 
 
 def test_unmatched_addition_is_appended_with_check_ids():
@@ -239,7 +240,9 @@ def test_merge_folds_adds_and_refreshes_the_report(media_report):
     assert all(t["finding_id"] in ids for t in merged["top_actions"])
     assert merged["summary"]["total_findings"] == len(merged["findings"]) == len(report["findings"]) + 1
     assert merged["summary"]["high"] == report["summary"]["high"]
-    assert merged["summary"]["medium"] == report["summary"]["medium"] + 1
+    # The legacy image evidence remains suspected/medium; the contradiction
+    # adds another medium finding. Neither becomes confirmed/high.
+    assert merged["summary"]["medium"] == report["summary"]["medium"] + 2
     # A legacy array clears no missing-stage limitation, and says why.
     assert _agent_lines(report["limitations"])
     assert _agent_lines(merged["limitations"]) == _agent_lines(report["limitations"])
