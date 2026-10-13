@@ -1,0 +1,2 @@
+[audit] merged outcome envelope: 0 of 6 agent check(s) assessed (not_run), 0 finding(s): 0 joined existing findings, 0 added
+[audit] report written to /tmp/brand-round5-replay-bare/out/final-report.json (UTF-8)

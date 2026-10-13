@@ -1,0 +1,22 @@
+{
+  "site": "https://www.duolingo.com/",
+  "archive_sha256": "fb7c1fe3047bf88ad9e86bff34ef9ce017e89df7196643b8dad9e33555453fc1",
+  "release": {
+    "name": "brand-ai-readiness-audit",
+    "version": "8.4.0",
+    "commit": "f321bf48e84b2dfba1cf962850ee1de61c054751",
+    "uncommitted_changes": false,
+    "source": "committed_git_snapshot",
+    "files": 166
+  },
+  "python": "3.14.8",
+  "environment": "Linux",
+  "verification_host": "Current assistant tool session; Claude Code not installed",
+  "host_search": "available but requires separate stage execution evidence",
+  "vision": "no full image viewing claimed",
+  "prepared_at_utc": "2026-10-13T13:05:29.709096+00:00",
+  "scope": "Production entrypoint CLI exercised via existing verification instrumentation; no assertion of an exact Claude Code/model run",
+  "outcomes_persisted_at_utc": "2026-10-13T13:07:58.531263+00:00",
+  "agent_deadline_at": "2026-10-13T13:07:24.074567+00:00",
+  "late_host_case": true
+}

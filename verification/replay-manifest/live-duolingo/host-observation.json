@@ -1,0 +1,34 @@
+{
+  "at_utc": "2026-10-13T13:07:58.531263+00:00",
+  "deadline_utc": "2026-10-13T13:07:24.074567+00:00",
+  "before_hashes": {
+    "base-report.json": "ac1ec9a9b11d3945c35c83a7bc1f3c3aed3a84ece63a1fefd795a3a144a232f9",
+    "evidence.json": "0185219a9285ac547976c6d4c9c556428766138892fde40afa8db3d7ba7b8e78"
+  },
+  "packet_read": true,
+  "packet_keys": [
+    "schema_version",
+    "audit_id",
+    "snapshot_sha256",
+    "snapshot_scope",
+    "code_version",
+    "captured_at",
+    "site",
+    "audited_url",
+    "content_policy",
+    "identity",
+    "focus",
+    "about_page",
+    "pages",
+    "claims",
+    "image_candidates",
+    "capabilities",
+    "checks",
+    "budget",
+    "limitations",
+    "ready_for_assessment",
+    "timing",
+    "packet_sha256"
+  ],
+  "host_stage": "actual local reading; no search or full image execution"
+}

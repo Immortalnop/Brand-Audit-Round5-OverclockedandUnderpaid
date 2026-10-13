@@ -1,0 +1,37 @@
+{
+  "entrypoint": "verification/capture_entrypoint.py around frozen production run_audit.main",
+  "core": {
+    "exit_code": null,
+    "entrypoint_elapsed_s": 59.06755905599857,
+    "started_at_unix": 1791896730.009241,
+    "finished_at_unix": 1791896789.0768,
+    "command_arguments": [
+      "https://www.duolingo.com/",
+      "--progress",
+      "--out",
+      "out/base-report.json",
+      "--evidence-out",
+      "out/evidence.json"
+    ],
+    "instrumentation": "client requests after send; observation snapshot excludes cookies/auth headers"
+  },
+  "merge": {
+    "exit_code": 0,
+    "entrypoint_elapsed_s": 0.01239951400202699,
+    "started_at_unix": 1791896878.8004143,
+    "finished_at_unix": 1791896878.8128135,
+    "command_arguments": [
+      "--from-report",
+      "out/base-report.json",
+      "--agent-findings",
+      "out/agent-outcomes.json",
+      "--evidence",
+      "out/evidence.json",
+      "--out",
+      "out/final-report.json"
+    ],
+    "instrumentation": "client requests after send; observation snapshot excludes cookies/auth headers"
+  },
+  "return_value_note": "run_audit.main returns None for successful core CLI; sys.exit(None) is exit code 0. Successful merge returns 0.",
+  "host_scope": "Current assistant session; console tools are not a Claude Code transcript. No recording claimed."
+}

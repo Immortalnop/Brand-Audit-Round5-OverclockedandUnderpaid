@@ -1,0 +1,1 @@
+{"exit_code": null, "entrypoint_elapsed_s": 59.06755905599857, "started_at_unix": 1791896730.009241, "finished_at_unix": 1791896789.0768, "command_arguments": ["https://www.duolingo.com/", "--progress", "--out", "out/base-report.json", "--evidence-out", "out/evidence.json"], "instrumentation": "client requests after send; observation snapshot excludes cookies/auth headers"}

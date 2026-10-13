@@ -1,0 +1,37 @@
+{
+  "entrypoint": "verification/capture_entrypoint.py around frozen production run_audit.main",
+  "core": {
+    "exit_code": null,
+    "entrypoint_elapsed_s": 39.39554316799331,
+    "started_at_unix": 1791896973.0873537,
+    "finished_at_unix": 1791897012.4828968,
+    "command_arguments": [
+      "https://www.python.org/",
+      "--progress",
+      "--out",
+      "out/base-report.json",
+      "--evidence-out",
+      "out/evidence.json"
+    ],
+    "instrumentation": "client requests after send; observation snapshot excludes cookies/auth headers"
+  },
+  "merge": {
+    "exit_code": 0,
+    "entrypoint_elapsed_s": 0.017695660004392266,
+    "started_at_unix": 1791898458.1860142,
+    "finished_at_unix": 1791898458.2037098,
+    "command_arguments": [
+      "--from-report",
+      "/tmp/brand-round5-replay-python/out/base-report.json",
+      "--agent-findings",
+      "/tmp/brand-round5-replay-python/out/agent-outcomes.json",
+      "--evidence",
+      "/tmp/brand-round5-replay-python/out/evidence.json",
+      "--out",
+      "/tmp/brand-round5-replay-python/out/final-report.json"
+    ],
+    "instrumentation": "client requests after send; observation snapshot excludes cookies/auth headers"
+  },
+  "return_value_note": "run_audit.main returns None for successful core CLI; sys.exit(None) is exit code 0. Successful merge returns 0.",
+  "host_scope": "Current assistant session; console tools are not a Claude Code transcript. No recording claimed."
+}

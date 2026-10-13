@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.1",
+  "audit_id": "9d00ef4bdc0349829331a1c100c63b2a",
+  "snapshot_sha256": "93245098d2fe806bfce7507d277ba8affcbf7d903089dae1ec38566563778c70",
+  "packet_sha256": "60208f53feaf9c494ebf10da7497d3be274342ed4083a7f4d8630f7a870e9adc",
+  "capabilities": {
+    "local_reading": true,
+    "search": true,
+    "vision": false
+  },
+  "checks": [
+    {
+      "check": "AG-01",
+      "outcome": "not_assessed",
+      "reason": "The packet records a known About target not acquired within this bounded sample; no assessable complete opening was supplied. No homepage substitution or second fetch was performed."
+    },
+    {
+      "check": "AG-02",
+      "outcome": "not_assessed",
+      "reason": "No independent-source query and inspection completed in the remaining host allowance."
+    },
+    {
+      "check": "AG-03",
+      "outcome": "not_assessed",
+      "reason": "No bound acquired claim was compared with independently inspected external evidence."
+    },
+    {
+      "check": "AG-04",
+      "outcome": "not_assessed",
+      "reason": "No full packet-listed image was viewed; no visual assessment is claimed."
+    },
+    {
+      "check": "AG-05",
+      "outcome": "not_assessed",
+      "reason": "No namesake query and distinguishing-source inspection completed in the remaining host allowance."
+    },
+    {
+      "check": "AG-06",
+      "outcome": "not_assessed",
+      "reason": "No applicable platform query and source inspection completed in the remaining host allowance."
+    }
+  ]
+}
