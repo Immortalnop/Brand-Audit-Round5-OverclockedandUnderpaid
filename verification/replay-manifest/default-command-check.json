@@ -1,0 +1,14 @@
+{
+  "scope": "Production CLI option dispatch probe with acquisition stubbed to dated saved data; not a live site audit.",
+  "prompt_command": "python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py SITE_URL --progress --out out/base-report.json --evidence-out out/evidence.json",
+  "defaults_received": {
+    "site_url": "https://barenecessities.in/",
+    "max_pages": 50,
+    "core_limit_s": 270
+  },
+  "acquisition_was_stubbed": true,
+  "network_attempts": 0,
+  "branch_archive_code_version": "8.4.0+unknown",
+  "missing_release_metadata_is_supported": true,
+  "cli_success_return_value": null
+}

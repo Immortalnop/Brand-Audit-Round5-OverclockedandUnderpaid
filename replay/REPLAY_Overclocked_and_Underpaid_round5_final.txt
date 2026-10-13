@@ -1,181 +1,130 @@
 REPLAY_Overclocked_and_Underpaid_round5_final
 TEAM: Overclocked & Underpaid
-PURPOSE: Internal reproducibility and demo runbook. Upload it only if requested;
-         paste the one canonical prompt into Claude Code to execute the audit.
+PURPOSE: Complete default audit and Claude Code demonstration workflow.
 UPDATED: 2026-10-13 (Asia/Kolkata)
 
-RELEASE_VERSION: 8.4.0
-PACKET_AND_OUTCOME_SCHEMA: 1.1
-ARCHIVE: brand-ai-readiness-audit-8.4.0.zip
-ARCHIVE_BYTES: 747940
-ARCHIVE_SHA256: fb7c1fe3047bf88ad9e86bff34ef9ce017e89df7196643b8dad9e33555453fc1
-RELEASE_SNAPSHOT_COMMIT: f321bf48e84b2dfba1cf962850ee1de61c054751
-TEST_SITE_URLS: https://barenecessities.in/ (configured rehearsal candidate)
-               Replace SITE_URL for a judge-selected public URL; one fresh run per URL.
-AGENT_HARNESS: Claude Code; version TO_RECORD_ON_FINALE_LAPTOP (`claude --version`).
-LLM_MODEL: TO_RECORD_ON_FINALE_LAPTOP; use the exact available model ID.
-           Record the resolved ID, not only an alias; the Round 3 model/version
-           declarations are historical and are not a new execution claim.
-RUN_RECORD_STATUS: Workflow finalized; exact laptop/model execution is not yet certified.
-MODEL_SELECTION: Use Claude Code's /model or startup display to identify the
-                 intended model, then launch the final fresh session with its
-                 exact ID. For preparation only, `claude --model opus` uses the
-                 documented alias. Resolve and pin it before freezing the replay.
-ENTRYPOINT: package/skills/audit-orchestrator/SKILL.md
+ARCHIVE: Brand-AI-Readiness-Audit-round5-final_version.zip
+TEST_SITE_URLS: https://barenecessities.in/
+AGENT_HARNESS: Claude Code
+AGENT_HARNESS_VERSION:
+LLM_MODEL:
+LLM_MODEL_VERSION:
+PYTHON_VERSION:
+OPERATING_SYSTEM:
+ENTRYPOINT: Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/SKILL.md
 EXPECTED_OUTPUT: out/final-report.json and out/final-report.md
-PROMPT_FILE: FINAL_AUDIT_PROMPT.txt (one prompt; supplied alongside the ZIP)
-DEMO_PROFILE: --max-pages 6 --timeout 120; bounded static sample, not whole-site coverage.
-DEFAULT_ENGINE_PROFILE: 50 pages, 270-second core ceiling when these flags are omitted.
+PROMPT_FILE: FINAL_AUDIT_PROMPT.txt
+AUDIT_SETTINGS: Engine defaults: maximum 50 crawled pages, 270-second core ceiling.
 
-VERIFICATION_STATE:
-The release checkout passed 1,344 tests. The final extracted ZIP passed 1,340
-with one expected build-tool module skip (four build-tool tests passed in the
-checkout). The current Fastly repair has live and controlled evidence.
-Those results verify engineering cases, not universal finding correctness.
-This runbook's command/handoff checks are recorded in
-verification/replay-manifest/record.json. Claude Code execution and the intended
-demo laptop must be confirmed there after the actual rehearsal; do not claim
-that a different host's run is a Claude Code run. Independent review of 64
-findings, laptop confirmation and a full presentation recording remain pending.
-See verification/FINAL_DEMO_CHECKLIST.md in the repository.
+This runs the complete marketplace workflow: one acquisition, all scheduled native
+specialists, supported AG-01 through AG-06 assessments, a local validated merge,
+and a readable report. It has no reduced-page or shortened-timeout flags.
+The 50-page setting is a cap; blocked, duplicate or excluded pages and exhausted
+budgets can reduce analyzed coverage. Optional integrations need their actual
+configuration and dependencies. A full workflow does not imply every optional
+capability ran, every check passed, or the entire website was acquired.
 
-ROUND REQUIREMENTS:
-Round 3 requires a portable recommend-only marketplace, one entrypoint, evidence,
-severity and prioritized actions; package at most 50 MB, typical audit under five
-minutes. Round 4 required a <=5-minute video, the unchanged Round 3 package and
-parseable TEST_SITE_URLS/LLM_MODEL/AGENT_HARNESS/ENV_SETUP/TEST_STEPS/EXPECTED_OUTPUT
-fields matching the recorded run. Those are historical Round 4 requirements.
-The supplied Round 5 brief permits refining the solution and a live or recorded
-walkthrough. It specifies an eight-minute presentation target, a ten-minute stop,
-at most seven presented slides and a separate five-minute Q&A. It does not list
-REPLAY.txt as a deliverable. Keep this as an internal reproducibility runbook;
-follow any later organizer upload instructions separately. Do not claim the old
-Round 3 freeze or five-minute video cap still applies to the whole finale.
-
-CANDIDATE SELECTION:
-This follows the latest Compare Finalist Projects ChatGPT conversation and its
-Demo_Candidate_Review.md. One configured URL is audited per fresh workflow.
-1. https://barenecessities.in/ — ecommerce/brand story; current six-page native
-   check completed in 10.930s, five eligible pages, 140 discovered. The selected
-   About target was outside this sample: AG-01 must stay unassessed unless a fresh
-   configured run exports a suitable complete opening. Independent B Lab research
-   is a lead for fresh host inspection, not evidence to paste into an envelope.
-2. https://www.pratham.org/ — education/communications reserve; current six-page
-   native check completed in 11.501s. The selected opening is homepage program
-   teaser text associated with an empty fragment. Review representativeness;
-   do not present it as proof of an unclear organization description.
-3. https://www.adafruit.com/ — commerce reserve from the project chat's saved
-   native evidence. Not freshly screened in this task; full Claude rehearsal needed.
-4. https://www.python.org/ — workflow reserve. A current default-profile native
-   run completed and supplied an About opening; the prior About finding is
-   debatable, so do not import it or force the same judgment.
-https://www.electrifylabs.in/ remains a researched small-business prospect, not a
-verified current Claude demo. Duolingo is excluded from the demo choices.
-These are candidates, not a claim that any complete Claude demo is proven.
-Choose the actual presentation URL after the laptop procedure below. Replace
-TEST_SITE_URLS and SITE_URL together; freeze the actual invocation/transcript.
-
-WHY ONE PROMPT:
-One request can read the skills, acquire once, assess the packet, merge locally,
-render and explain the actual report. Keep setup/model selection outside the
-measured audit request. Extra assessment/re-crawl prompts risk using another
-snapshot or restarting the host allowance. The three Python commands below
-are one workflow: acquisition, a no-network merge, and a no-network renderer.
+The Claude version/model fields are intentionally blank for now. Fill them from
+the actual session when recording the final demonstration. No historical model
+or harness version is assumed. The launch below uses the account's configured
+model; an exact --model argument can be added after choosing and recording it.
 
 ENV_SETUP:
-Python 3.10+ and authenticated Claude Code with the selected model. The runtime
-uses the Python standard library; no runtime pip install or curl is required.
-Recommended shell: Bash on Linux/macOS/WSL, matching the previous replay.
-Use a fresh workspace and a clean extracted package, not a development checkout
-with previous audit files or a local .env supplying undisclosed settings.
-Search and image viewing are host capabilities, not automatic engine features.
-The demo baseline disables rendering, script-native search and field-vitals lookup;
-bounded declared-profile and knowledge-graph lookups retain their engine defaults.
-No Playwright/Chromium, native search endpoint or PageSpeed key is required.
+Python 3.10+ and installed, authenticated Claude Code. The ordinary static runtime
+uses the Python standard library and needs no runtime pip install. Bash on Linux,
+macOS or WSL is suitable. Use a fresh workspace with outputs outside the code.
+Do not load previous audit reports or resume an earlier Claude conversation.
+Keep the entrypoint's default acquisition/time settings. Optional rendering
+requires Playwright/Chromium and ENABLE_RENDERING=1; native search requires the
+configured SEARCH_API_URL/provider; field vitals require PAGESPEED_API_KEY.
+Prepare and disclose any such capabilities before running, and preserve their
+configured settings. Do not install dependencies or change capabilities mid-run.
+Without those configurations, the engine runs and records the relevant limits.
+Host WebSearch is separate from the engine's optional search provider.
 
 TEST_STEPS:
-1. Put the exact archive and the prompt beside a new workspace. Verify the archive
-   before extraction. From the folder containing the archive and prompt:
+1. Put Brand-AI-Readiness-Audit-round5-final_version.zip beside a fresh workspace.
+   From the directory containing that archive:
 
-      python3 -c "import hashlib,pathlib; p=pathlib.Path('brand-ai-readiness-audit-8.4.0.zip'); assert p.stat().st_size==747940; assert hashlib.sha256(p.read_bytes()).hexdigest()=='fb7c1fe3047bf88ad9e86bff34ef9ce017e89df7196643b8dad9e33555453fc1'; print('Archive identity verified')"
       mkdir audit-workspace
       cd audit-workspace
-      mkdir package out
-      python3 -m zipfile -e ../brand-ai-readiness-audit-8.4.0.zip package
+      mkdir out
+      python3 -m zipfile -e ../Brand-AI-Readiness-Audit-round5-final_version.zip .
 
-   This ZIP has a flat root. Do not invent a nested Brand-AI-Readiness-Audit/
-   directory. Confirm package/marketplace.json, package/RELEASE.json and the
-   entrypoint skill exist. The output folder is outside the extracted package.
-   Copy the supplied prompt beside package/ if convenient; do not alter the ZIP.
+   The supplied ZIP contains the folder
+   Brand-AI-Readiness-Audit-round5-final_version/. Its marketplace.json, common/
+   and skills/ are inside that folder. Launch Claude from audit-workspace/,
+   so that out/ is its sibling rather than part of the extracted code.
+   Do not create an extra package/ directory or assume a flat archive root.
+   This branch source ZIP has no RELEASE.json; the prompt reads that file only
+   if present. Preserve the engine's code_version value, including +unknown
+   when the archive has neither Git metadata nor portable release metadata.
+   Use the revised prompt embedded below; do not substitute an older prompt
+   that might be included among the archive's historical replay documents.
 
-2. Prepare the baseline environment in that shell before starting Claude:
+2. Prepare the shell without changing the engine's audit limits:
 
-      unset AGENT_FINDINGS_PATH SEARCH_API_URL SEARCH_API_KEY PAGESPEED_API_KEY
-      unset OFF_SITE_LOOKUP KNOWLEDGE_GRAPH_LOOKUP AUDIT_PROGRESS
-      export ENABLE_RENDERING=0
-      export FIELD_VITALS_LOOKUP=0
+      unset AGENT_FINDINGS_PATH
       export PYTHONDONTWRITEBYTECODE=1
       python3 --version
-      claude --version
 
-   Record OS, Python/Claude versions, exact model ID, timezone, selected URL/profile,
-   archive SHA and optional capability availability in out/run-metadata.json
-   or a separate operator note. Never print API keys, auth tokens or cookies.
-   PYTHONDONTWRITEBYTECODE prevents Python from creating caches in package/.
-   Native Windows: choose the actual `python`/`python3` executable and substitute
-   it consistently in setup and the prompt. Clear these settings with
-   Remove-Item Env:NAME -ErrorAction SilentlyContinue and set variables with
-   $env:ENABLE_RENDERING='0', $env:FIELD_VITALS_LOOKUP='0', and
-   $env:PYTHONDONTWRITEBYTECODE='1'. Always use --out for UTF-8 JSON; stdout
-   redirection encoding is irrelevant to those files. Claude's own shell setup
-   must be working before the timed run.
+   Use a workspace without an undisclosed .env file. Keep intentionally configured
+   optional integrations; record their availability without exposing credentials.
+   PYTHONDONTWRITEBYTECODE prevents Python caches in the extracted code.
+   On native Windows, use the installed python/python3 executable consistently.
+   Clear AGENT_FINDINGS_PATH with
+   Remove-Item Env:AGENT_FINDINGS_PATH -ErrorAction SilentlyContinue
+   and set $env:PYTHONDONTWRITEBYTECODE='1'. The extraction commands also work
+   with python in place of python3. Claude's own shell must be working first.
+   Reports use --out for UTF-8 JSON; do not append audits with >> into one file.
 
-3. Launch a fresh interactive Claude Code session from audit-workspace/.
-   Replace YOUR_EXACT_MODEL_ID with the ID selected and recorded above:
+3. From audit-workspace/, start a fresh interactive Claude Code session:
 
-      claude --model YOUR_EXACT_MODEL_ID --tools "Read,Write,Bash,WebSearch,WebFetch" --disallowedTools "mcp__*" --allowedTools "Read" "Edit(out/**)" "Bash(python3 *)" "Bash(python *)" "WebSearch" "WebFetch"
+      claude --tools "Read,Write,Bash,WebSearch,WebFetch" --disallowedTools "mcp__*" --allowedTools "Read" "Edit(out/**)" "Bash(python3 *)" "Bash(python *)" "WebSearch" "WebFetch"
 
-   `--tools` limits built-in tools; `--allowedTools` pre-approves matching uses.
-   Current Claude Code path-specific writes use Edit rules, including Write
-   requests; use Edit(out/**), not Write(out/**). In versions that do not support
-   the documented flags/rules, inspect local --help and use normal approvals;
-   record that version/configuration. Do not bypass permissions or silently
-   enable a second agent/browser/plugin. These rules do not constitute an
-   OS-level read-only sandbox for Python. The --tools flag alone does not
-   restrict separately configured MCP tools. The explicit mcp__* deny excludes MCP tools for this baseline.
-   Use a clean harness configuration and disclose any extra tools/settings/hooks.
-   Package preservation is checked by contents, not inferred from CLI flags.
-   Do not pass --continue/--resume or load prior conversations/reports.
+   Read the skills through their explicit paths; no skill installation or package
+   modification is needed. --tools selects built-in tools; --allowedTools
+   preapproves matching uses. Current path-scoped Write permissions use Edit
+   rules, hence Edit(out/**). The MCP deny keeps this a Claude built-in-tool run.
+   These flags do not make indirect Python file operations an OS sandbox.
+   If the installed version lacks a documented flag/rule, use supported local
+   --help and ordinary approvals, and disclose the actual configuration.
+   Do not bypass permissions or enable another agent/browser/plugin silently.
+   Do not use --continue or --resume.
 
-4. Replace only SITE_URL in the canonical prompt for the selected URL, and the
-   interpreter/directory/profile configuration if necessary. The six-page cap
-   bounds acquisition, not every kind of HTTP request; observed eligible pages
-   can be fewer due to deduplication, scope exclusions, blocks or failures.
-   Paste the complete prompt once. Approve any ordinary authorized tool request still required by the host.
-   Record the actual transcript and wall-clock start/end. Permission/tool delay
-   consumes the real allowance; do not reset the deadline after waiting.
+4. Set SITE_URL in the following prompt to the public URL being demonstrated.
+   Update TEST_SITE_URLS above to match it. Keep the default audit command without
+   --max-pages or --timeout overrides. Change directory/interpreter values only
+   if your actual setup differs, substituting them consistently in all commands.
+   Paste the complete prompt once. Approve ordinary authorized requests as needed.
+   Keep the actual tool transcript and wall-clock start/end; waiting for a tool
+   does not restart the packet's host-stage allowance.
 
 ----- BEGIN AUDIT PROMPT -----
 SITE_URL: https://barenecessities.in/
-PACKAGE_DIR: ./package
+PACKAGE_DIR: ./Brand-AI-Readiness-Audit-round5-final_version
 OUTPUT_DIR: ./out
 PYTHON_COMMAND: python3
-MAX_PAGES: 6
-CORE_TIMEOUT_SECONDS: 120
 
 Audit SITE_URL using the submitted Brand AI-Readiness Audit marketplace in
 PACKAGE_DIR. Complete the workflow below from this single request. Use the
 configured Python command consistently; quote the URL as one literal argument.
 Use Claude Code's Read, Write, Bash, WebSearch and WebFetch where available.
-The operator can replace the URL and profile before a fresh run. This is a
-bounded demo sample. Work in the prepared workspace, not inside PACKAGE_DIR.
+The operator can replace the URL before a fresh run. Run the complete default
+audit workflow. Work in the prepared workspace, with outputs outside PACKAGE_DIR.
 
 1. Read the contract before running the audit.
-Read PACKAGE_DIR/marketplace.json, PACKAGE_DIR/RELEASE.json,
+Read PACKAGE_DIR/marketplace.json,
 PACKAGE_DIR/skills/audit-orchestrator/SKILL.md,
 PACKAGE_DIR/skills/entity-corroboration-agent/SKILL.md,
-PACKAGE_DIR/skills/entity-corroboration-agent/references/checks.md, and
+PACKAGE_DIR/skills/entity-corroboration-agent/references/checks.md,
+PACKAGE_DIR/skills/crawl-render-audit/SKILL.md,
+PACKAGE_DIR/skills/freshness-corroboration/SKILL.md,
+PACKAGE_DIR/skills/engagement-audit/SKILL.md, and
 PACKAGE_DIR/skills/audit-orchestrator/references/input-boundaries.md.
+Read PACKAGE_DIR/RELEASE.json only if present. A branch source ZIP may omit it;
+that is not an audit failure. Preserve the engine-reported code_version rather
+than inventing release or commit metadata.
 Consult PACKAGE_DIR/skills/entity-corroboration-agent/scripts/ingest_agent_findings.py
 and PACKAGE_DIR/common/agent_semantics.py before acquisition if you need outcome
 field details. The orchestrator schedules the native specialist
@@ -196,13 +145,13 @@ bounded host stage; they do not authorize a second crawl or a new page sample.
 
 2. Acquire and analyze once.
 Run this command with SITE_URL substituted as one quoted argument:
-python3 package/skills/audit-orchestrator/scripts/run_audit.py SITE_URL --max-pages 6 --timeout 120 --progress --out out/base-report.json --evidence-out out/evidence.json
-Use the configured directories/interpreter and substitute MAX_PAGES and
-CORE_TIMEOUT_SECONDS if the operator changed them. Keep
-the configured six-page, 120-second core profile; the engine's unconfigured
-defaults remain 50 pages and 270 seconds. Do not increase the cap, enable optional
-integrations or alter settings during the run. Any separate profile must be
-chosen and disclosed before acquisition.
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py SITE_URL --progress --out out/base-report.json --evidence-out out/evidence.json
+Use the configured directories/interpreter consistently. Omit --max-pages and
+--timeout so the engine uses its normal 50-page cap and 270-second worker ceiling.
+This is a maximum, not a promise of exactly 50 analyzed pages. Run all native
+checks scheduled by the entrypoint and all supported agent checks. Preserve
+configured optional capabilities; do not install dependencies, change settings
+or enable integrations mid-run. Report actual coverage and unavailable features.
 Preserve the command's exit status and diagnostic output. Verify that the current
 base report exists, parses as JSON and contains its audit ID, code version,
 execution status and coverage. An output-write failure can fall back to stdout;
@@ -214,9 +163,10 @@ A valid partial, degraded or insufficient-evidence report is a report to explain
 Read base-report.json and evidence.json. Check ready_for_assessment, provenance,
 focus.ag01, and timing.agent_stage_recommended/agent_deadline_at. The deadline is
 an absolute UTC time and is at most 55 seconds after core completion, within the
-remaining workflow allowance. Use Bash with Python's UTC clock before each host
-operation; never start a fresh allowance. Hash the base report and packet before
-this stage and verify them afterward. For a ready packet, immediately initialize
+remaining workflow allowance. Skip assessments when agent_stage_recommended is
+false or that deadline has passed. Use Bash with Python's UTC clock before each host
+operation; never start a fresh allowance. Preserve the base report and packet
+without editing them. For a ready packet, immediately initialize
 the bound envelope below with six not_assessed outcomes and truthful pending
 reasons. Do AG-01 first when its opening is assessable and complete, saving its
 supported outcome immediately. Save after each completed check; retain earlier
@@ -235,15 +185,23 @@ AG-06. Use pass, finding, not_assessed or error, with the actual reason and the
 contract's required evidence. Use packet IDs as source_refs. Do not use a legacy
 findings array, manually choose F-IDs, calculate new scores or force a finding.
 
+For search checks, include observation.identity bound to the acquired name and
+observation.context describing entity/date/query scope. Each queries entry needs
+query, executed_at, result_count, matching_result_count and independent_result_count;
+use actual nonnegative integer counts, with independent <= matching <= returned.
+AG-06 queries also name platform. For an actually inspected page, sources entries
+use url, kind (inspected_page), quote and actual authorship/accessed_at where
+required. Search snippets or listed links are not inspected pages. Record only
+fields supported by tool execution; unavailable counts/evidence leave the check
+unassessed rather than invented. Reuse real sources without duplicating authors.
+
 - AG-01: assess exactly focus.ag01.opening_passage and its selected E page_ref.
   Copy the entire opening to observation.passage for either pass or finding.
-  Identify genuinely missing who/offering/category elements in unanswered for
+  Identify genuinely missing who/offering/category elements in observation.unanswered for
   a finding. An observed About page that failed, was blocked, omitted or could
   not be isolated is not_assessed. Use home only when the packet explicitly
   selects the no-observed-About fallback. Style or missing metadata alone does
   not prove that the body fails to describe the organization.
-  Check whether the passage represents a substantive opening; cart, navigation
-  or program teasers alone do not justify a brand-wide unclear-identity claim.
 - AG-02: use the acquired identity and scoped identity/category and relevant
   community queries. Record actual returned-result, matching and independent
   counts, query text, execution time/context and inspected independent passages.
@@ -253,8 +211,10 @@ findings array, manually choose F-IDs, calculate new scores or force a finding.
 - AG-03: bind an exact acquired site_quote to an E passage or C value; for a C
   reference retain its subject, predicate and E parent. Keep the explanatory
   site_claim separate. Inspect external passages and record URL, quotation,
-  authorship, identity/time/context, independence and material conflict. Site
-  aliases and syndicated copies are not independent sources. Agreement is not
+  authorship, identity/time/context, independence and material conflict.
+  Record observation.same_entity and observation.independence; a finding also
+  needs observation.material (boolean) and observation.conflict_explanation.
+  Site aliases and syndicated copies are not independent sources. Agreement is not
   contradiction; high/confirmed needs two independently authored inspected
   sources supporting a material conflict. Never declare the external source
   correct merely because it disagrees.
@@ -271,11 +231,14 @@ findings array, manually choose F-IDs, calculate new scores or force a finding.
   sources for namesakes. Own sameAs profiles are not competitors. Record the
   relevant queries and competing_entities; namesakes alone prove no assistant
   confusion. Preserve the contract's identity/context/source requirements.
+  Each observation.competing_entities entry needs name, url and distinguishing;
+  bind its URL to an actually inspected distinguishing source.
 - AG-06: choose platforms appropriate to the observed business, explain
   business_applicability and execute platform-specific queries. Record their
   counts and matching source passages. platforms_missing must be limited to
   applicable platforms actually queried with zero matching outcomes. Unopened
   links, search failures and inaccessible profiles do not prove absence.
+  A pass needs actual matching source evidence for every platform assessed.
 
 Reuse inspected independent sources across checks where they actually support
 each check, without converting one observation into multiple independent sources.
@@ -295,15 +258,15 @@ valid; it reports no checks as passed.
 
 4. Merge locally once, then render.
 For a ready packet and saved envelope, run:
-python3 package/skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
 This is merge-only: do not supply a site argument or run acquisition again.
 Verify the final JSON and its coverage.agent_stage/agent_corroboration_stage.
 If the envelope is rejected, preserve the reason and base report, stop the
-agent path, and report the rejection. Do not patch report/packet hashes, weaken
+agent path, and report the rejection. Do not change evidence-binding fields, weaken
 validation, silently discard native findings, switch to a legacy array, or
 re-crawl. The base report remains the valid engine-only result.
 For the successful merged report or explicit unchanged-base fallback, run:
-python3 package/common/report_markdown.py out/final-report.json out/final-report.md
+python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/final-report.json out/final-report.md
 Merge and rendering are local; make no new website requests during those steps.
 
 5. Deliver a concise explanation of the actual final report.
@@ -322,124 +285,97 @@ unassessed checks, and native integrations from host search/image inspection.
 Missing optional llms.txt/FAQ markup is not a universal Google ranking defect.
 Do not promise ranking changes, business uplift, calibrated accuracy or a complete
 site assessment from a bounded sample. Report relevant limits and failures.
-Verify the base report, packet and package contents remain unchanged. Record
+Keep the base report, packet and package files unmodified. Record
 actual core/host/full-request wall times, including any exceeded deadline.
-The 270-second workflow target is not a
-claim that this code can cancel arbitrary Claude tools. Do not claim a screenshot,
+The 270-second workflow target cannot cancel arbitrary Claude tools. Do not claim a screenshot,
 video, search, image view or rendered browser run that did not actually occur.
 ----- END AUDIT PROMPT -----
 
-5. Inspect and retain the outputs.
-   Primary: out/final-report.json, out/final-report.md.
-   Supporting: out/base-report.json, out/evidence.json (possibly non-ready),
-   out/agent-outcomes.json when a ready packet is merged, out/agent-stage-notes.md,
-   run metadata and the actual tool transcript. Hash the base report and packet
-   before/after the host stage; hashes must match. Verify package contents remain
-   unchanged and no cache files were created. Retain the archive and its hash.
-   For a non-ready packet, final-report.json is an exact unchanged copy of the
-   current base report; the stage stays unassessed/not_supplied. For a rejected
-   envelope, the base remains usable but no merged final success is claimed.
+5. Inspect and retain the actual outputs.
+   Primary: out/final-report.json and out/final-report.md.
+   Supporting: out/base-report.json, out/evidence.json when available,
+   out/agent-outcomes.json when supplied, and out/agent-stage-notes.md.
+   Preserve the base report, packet and package files. Retain the real transcript,
+   settings, run dates and actual model/harness information when available.
 
-   Review execution_status, coverage, challenged_pages/out_of_scope_pages,
-   warnings/limitations, agent_stage outcomes and actual measured timing.
-   Completed acquisition does not imply every optional check was assessed.
-   This profile enforces a 120-second core ceiling (unconfigured default: 270). The whole workflow targets
-   270 seconds, leaving at most 55 seconds for the host and 15 for merge; the
-   engine cannot forcibly cancel arbitrary Claude tools. Preserve late runs.
-   Human response/setup time is separate; record the actual measured scope.
+   The envelope copies audit_id, snapshot_sha256 and packet_sha256 from the
+   exported packet. These are required schema fields, not a manual archive check.
+   The existing engine validates their binding automatically. Do not remove or
+   invent them, change the packet, or weaken validation to make a merge succeed.
 
-   Keep every finding in engine priority order. Stable check IDs and acquired
-   evidence are better comparison keys than F-number IDs. Scope, timings,
-   live content and host judgments may differ between runs. A www redirect
-   or a Fastly challenge is interpreted by the engine, not manually recrawled.
-   A protected page is an evidence limitation, not a missing-H1/description
-   or dead-end defect. Claimed passes require actual assessed observations.
+   Review execution_status, analyzed/discovered coverage, challenged/out-of-scope
+   pages, warnings, limitations, actual AG outcomes and timing. If the packet is
+   missing or non-ready, the final JSON is an unchanged copy of this run's base
+   report and no agent assessment is claimed. A rejected handoff leaves the base
+   usable; it does not establish a successful merged final report.
 
-FALLBACK RUN PATH (engine only; separate fresh workspace, no agent required):
-      python3 package/skills/audit-orchestrator/scripts/run_audit.py https://barenecessities.in/ --max-pages 6 --timeout 120 --progress --out out/engine-only-report.json
-      python3 package/common/report_markdown.py out/engine-only-report.json out/engine-only-report.md
+   The core ceiling and workflow target are 270 seconds. The host stage gets
+   remaining time, at most 55 seconds; merge/finalization reserves 15 seconds.
+   A slow default audit can leave no host-stage time. The engine cannot cancel
+   arbitrary Claude tools, so obey the actual packet deadline and retain late
+   operations honestly. Report full-request timing separately from core timing.
 
-This is a separate live acquisition and is not guaranteed to reproduce the same
-findings, IDs, timings or counts as an earlier run. It lacks host AG assessment
-and records that limitation. Do not use it to replace evidence after a rejected
-merge, and do not describe an empty array as six passed agent checks.
+FALLBACK RUN PATH (native engine only, separate fresh output directory):
+      python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py https://barenecessities.in/ --progress --out out/engine-only-report.json
+      python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/engine-only-report.json out/engine-only-report.md
 
-FINALE LAPTOP VERIFICATION AND FREEZE:
-1. Confirm the archive hash and clean extraction. Record exact Python/Claude Code
-   versions, model ID, URL, profile, OS and actual available tools. Replace the
-   two TO_RECORD environment fields above. They are disclosure gaps until filled;
-   do not present this runbook as an executed replay while they remain unresolved.
-2. In a fresh workspace run the complete canonical prompt. Keep the original
-   transcript, UTC times, JSON, packet, envelope, Markdown and output hashes.
-   Confirm one acquisition, unchanged package/base/packet, valid binding and no
-   target recrawl. Read coverage and actual AG outcomes; search/vision may remain
-   unassessed. Record tool prompts, blocks and late operations honestly.
-3. Independently review the selected opening, each headline finding's original
-   evidence, affected scope, status, severity and applicable action. Select one
-   positive observation and up to two supported improvements. An acquisition or
-   focus limit is itself explainable; it is not a finding about unseen content.
-   Choose another candidate in a separate fresh run if the evidence is unsuitable.
-4. Repeat the chosen URL once using the same disclosed profile for stability.
-   Compare check IDs, support and recommendations, not fixed F-number/counts.
-   Retain failed runs. Exercise the engine-only fallback separately; then keep
-   an offline recording plus its untouched JSON/Markdown for venue network failure.
-5. Record a complete presentation: opening slides, meaningful input/agent activity/
-   output, closing slides, accurate tradeoffs and limitations. Target eight minutes,
-   stop at ten, present at most seven slides; practice five-minute Q&A. A recording
-   must show one actual workflow; saved-snapshot replay must be labeled as such.
-6. Complete the independent 64-finding review in verification/FINAL_DEMO_CHECKLIST.md
-   before making calibrated accuracy claims. Automated tests do not replace it.
+Use the same chosen URL and default settings. This is a separate live acquisition,
+so its findings and timing may differ. It lacks the host AG assessment. Do not
+substitute it for a rejected merge or describe unassessed checks as passed.
+A saved report/recording can support a venue-network fallback, clearly labeled
+as a prior execution; it is not a new live acquisition.
 
-DEMONSTRATION AND ADOBE CONNECTION:
-Show input -> agent reading marketplace -> bounded acquisition -> matching packet
--> supported host outcomes -> validated local merge -> prioritized JSON/Markdown.
-Explain one acquired evidence/action pair, supplied owner roles and quick wins.
-For a potential brand/content or ecommerce user, these observations could feed a
-Brand Visibility investigation, improve source information for Brand Concierge,
-or inform a reviewed CX Enterprise Coworker work queue. This is a proposed handoff,
-not a demonstrated Adobe integration, automatic publishing or measured uplift.
-Do not spend the entire walkthrough waiting; prepare and disclose the recorded
-fallback. Live and recorded formats are both allowed by the Round 5 brief.
+FINAL DEMONSTRATION CHECKS:
+1. Confirm the extracted marketplace/skill paths and Python/Claude setup. Run
+   the complete prompt on the intended laptop with the default audit settings.
+2. Keep the original JSON, evidence, envelope, Markdown, notes and transcript.
+   Confirm one acquisition and no second crawl during host assessment/merge.
+   Review actual capability coverage rather than assuming every feature ran.
+3. Independently inspect the selected About opening and each headline finding's
+   original support, affected scope, status, severity and applicable fix. Show
+   positive observations and up to two supported improvements without forcing
+   findings, counts or a predetermined result. Keep the complete report intact.
+4. Repeat the chosen site's full workflow for stability. Compare stable check
+   IDs, scope and evidence instead of expecting identical F-number IDs/counts.
+   Keep failures and late operations. Complete the independent review set before
+   making calibrated accuracy claims; passing tests are not an accuracy measure.
+5. Fill the blank model/harness fields from the session actually recorded, then
+   retain one real continuous run and its complete presentation recording.
+   The Round 5 brief permits a live or recorded walkthrough. Target eight minutes,
+   stop at ten, present at most seven slides, and practice separate five-minute Q&A.
 
-OPTIONAL PROFILES (configure before acquisition, in a separate disclosed run):
---max-pages N supports 1..100; default 50. Higher caps increase the bounded
-request/byte allowance; they do not extend the worker/workflow time. Rendering,
-script-native search and field-vitals data need their real dependencies/config.
-Enable them only when prepared, authorized and disclosed; never claim execution
-because a flag or provider key exists. The one prompt reads actual capabilities
-and keeps unsupported checks unassessed. Optional host image inspection is scoped
-to packet-listed images and actual viewed evidence, outside the engine ledger.
+ROUND REQUIREMENTS AND CONTEXT:
+Round 3 requires a portable recommend-only marketplace with one entrypoint,
+evidence, severity and prioritized actions, at most 50 MB and a typical audit
+under five minutes. Round 4 required an unchanged Round 3 package and labeled
+replay fields matching its video. Round 5 permits refining the solution; the
+supplied brief does not list a replay upload. This is an internal full-workflow
+runbook unless later organizer instructions request it.
+The relevant Adobe Hackathon project context and supplied round PDFs were used.
+Bare Necessities is the configured example URL; Pratham, Adafruit and Python
+remain possible alternatives. Pick one public URL per fresh run. Earlier audit
+results are historical evidence, not promised results for this default workflow.
+Duolingo is excluded from the demonstration choices.
 
-CHANGE LOG FROM ROUND 3:
-- One acquisition plus bound schema-1.1 packet, replacing two independent crawls.
-- AG-01 uses the selected acquired opening; failed About stays unassessed.
-- All six AG outcomes and actual capability/source/time limitations are retained.
-- Final merge validates audit/snapshot/packet binding and supported semantics.
-- UTF-8 --out avoids shell encoding and append-redirection problems.
-- Native final JSON/Markdown preserves priority, snippets, suggested owner roles,
-  top actions, quick wins, working checks, opportunities and explicit limitations.
-- Challenge/queue/login handling remains engine-owned; no bypass or fabricated
-  content defect. Static CWV estimates are not measured field performance.
-- No stale fixed finding counts, identical-fallback promise, model/version claim,
-  unsupported screenshot/video claim or post-report re-fetch of target HTML.
+For an Adobe relevance explanation, show how a potential brand/content team could
+use the report in source-content review for Brand Concierge, a Brand Visibility
+investigation, or a reviewed CX Enterprise Coworker repair queue. Label this as a
+proposed workflow, not a demonstrated Adobe connector or measured business gain.
 
-RESEARCH AND CONTRACT SOURCES (checked 2026-10-13):
-Current package SKILL.md/reference files, entrypoint CLI, semantic/ingestion
-validators, renderer, release verification and actual workflow evidence are the
-primary implementation authority. Claude Code launch/permission conventions:
+VERIFICATION SCOPE:
+The supplied branch ZIP's common/, skills/ and marketplace.json were compared
+byte-for-byte with this working codebase. Setup paths, default CLI settings,
+outcome requirements and local merge/render commands were checked against all
+five skills and the current validators. No runtime code or skill was changed.
+Exact Claude Code/model execution, independent finding review and presentation
+recording still require the intended laptop. Previous automated runtime test
+results remain recorded separately; they do not certify every natural-language
+finding or every optional capability.
+
+CONTRACT AND TOOL REFERENCES:
+marketplace.json; all five SKILL.md files; entity references/checks.md;
+audit-orchestrator references/input-boundaries.md; existing entrypoint, evidence,
+ingestion/semantic validators and report renderer.
 https://code.claude.com/docs/en/cli-reference
 https://code.claude.com/docs/en/permissions
 https://code.claude.com/docs/en/skills
-Prompt structure (clear instructions, context, examples and explicit tool scope):
-https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
-
-ROUND/PROJECT SOURCE PROVENANCE:
-Read all three supplied official round PDFs and the mentor notes. Source hashes,
-page/section mappings, project-chat retrieval and fresh screening limits are in
-verification/replay-manifest/source-context.md. The Round 3 replay is retained
-unchanged at its original path. Current source/ZIP contracts override historical
-file layout, two-crawl commands, legacy arrays and fallback identity promises.
-The current task's live runs used verification instrumentation around the exact
-production entrypoint through another host; none is labeled a Claude Code run.
-All host assessment attempts here remained unassessed and late. Native completion
-is established; a complete on-time Claude/model/laptop run remains pending.

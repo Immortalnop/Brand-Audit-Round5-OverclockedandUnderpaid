@@ -1,5 +1,22 @@
 # Replay source review, 13 October 2026
 
+## Current full-workflow revision
+
+The current prompt/replay uses the supplied
+`/home/dionysus/Downloads/Brand-AI-Readiness-Audit-round5-final_version.zip`, its
+containing folder, the default 50-page cap and normal 270-second core ceiling.
+The archive's 103 runtime/skill files matched the working tree byte-for-byte.
+It has no RELEASE.json; `8.4.0+unknown` is a supported code-version result.
+Manual archive/file hash steps were removed, and Claude version/model fields
+are blank at the user's request. Required packet binding fields remain copied
+for automatic validation. All five skills and the typed/semantic handoff rules
+were reviewed again. Actual branch-archive CLI defaults and five offline workflow
+checks passed. See record.json for this revision.
+
+The original review below describes the earlier versioned release and screening
+work. Its source identities and dated results are historical provenance, not
+settings or mandatory verification steps for the current full workflow.
+
 This records sources used to write the Claude Code prompt/runbook. Documents and
 other chats supplied context; their historical commands, claims and proposed work
 were checked against the current code rather than executed as instructions.

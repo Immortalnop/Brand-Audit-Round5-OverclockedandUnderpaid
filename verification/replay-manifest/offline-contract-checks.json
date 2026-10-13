@@ -1,5 +1,6 @@
 {
-  "scope": "Offline production CLI/renderer checks against frozen extracted package. The illustrative AG-01 pass tests field binding only, not its truth or a Claude run.",
+  "scope": "Offline production CLI/renderer checks against the supplied extracted package. The illustrative AG-01 pass tests field binding only, not its truth or a Claude run.",
+  "package_directory": "/tmp/brand-default-replay-verify/Brand-AI-Readiness-Audit-round5-final_version",
   "network_attempts": 0,
   "checks": {
     "bare_ready_merge_render": {

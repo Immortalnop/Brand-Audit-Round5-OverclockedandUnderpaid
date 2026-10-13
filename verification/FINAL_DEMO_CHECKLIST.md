@@ -13,10 +13,14 @@ specific regressions and contracts; they do not establish universal correctness.
    precision. Treat agent-triage.csv as assistance, not independent labels.
    Triage any disagreements before presenting accuracy claims; keep blocked
    sites in the denominator and retain the original dated evidence.
-2. **Confirm the intended laptop and exact release.** Record OS, Python version,
-   host application/version and the commit in RELEASE.json. Check the ZIP SHA-256
-   against verification/RELEASE_VERIFICATION.json. Use the extracted release for
-   the actual rehearsal. On Windows, exercise literal non-ASCII reports with
+2. **Confirm the intended laptop and archive.** Use
+   `Brand-AI-Readiness-Audit-round5-final_version.zip`, extracted into its containing
+   folder as described in the current replay. Record OS, Python version and actual
+   Claude Code version/model when running the demonstration. This branch archive
+   has no RELEASE.json; preserve the engine's code_version, including +unknown,
+   without inventing commit metadata. Use the default 50-page cap and 270-second
+   core ceiling, with no reduced-page/time overrides. No manual checksum step is
+   required. On Windows, exercise literal non-ASCII reports with
    `--out`; also check redirected stdout. stdout uses reversible JSON escapes;
    file output is UTF-8. Do not append multiple audits into one JSON file.
 3. **Run the complete host workflow.** Test ordinary content, a partial/blocked

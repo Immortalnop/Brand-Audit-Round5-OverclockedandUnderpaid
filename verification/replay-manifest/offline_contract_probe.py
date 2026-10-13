@@ -106,8 +106,8 @@ results['nonready_unchanged_base_fallback'] = {'passed': True, 'byte_identical':
                                              'renderer_exit_code': rendered['exit_code'],
                                              'source': 'verification/review-set/publishing (dated saved evidence)'}
 assert attempts == [], attempts
-record = {'scope': 'Offline production CLI/renderer checks against frozen extracted package. '
+record = {'scope': 'Offline production CLI/renderer checks against the supplied extracted package. '
                    'The illustrative AG-01 pass tests field binding only, not its truth or a Claude run.',
-          'network_attempts': len(attempts), 'checks': results}
+          'package_directory': str(PACKAGE), 'network_attempts': len(attempts), 'checks': results}
 (REPO/'verification/replay-manifest/offline-contract-checks.json').write_text(json.dumps(record, indent=2)+'\n')
 print(json.dumps({'network_attempts': len(attempts), 'checks_passed': list(results)}))

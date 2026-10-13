@@ -1,23 +1,27 @@
 SITE_URL: https://barenecessities.in/
-PACKAGE_DIR: ./package
+PACKAGE_DIR: ./Brand-AI-Readiness-Audit-round5-final_version
 OUTPUT_DIR: ./out
 PYTHON_COMMAND: python3
-MAX_PAGES: 6
-CORE_TIMEOUT_SECONDS: 120
 
 Audit SITE_URL using the submitted Brand AI-Readiness Audit marketplace in
 PACKAGE_DIR. Complete the workflow below from this single request. Use the
 configured Python command consistently; quote the URL as one literal argument.
 Use Claude Code's Read, Write, Bash, WebSearch and WebFetch where available.
-The operator can replace the URL and profile before a fresh run. This is a
-bounded demo sample. Work in the prepared workspace, not inside PACKAGE_DIR.
+The operator can replace the URL before a fresh run. Run the complete default
+audit workflow. Work in the prepared workspace, with outputs outside PACKAGE_DIR.
 
 1. Read the contract before running the audit.
-Read PACKAGE_DIR/marketplace.json, PACKAGE_DIR/RELEASE.json,
+Read PACKAGE_DIR/marketplace.json,
 PACKAGE_DIR/skills/audit-orchestrator/SKILL.md,
 PACKAGE_DIR/skills/entity-corroboration-agent/SKILL.md,
-PACKAGE_DIR/skills/entity-corroboration-agent/references/checks.md, and
+PACKAGE_DIR/skills/entity-corroboration-agent/references/checks.md,
+PACKAGE_DIR/skills/crawl-render-audit/SKILL.md,
+PACKAGE_DIR/skills/freshness-corroboration/SKILL.md,
+PACKAGE_DIR/skills/engagement-audit/SKILL.md, and
 PACKAGE_DIR/skills/audit-orchestrator/references/input-boundaries.md.
+Read PACKAGE_DIR/RELEASE.json only if present. A branch source ZIP may omit it;
+that is not an audit failure. Preserve the engine-reported code_version rather
+than inventing release or commit metadata.
 Consult PACKAGE_DIR/skills/entity-corroboration-agent/scripts/ingest_agent_findings.py
 and PACKAGE_DIR/common/agent_semantics.py before acquisition if you need outcome
 field details. The orchestrator schedules the native specialist
@@ -38,13 +42,13 @@ bounded host stage; they do not authorize a second crawl or a new page sample.
 
 2. Acquire and analyze once.
 Run this command with SITE_URL substituted as one quoted argument:
-python3 package/skills/audit-orchestrator/scripts/run_audit.py SITE_URL --max-pages 6 --timeout 120 --progress --out out/base-report.json --evidence-out out/evidence.json
-Use the configured directories/interpreter and substitute MAX_PAGES and
-CORE_TIMEOUT_SECONDS if the operator changed them. Keep
-the configured six-page, 120-second core profile; the engine's unconfigured
-defaults remain 50 pages and 270 seconds. Do not increase the cap, enable optional
-integrations or alter settings during the run. Any separate profile must be
-chosen and disclosed before acquisition.
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py SITE_URL --progress --out out/base-report.json --evidence-out out/evidence.json
+Use the configured directories/interpreter consistently. Omit --max-pages and
+--timeout so the engine uses its normal 50-page cap and 270-second worker ceiling.
+This is a maximum, not a promise of exactly 50 analyzed pages. Run all native
+checks scheduled by the entrypoint and all supported agent checks. Preserve
+configured optional capabilities; do not install dependencies, change settings
+or enable integrations mid-run. Report actual coverage and unavailable features.
 Preserve the command's exit status and diagnostic output. Verify that the current
 base report exists, parses as JSON and contains its audit ID, code version,
 execution status and coverage. An output-write failure can fall back to stdout;
@@ -56,9 +60,10 @@ A valid partial, degraded or insufficient-evidence report is a report to explain
 Read base-report.json and evidence.json. Check ready_for_assessment, provenance,
 focus.ag01, and timing.agent_stage_recommended/agent_deadline_at. The deadline is
 an absolute UTC time and is at most 55 seconds after core completion, within the
-remaining workflow allowance. Use Bash with Python's UTC clock before each host
-operation; never start a fresh allowance. Hash the base report and packet before
-this stage and verify them afterward. For a ready packet, immediately initialize
+remaining workflow allowance. Skip assessments when agent_stage_recommended is
+false or that deadline has passed. Use Bash with Python's UTC clock before each host
+operation; never start a fresh allowance. Preserve the base report and packet
+without editing them. For a ready packet, immediately initialize
 the bound envelope below with six not_assessed outcomes and truthful pending
 reasons. Do AG-01 first when its opening is assessable and complete, saving its
 supported outcome immediately. Save after each completed check; retain earlier
@@ -77,15 +82,23 @@ AG-06. Use pass, finding, not_assessed or error, with the actual reason and the
 contract's required evidence. Use packet IDs as source_refs. Do not use a legacy
 findings array, manually choose F-IDs, calculate new scores or force a finding.
 
+For search checks, include observation.identity bound to the acquired name and
+observation.context describing entity/date/query scope. Each queries entry needs
+query, executed_at, result_count, matching_result_count and independent_result_count;
+use actual nonnegative integer counts, with independent <= matching <= returned.
+AG-06 queries also name platform. For an actually inspected page, sources entries
+use url, kind (inspected_page), quote and actual authorship/accessed_at where
+required. Search snippets or listed links are not inspected pages. Record only
+fields supported by tool execution; unavailable counts/evidence leave the check
+unassessed rather than invented. Reuse real sources without duplicating authors.
+
 - AG-01: assess exactly focus.ag01.opening_passage and its selected E page_ref.
   Copy the entire opening to observation.passage for either pass or finding.
-  Identify genuinely missing who/offering/category elements in unanswered for
+  Identify genuinely missing who/offering/category elements in observation.unanswered for
   a finding. An observed About page that failed, was blocked, omitted or could
   not be isolated is not_assessed. Use home only when the packet explicitly
   selects the no-observed-About fallback. Style or missing metadata alone does
   not prove that the body fails to describe the organization.
-  Check whether the passage represents a substantive opening; cart, navigation
-  or program teasers alone do not justify a brand-wide unclear-identity claim.
 - AG-02: use the acquired identity and scoped identity/category and relevant
   community queries. Record actual returned-result, matching and independent
   counts, query text, execution time/context and inspected independent passages.
@@ -95,8 +108,10 @@ findings array, manually choose F-IDs, calculate new scores or force a finding.
 - AG-03: bind an exact acquired site_quote to an E passage or C value; for a C
   reference retain its subject, predicate and E parent. Keep the explanatory
   site_claim separate. Inspect external passages and record URL, quotation,
-  authorship, identity/time/context, independence and material conflict. Site
-  aliases and syndicated copies are not independent sources. Agreement is not
+  authorship, identity/time/context, independence and material conflict.
+  Record observation.same_entity and observation.independence; a finding also
+  needs observation.material (boolean) and observation.conflict_explanation.
+  Site aliases and syndicated copies are not independent sources. Agreement is not
   contradiction; high/confirmed needs two independently authored inspected
   sources supporting a material conflict. Never declare the external source
   correct merely because it disagrees.
@@ -113,11 +128,14 @@ findings array, manually choose F-IDs, calculate new scores or force a finding.
   sources for namesakes. Own sameAs profiles are not competitors. Record the
   relevant queries and competing_entities; namesakes alone prove no assistant
   confusion. Preserve the contract's identity/context/source requirements.
+  Each observation.competing_entities entry needs name, url and distinguishing;
+  bind its URL to an actually inspected distinguishing source.
 - AG-06: choose platforms appropriate to the observed business, explain
   business_applicability and execute platform-specific queries. Record their
   counts and matching source passages. platforms_missing must be limited to
   applicable platforms actually queried with zero matching outcomes. Unopened
   links, search failures and inaccessible profiles do not prove absence.
+  A pass needs actual matching source evidence for every platform assessed.
 
 Reuse inspected independent sources across checks where they actually support
 each check, without converting one observation into multiple independent sources.
@@ -137,15 +155,15 @@ valid; it reports no checks as passed.
 
 4. Merge locally once, then render.
 For a ready packet and saved envelope, run:
-python3 package/skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
 This is merge-only: do not supply a site argument or run acquisition again.
 Verify the final JSON and its coverage.agent_stage/agent_corroboration_stage.
 If the envelope is rejected, preserve the reason and base report, stop the
-agent path, and report the rejection. Do not patch report/packet hashes, weaken
+agent path, and report the rejection. Do not change evidence-binding fields, weaken
 validation, silently discard native findings, switch to a legacy array, or
 re-crawl. The base report remains the valid engine-only result.
 For the successful merged report or explicit unchanged-base fallback, run:
-python3 package/common/report_markdown.py out/final-report.json out/final-report.md
+python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/final-report.json out/final-report.md
 Merge and rendering are local; make no new website requests during those steps.
 
 5. Deliver a concise explanation of the actual final report.
@@ -164,8 +182,7 @@ unassessed checks, and native integrations from host search/image inspection.
 Missing optional llms.txt/FAQ markup is not a universal Google ranking defect.
 Do not promise ranking changes, business uplift, calibrated accuracy or a complete
 site assessment from a bounded sample. Report relevant limits and failures.
-Verify the base report, packet and package contents remain unchanged. Record
+Keep the base report, packet and package files unmodified. Record
 actual core/host/full-request wall times, including any exceeded deadline.
-The 270-second workflow target is not a
-claim that this code can cancel arbitrary Claude tools. Do not claim a screenshot,
+The 270-second workflow target cannot cancel arbitrary Claude tools. Do not claim a screenshot,
 video, search, image view or rendered browser run that did not actually occur.
