@@ -5,7 +5,11 @@ facts -> dependent batch (9 jobs) -> merge -> prioritize -> recommendations ->
 validate -> JSON. Snapshot data stays immutable until report serialization.
 
 The public API runs the complete audit in an isolated process with a 270-second
-watchdog and brief kill grace. Analysis batches use bounded waits and record
+watchdog and brief kill grace. When a pre-contract host clock is supplied via
+`--workflow-started-at`, the watchdog is narrowed to remaining workflow time
+after the 60-second finalization reserve. The default page cap remains 50.
+The host AG cap is 180 seconds from the remaining allowance, without a reset.
+Analysis batches use bounded waits and record
 unfinished jobs. Acquisition has a 110-second phase deadline. Watchdog failure
 returns an explicit evidence-unavailable report rather than inventing findings.
 

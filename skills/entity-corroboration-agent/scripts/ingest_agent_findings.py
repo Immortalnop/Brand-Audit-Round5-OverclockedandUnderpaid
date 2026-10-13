@@ -887,6 +887,12 @@ def validate_envelope(envelope, report, packet):
                 errors.append('packet_sha256 does not match the saved report')
             if envelope.get('packet_sha256') != digest:
                 errors.append('packet_sha256 does not match the outcome envelope')
+            # Timing is part of the packet content binding. A caller cannot reset
+            # the saved report's host clock independently of the acquired packet.
+            if isinstance(packet.get('timing'),dict) and isinstance(report.get('timing'),dict):
+                for key,value in packet['timing'].items():
+                    if report['timing'].get(key)!=value:
+                        errors.append('timing.'+key+' differs from the bound evidence packet')
         except ValueError as exc:
             raise EnvelopeError([str(exc)]) from exc
     if errors:

@@ -231,7 +231,7 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
             category="freshness", finding_type="proactive_improvement",
             severity=severity,
             status="suspected", confidence=scale_confidence(0.6, sample_ratio),
-            title=f"Review older dates among {label}",
+            title=f"Older dates among {label} need contextual verification",
             root_cause=f"Older dates classified as '{category}' warrant a contextual review; age alone does not establish that a current fact is wrong"
                        + ("" if crawl_ratio >= 0.999 else " (within the pages actually crawled; the "
                                                            "rest of the site was not analyzed)"),

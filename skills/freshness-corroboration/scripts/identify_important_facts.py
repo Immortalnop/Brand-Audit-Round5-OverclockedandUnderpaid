@@ -12,7 +12,8 @@ def identify_important_facts(claims_artifact, deadline):
     def score(c):
         score=c.get("importance", 0.5) * _TYPE_WEIGHT.get(c["type"], 0.4) + c.get("confidence", 0.5) * 0.2
         subject=c.get('subject','')
-        if c.get('predicate')=='name' and (subject=='Question' or isinstance(subject,(list,tuple)) and 'Question' in subject):
+        kinds=subject.split(' / ') if isinstance(subject,str) else subject if isinstance(subject,(list,tuple)) else ()
+        if c.get('predicate')=='name' and 'Question' in kinds:
             return score*.1  # FAQ labels are questions, not material brand assertions.
         return score
 

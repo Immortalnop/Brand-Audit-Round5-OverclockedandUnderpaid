@@ -162,6 +162,11 @@ def _header(report):
         lines.append(f"- **Time limits:** audit worker stopped at {_num(timing['core_limit_s'], 0)} seconds "
                      f"(enforced); {_num(timing.get('agent_time_left_s', 0), 0)} seconds left for the "
                      f"optional agent stage (not enforced by the audit)")
+        if timing.get('clock_scope')=='host_first_tool':
+            lines.append(f"- **Preparation:** {_num(timing.get('preparation_elapsed_s',0),1)} seconds included from the host's first tool; {_num(timing.get('finalization_budget_s',0),0)} seconds reserved for saving, merge, rendering and reply")
+    elapsed=_dict(_dict(cov.get('agent_corroboration')).get('workflow_timing'))
+    if isinstance(elapsed.get('workflow_elapsed_s'),(int,float)):
+        lines.append(f"- **Through merge:** {_num(elapsed['workflow_elapsed_s'],1)} seconds; "+('within' if elapsed.get('within_workflow_target') else 'exceeded')+" the workflow target. Rendering and final reply are additional.")
     budget = _dict(cov.get("network_budget"))
     site_pool = _dict(_dict(budget.get("pools")).get("site"))
     if isinstance(site_pool.get("requests"), int):

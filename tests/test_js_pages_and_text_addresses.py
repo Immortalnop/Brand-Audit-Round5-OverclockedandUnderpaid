@@ -223,11 +223,11 @@ def test_address_in_a_plain_div_is_location_evidence():
     assert "12 High Street, Springfield 4000" in finding["evidence"][0]["description"]
 
 
-def test_text_address_and_map_link_make_a_confirmed_defect():
+def test_text_address_and_map_link_confirm_optional_markup_applicability():
     html = ('<div>Visit us at 221B Baker Street, London NW1 6XE.</div>'
             '<a href="https://maps.google.com/?q=221B+Baker+Street">Directions</a>' + TEXT)
     finding = by_id(run(analyze_context_signals, page(html)), "location-markup-missing")[0]
-    assert finding["finding_type"] == "defect" and finding["severity"] == "medium"
+    assert finding["finding_type"] == "proactive_improvement" and finding["severity"] == "low"
 
 
 def test_text_address_with_location_markup_is_quiet():

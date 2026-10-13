@@ -7,12 +7,14 @@ class Limits:
     # The controlled audit worker is hard-stopped at TOTAL_AUDIT_TIMEOUT_S. Most
     # sites finish well before it; the optional agent stage gets what the worker
     # left before the workflow target, at most AGENT_STAGE_BUDGET_S, and the
-    # merge MERGE_FINALIZATION_S. Only the worker limit is enforced by this code;
+    # finalization MERGE_FINALIZATION_S (saving, merge, rendering and reply).
+    # A supplied host start clock also bounds the worker to the remaining time.
+    # Only the worker limit is enforced by this code;
     # the agent stage is timed and reported, not stopped (run_audit.timing_plan).
     TOTAL_AUDIT_TIMEOUT_S: float = 270
     WORKFLOW_TARGET_S: float = 270
-    AGENT_STAGE_BUDGET_S: float = 55
-    MERGE_FINALIZATION_S: float = 15
+    AGENT_STAGE_BUDGET_S: float = 180
+    MERGE_FINALIZATION_S: float = 60
     # Inside the worker: acquisition, then the analysis batches, then the report.
     ACQUISITION_BUDGET_S: float = 110
     RENDERING_BUDGET_S: float = 55

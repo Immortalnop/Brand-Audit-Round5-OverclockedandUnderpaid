@@ -117,8 +117,9 @@
     as plain text within one block: after a label ("Address:", "Visit us at"),
     as a street line ("12 High Street, Springfield"), or as three or more
     comma-separated parts ending in a postal code. Email, IP and web addresses
-    and lists of names followed by a number do not count. Two kinds of
-    evidence make a medium defect; one kind is a low suggestion.
+    and lists of names followed by a number do not count. Missing optional
+    location markup remains low advice; additional evidence confirms applicability,
+    not a universal markup requirement.
   - `contact-markup-missing` (low, suspected): an email or phone number is
     shown (mailto: or tel: links, an email written as text, a phone number
     after a label such as "Phone:" or "Call us on") and no page states an

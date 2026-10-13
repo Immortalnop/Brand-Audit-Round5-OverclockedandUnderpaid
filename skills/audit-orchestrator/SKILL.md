@@ -182,13 +182,17 @@ $ python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.js
 packet; it is written only when at least one page was analyzed. The report,
 packet, agent input and final report must be four different files.
 
-Time plan: the audit worker is stopped at 270 seconds (`--timeout` lowers it).
-The whole workflow targets 270 seconds: the agent stage gets what the audit
-left before that, at most 55 seconds, and the merge 15. A slow site that uses
-the full worker limit leaves no agent time. The report's `timing` and the
+Time plan: ordinary CLI audits retain a 270-second worker ceiling and the
+50-page default. For a host workflow, capture an ISO 8601 UTC clock before reading
+skills and pass `--workflow-started-at`. The worker is then stopped at the lesser
+of its normal ceiling and the remaining 270-second target after a 60-second reserve
+for saving, merge, rendering and reply. The agent receives at most 180 seconds
+from the remaining allowance; a slow site can still leave no agent time. No new
+allowance starts after core completion. Small batches of independent host reads
+may overlap, but outcome writes and the single merge stay sequential. The report's `timing` and the
 packet's `timing` give the agent deadline as a UTC time. This code cannot stop the host agent: stop the agent
 stage by that deadline, and skip it when `agent_stage_recommended` is false.
-The merge records the measured workflow time. Network: every request of the
+The merge records time through merge, including host preparation when supplied; rendering and the final reply are additional. An operator stopwatch verifies prompt-to-reply duration. Network: every request of the
 audit is charged to one ledger with a site pool (90 requests, 40 MiB by
 default) and an external pool (40 requests, 16 MiB), reported in
 `coverage.network_budget`; the agent's own tool calls are not in it.

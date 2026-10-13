@@ -639,13 +639,11 @@ CATALOG = MappingProxyType({key: MappingProxyType(value) for key, value in {'abo
                                  'authority and trust); an unattributed article gives them nothing to weigh.'},
  'author-credentials-weak': {'expected_outcome': 'The expertise behind each article is explicit and '
                                                  'checkable.',
-                             'implementation_detail': 'Type the Article author as a Person with a url to an '
-                                                      'author page, sameAs profile links and jobTitle, '
-                                                      'description or knowsAbout, and show the same name in the '
+                             'implementation_detail': 'Use Person or Organization for the actual author, with a matching profile. '
+                                                      'For people, state accurate role or expertise details, and show the same name in the '
                                                       'byline.',
-                             'mechanism': 'An author given only as a plain name or as the organization, '
-                                          'without a profile or credentials, cannot be connected to real '
-                                          'expertise.'},
+                             'mechanism': 'Explicit author identity and matching profiles provide checkable attribution; '
+                                          'organization authors are legitimate and personal credentials apply to people.'},
  'llms-txt-invalid': {'expected_outcome': 'Configured readers of the supplied artifact can follow its links; Google Search ignores it.',
                       'implementation_detail': 'Start the supplied llms.txt with one H1 title. Summary, file '
                                                'lists and H2 sections are optional. Serve supplied '

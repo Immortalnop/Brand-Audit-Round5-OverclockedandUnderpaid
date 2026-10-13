@@ -479,17 +479,19 @@ def _audit_in_worker(site_url, limits, allow_private_targets, export_evidence, a
     return {"report": report, "evidence_packet": packet}
 
 
-def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False) -> dict:
+def run_audit(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False, workflow_started_at=None) -> dict:
     """Public bounded API. A stalled DNS call or analysis cannot hold the caller indefinitely."""
-    return _run_bounded(site_url, limits, allow_private_targets, False)[0]
+    if workflow_started_at is None:return _run_bounded(site_url, limits, allow_private_targets, False)[0]
+    return _run_bounded(site_url, limits, allow_private_targets, False, workflow_started_at)[0]
 
 
-def run_audit_with_evidence(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False):
+def run_audit_with_evidence(site_url: str, limits=DEFAULT_LIMITS, allow_private_targets=False, workflow_started_at=None):
     """(report, evidence packet or None): run_audit plus the bounded agent
     evidence packet (common/agent_evidence.py). The packet is None when the
     worker did not finish or no page was analyzed: nothing is then ready for
     the agent stage to assess."""
-    return _run_bounded(site_url, limits, allow_private_targets, True)
+    if workflow_started_at is None:return _run_bounded(site_url, limits, allow_private_targets, True)
+    return _run_bounded(site_url, limits, allow_private_targets, True, workflow_started_at)
 
 
 # Below this many seconds left before the agent deadline, the agent stage is
@@ -501,7 +503,29 @@ def _iso(ts):
     return datetime.fromtimestamp(ts, timezone.utc).isoformat()
 
 
-def timing_plan(limits, started_wall, core_finished_wall=None):
+def parse_workflow_start(value, now):
+    """Validate the host's first-tool UTC clock before any network or worker work."""
+    if value is None:return None
+    try:
+        if not isinstance(value,str):raise ValueError()
+        parsed=datetime.fromisoformat(value[:-1]+'+00:00' if value.endswith('Z') else value)
+        if parsed.tzinfo is None:raise ValueError()
+        stamp=parsed.timestamp()
+        if stamp>now:raise ValueError('future')
+        return stamp
+    except (TypeError,ValueError,OverflowError) as exc:
+        raise ValueError('--workflow-started-at must be an ISO 8601 timestamp with a timezone, not in the future') from exc
+
+
+def workflow_worker_budget(limits, now, workflow_started_wall):
+    """The normal core ceiling, optionally narrowed by the shared host clock."""
+    ceiling=min(270.,float(limits.TOTAL_AUDIT_TIMEOUT_S))
+    if workflow_started_wall is None:return ceiling
+    remaining=workflow_started_wall+limits.WORKFLOW_TARGET_S-limits.MERGE_FINALIZATION_S-now
+    return max(0.,min(ceiling,remaining))
+
+
+def timing_plan(limits, started_wall, core_finished_wall=None, workflow_started_wall=None):
     """The host workflow's time plan for one audit. Absolute deadlines are UTC
     timestamps counted from when the audit started. Only the core worker limit
     is enforced here: the worker process is stopped at core_limit_s. The agent
@@ -511,17 +535,21 @@ def timing_plan(limits, started_wall, core_finished_wall=None):
     its deadline is advisory and the merge records how long the whole workflow
     actually took."""
     target = float(getattr(limits, "WORKFLOW_TARGET_S", 270.))
-    finalization = float(getattr(limits, "MERGE_FINALIZATION_S", 15.))
+    finalization = float(getattr(limits, "MERGE_FINALIZATION_S", 60.))
     core_limit = float(limits.TOTAL_AUDIT_TIMEOUT_S)
-    agent_deadline = started_wall + target - finalization
+    session_start=started_wall if workflow_started_wall is None else workflow_started_wall
+    agent_deadline = session_start + target - finalization
     plan = {
         "workflow_target_s": target,
         "core_limit_s": core_limit,
-        "agent_stage_budget_s": float(getattr(limits, "AGENT_STAGE_BUDGET_S", 55.)),
+        "agent_stage_budget_s": float(getattr(limits, "AGENT_STAGE_BUDGET_S", 180.)),
         "finalization_budget_s": finalization,
-        "session_started_at": _iso(started_wall),
+        "session_started_at": _iso(session_start),
+        "clock_scope":"host_first_tool" if workflow_started_wall is not None else "engine_start",
+        "core_started_at":_iso(started_wall),
+        "preparation_elapsed_s":round(started_wall-session_start,3),
         "agent_deadline_at": _iso(agent_deadline),
-        "session_deadline_at": _iso(started_wall + target),
+        "session_deadline_at": _iso(session_start + target),
         "enforcement": {
             "core": "enforced: the audit worker process is stopped at core_limit_s",
             "agent_stage": "not enforced by this code: the host agent must stop by agent_deadline_at",
@@ -529,32 +557,34 @@ def timing_plan(limits, started_wall, core_finished_wall=None):
         },
     }
     if core_finished_wall is not None:
+        plan['core_finished_at']=_iso(core_finished_wall)
         plan["core_elapsed_s"] = round(core_finished_wall - started_wall, 3)
         left = agent_deadline - core_finished_wall
         plan["agent_time_left_s"] = round(max(0., min(left, plan["agent_stage_budget_s"])), 3)
-        # The absolute deadline must also express the 55-second maximum. A
+        # The absolute deadline must also express the host-stage maximum. A
         # fast core cannot leave the host an accidental 200+ second allowance.
         plan['agent_deadline_at'] = _iso(min(agent_deadline, core_finished_wall + plan['agent_time_left_s']))
         plan["agent_stage_recommended"] = plan["agent_time_left_s"] >= _MIN_AGENT_STAGE_S
     return plan
 
 
-def _run_bounded(site_url, limits, allow_private_targets, export_evidence):
-    from subprocess_isolation import run_isolated
+def _run_bounded(site_url, limits, allow_private_targets, export_evidence, workflow_started_at=None):
+    from subprocess_isolation import run_isolated, IsolatedResult
     from dataclasses import replace
     import math
     import time
     if not math.isfinite(limits.TOTAL_AUDIT_TIMEOUT_S) or limits.TOTAL_AUDIT_TIMEOUT_S <= 0:
         raise ValueError("Audit timeout must be a positive finite number")
-    limits=replace(limits,TOTAL_AUDIT_TIMEOUT_S=min(270.,limits.TOTAL_AUDIT_TIMEOUT_S))
+    started_wall=time.time()
+    workflow_started_wall=parse_workflow_start(workflow_started_at,started_wall)
+    limits=replace(limits,TOTAL_AUDIT_TIMEOUT_S=workflow_worker_budget(limits,started_wall,workflow_started_wall))
     site_url = validate_input(site_url)
     _progress("started; total limit " + str(limits.TOTAL_AUDIT_TIMEOUT_S) + "s")
     audit_id = uuid.uuid4().hex
-    started_wall = time.time()
     result = run_isolated(_run_audit_impl, args=(site_url, limits, allow_private_targets, export_evidence, audit_id),
                           timeout_s=limits.TOTAL_AUDIT_TIMEOUT_S,
-                          on_wait=lambda elapsed: _progress(f"working ({elapsed:.0f}s elapsed); Ctrl+C cancels cleanly"))
-    timing = timing_plan(limits, started_wall, time.time())
+                          on_wait=lambda elapsed: _progress(f"working ({elapsed:.0f}s elapsed); Ctrl+C cancels cleanly")) if limits.TOTAL_AUDIT_TIMEOUT_S>0 else IsolatedResult(False,None,True,'Shared workflow allowance exhausted before acquisition; no requests made.')
+    timing = timing_plan(limits, started_wall, time.time(),workflow_started_wall)
     if result.ok:
         if export_evidence:
             report, packet = result.value["report"], result.value["evidence_packet"]
@@ -567,7 +597,8 @@ def _run_bounded(site_url, limits, allow_private_targets, export_evidence):
             packet = nonready_packet(audit_id, report.get('snapshot_sha256'), reason, site_url)
         if packet is not None:
             packet["timing"] = {k: timing[k] for k in ("agent_deadline_at", "agent_stage_budget_s",
-                                                        "agent_time_left_s", "agent_stage_recommended")}
+                                                        "agent_time_left_s", "agent_stage_recommended",
+                                                        "session_started_at","session_deadline_at","clock_scope")}
             from agent_evidence import MAX_PACKET_BYTES
             packet = fit_packet(packet, MAX_PACKET_BYTES)
             report['packet_sha256'] = packet['packet_sha256']
@@ -591,6 +622,8 @@ def _run_bounded(site_url, limits, allow_private_targets, export_evidence):
         "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
     packet = nonready_packet(audit_id, None, result.error or 'Audit worker did not return.', site_url) if export_evidence else None
     if packet is not None:
+        packet['timing']=timing
+        packet=fit_packet(packet,512*1024)
         report['packet_sha256'] = packet['packet_sha256']
         report['coverage'].update(evidence_packet_bytes=emitted_bytes(packet), evidence_packet_ready=False)
     return report, packet
@@ -716,9 +749,9 @@ def _merge_main(parser, parsed):
     if parsed.agent_findings is None:
         parser.error("--from-report needs --agent-findings PATH")
     if parsed.site is not None or parsed.max_pages is not None or parsed.timeout is not None \
-            or parsed.evidence_out is not None:
+            or parsed.evidence_out is not None or parsed.workflow_started_at is not None:
         parser.error("--from-report merges into a saved report and does not crawl; "
-                     "leave out the site, --max-pages, --timeout and --evidence-out")
+                     "leave out the site, --max-pages, --timeout, --workflow-started-at and --evidence-out")
     _check_out(parser, parsed.out)
     # The deterministic report stays the merge base; the final report is a new file.
     _check_distinct(parser, from_report=parsed.from_report, agent_findings=parsed.agent_findings,
@@ -782,7 +815,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=float, default=None,
                         help="Override the audit worker's wall-clock cap in seconds (default 270, handout "
                              "limit 300). The optional agent stage gets what the audit leaves before the "
-                             "270-second workflow target, at most 55 seconds (see the report's timing). Lower "
+                             "270-second workflow target, at most 180 seconds (see the report's timing). Lower "
                              "it for a quick interactive run on a large site, or to reserve agent time.")
     parser.add_argument("--max-pages", type=int, default=None,
                         help=f"Pages to crawl (default {DEFAULT_LIMITS.MAX_PAGES_CRAWLED}, at most "
@@ -809,6 +842,8 @@ def main(argv=None):
     parser.add_argument("--evidence", metavar="PATH", default=None,
                         help="With --from-report: the evidence packet the audit wrote with --evidence-out. "
                              "Required when --agent-findings holds an outcome envelope.")
+    parser.add_argument('--workflow-started-at',metavar='ISO8601',default=None,
+                        help='Host UTC clock captured before reading skills. Counts preparation against the 270-second workflow target and reserves 60 seconds for finalization. The default 50-page cap is unchanged; the worker receives only remaining time. Omit for ordinary direct CLI audits.')
     parsed = parser.parse_args(argv)
     if parsed.from_report is not None:
         return _merge_main(parser, parsed)
@@ -843,10 +878,11 @@ def main(argv=None):
     if parsed.max_pages is not None:
         active_limits = limits_for_pages(active_limits, parsed.max_pages)
     try:
+        workflow_options={'workflow_started_at':parsed.workflow_started_at} if parsed.workflow_started_at is not None else {}
         if parsed.evidence_out is not None:
-            report, packet = run_audit_with_evidence(parsed.site, limits=active_limits)
+            report, packet = run_audit_with_evidence(parsed.site, limits=active_limits,**workflow_options)
         else:
-            report, packet = run_audit(parsed.site, limits=active_limits), None
+            report, packet = run_audit(parsed.site, limits=active_limits,**workflow_options), None
         _emit_packet(packet, parsed.evidence_out, report)
         _emit(report, parsed.out)
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)

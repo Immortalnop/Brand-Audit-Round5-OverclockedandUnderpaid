@@ -42,7 +42,8 @@ from merge_agent_stage import workflow_elapsed
 from models import make_deadline
 from prioritize_findings import top_actions
 from report_markdown import render
-from run_audit import timing_plan
+from run_audit import timing_plan,parse_workflow_start,workflow_worker_budget,run_audit_with_evidence
+import pytest
 from test_precision_traps import SITE, TEXT, page, snapshot
 from transport import Transport
 
@@ -208,12 +209,13 @@ def test_default_core_limit_is_270_and_a_fast_audit_leaves_agent_time():
     assert LIMITS.TOTAL_AUDIT_TIMEOUT_S == 270
     plan = timing_plan(LIMITS, 1_000_000.0, 1_000_000.0 + 60)
     assert plan["core_limit_s"] == 270 and plan["workflow_target_s"] == 270
-    assert plan["agent_stage_budget_s"] == 55 and plan["agent_time_left_s"] == 55
+    assert plan["agent_stage_budget_s"] == 180 and plan["agent_time_left_s"] == 150
     assert plan["agent_stage_recommended"]
-    assert datetime.fromisoformat(plan['agent_deadline_at']).timestamp() == 1_000_000 + 60 + 55
+    assert datetime.fromisoformat(plan['agent_deadline_at']).timestamp() == 1_000_000 + 210
     assert "not enforced" in plan["enforcement"]["agent_stage"]
-    # 230 seconds in: 25 left before the agent deadline (270 - 15).
-    assert timing_plan(LIMITS, 0.0, 230.0)["agent_time_left_s"] == 25
+    assert timing_plan(LIMITS, 0.0, 180.0)["agent_time_left_s"] == 30
+    assert timing_plan(LIMITS, 0.0, 230.0)["agent_time_left_s"] == 0
+    assert timing_plan(LIMITS, 0.0, 5.0)["agent_time_left_s"] == 180
 
 
 def test_full_length_core_leaves_no_agent_time():
@@ -226,10 +228,40 @@ def test_merge_records_measured_workflow_time():
     plan = timing_plan(LIMITS, started.timestamp(), started.timestamp() + 100)
     on_time = workflow_elapsed(plan, started + timedelta(seconds=200))
     assert on_time["workflow_elapsed_s"] == 200 and on_time["within_workflow_target"]
-    assert on_time['after_agent_deadline'] and on_time['agent_elapsed_s'] == 100
+    assert not on_time['after_agent_deadline'] and on_time['agent_elapsed_s'] == 100
     late = workflow_elapsed(plan, started + timedelta(seconds=300))
     assert not late["within_workflow_target"] and late["after_agent_deadline"]
     assert workflow_elapsed(None, started) is None
+
+
+def test_host_preparation_is_charged_without_changing_default_core_or_page_cap():
+    start=1_000_000.
+    assert LIMITS.MAX_PAGES_CRAWLED==50
+    assert workflow_worker_budget(LIMITS,start+25,None)==270
+    assert workflow_worker_budget(LIMITS,start+25,start)==185
+    plan=timing_plan(replace(LIMITS,TOTAL_AUDIT_TIMEOUT_S=185),start+25,start+55,start)
+    assert plan['preparation_elapsed_s']==25 and plan['core_elapsed_s']==30
+    assert plan['agent_time_left_s']==155
+    assert datetime.fromisoformat(plan['session_deadline_at']).timestamp()==start+270
+    measured=workflow_elapsed(plan,datetime.fromtimestamp(start+100,timezone.utc))
+    assert measured['workflow_elapsed_s']==100 and measured['agent_elapsed_s']==45
+
+
+@pytest.mark.parametrize('value',[True,123,'garbage','2026-10-14T00:00:00','2026-10-15T00:00:00Z'])
+def test_invalid_or_future_host_clocks_cannot_reset_the_budget(value):
+    with pytest.raises(ValueError,match='workflow-started-at'):
+        parse_workflow_start(value,datetime(2026,10,14,tzinfo=timezone.utc).timestamp())
+
+
+def test_expired_shared_clock_makes_no_worker_or_network_request(monkeypatch):
+    import subprocess_isolation
+    def refuse(*args,**kwargs):raise AssertionError('Worker must not be launched')
+    monkeypatch.setattr(subprocess_isolation,'run_isolated',refuse)
+    report,packet=run_audit_with_evidence('https://example.com/',workflow_started_at='2020-01-01T00:00:00Z')
+    assert report['execution_status']=='partial_deadline_reached'
+    assert not packet['ready_for_assessment']
+    assert report['timing']['core_limit_s']==0
+    assert report['timing']['agent_time_left_s']==0
 
 
 # ---------------------------------------------------------------------------

@@ -1,9 +1,9 @@
 ---
 name: entity-corroboration-agent
 description: >-
-  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources corroborate (AG-02) or contradict (AG-03) what the site claims. It runs no deterministic script: the calling agent works from the evidence packet the audit exported, with its own reading, search and vision tools, and hands one outcome per check back to the entrypoint, which validates and merges it with no new crawl. Use when diagnosing entity confusion, hallucinated brand attributes or a lack of multi-source consensus. It also reads facts drawn inside images (AG-04), searches knowledge graphs for same-named entities (AG-05) and searches review and directory platforms for the brand's profiles (AG-06), which scripts cannot do.
+  Agent-executed qualitative stage. Judges whether the brand About-page self-description is concrete enough for an assistant to quote (AG-01), and whether independent sources corroborate (AG-02) or contradict (AG-03) what the site claims. It runs no deterministic assessment script: the calling agent works from the evidence packet the audit exported, with its own reading, search and vision tools, and hands one outcome per check back to the entrypoint, which validates and merges it with no new crawl. Use when diagnosing entity confusion, hallucinated brand attributes or a lack of multi-source consensus. It also reads facts drawn inside images (AG-04), searches knowledge graphs for same-named entities (AG-05) and searches review and directory platforms for the brand's profiles (AG-06), which scripts cannot do.
 license: MIT
-allowed-tools: Read WebSearch WebFetch
+allowed-tools: Read Edit Write Bash WebSearch WebFetch
 ---
 
 
@@ -25,10 +25,36 @@ The deterministic saved report remains the merge base. Merge and rendering make
 no network requests. Do not crawl the target again, read process memory, submit
 forms, access authenticated areas, bypass challenges or automatically edit a site.
 
-The core worker has an enforced 270-second ceiling. The host stage receives only
-remaining workflow time, at most 55 seconds. Read `timing.agent_deadline_at`; stop
+The ordinary core ceiling is 270 seconds with 50 pages by default. Pass the
+host clock captured before contract reading via `--workflow-started-at`; the
+worker then receives only remaining workflow time after the 60-second finalization
+reserve. The host stage receives only remaining time, at most 180 seconds. Read `timing.agent_deadline_at`; stop
 or skip when time expires or `agent_stage_recommended` is false. Host time is
 measured at merge; this code cannot enforce cancellation of arbitrary host tools.
+Use `scripts/agent_handoff.py prepare --report base.json --evidence packet.json
+--out outcomes.json` to initialize six bound pending outcomes and read a compact
+native summary. Add `--search` only when the host search tool is available; vision
+starts false. This validates the ordinary envelope boundary, creates the output
+exclusively, and does not acquire a site. Replace pending reasons before merge.
+Use its `summary --report final.json` mode after rendering to prepare the reply.
+
+Independent read-only native tool calls may run in batches of two, at most three.
+Dependent inspections wait for search results. Keep one writer, save each completed
+check sequentially, and merge once. Do not overlap fetches to the same source host,
+launch subagents, relax evidence requirements or reset clocks. A research batch
+needs at least 30 seconds remaining; source inspection needs at least 15 seconds
+and enough time to save. Those guards do not guarantee host cancellation.
+
+An optional full raster fetch uses `scripts/fetch_agent_image.py --report base.json
+--evidence packet.json --image-id I001 --out-dir out`. Select an actual exported I
+with an E parent. It permits one fetch per output directory, requires 25 seconds
+remaining, and enforces a 20-second process cap, four requests including robots
+and redirects, and 3 MiB image bytes. It uses public-DNS/TLS/robots/same-origin
+safeguards without changing the audit User-Agent. Preserve its separate receipt.
+Fetch and writes stay sequential. Actually Read the saved image before declaring
+vision; fetching, alt text and header bytes never prove viewing. No alternate
+fetches or retries after failure.
+
 External source/image inspection belongs to the declared host stage, outside the
 script request ledger, and needs its own measured scope.
 
@@ -44,7 +70,11 @@ assessment, never an automatic upgrade.
 
 The packet contains at most eight E pages, twelve C claims, eight I image
 candidates and 512 KiB of emitted UTF-8 JSON. Each page shares a 4,000-character
-allowance between generic and focused text. All metadata is bounded; omissions,
+allowance between generic and focused text. Generic text prefers acquired body
+content so navigation cannot displace the substance; `text_scope` and truncation
+retain the limit on whole-page absence claims. Image parents are jointly selected.
+Openings preserve leading short fragments with the first prose, without replacing
+genuinely vague text. An ambiguous or broken selection remains unassessed. All metadata is bounded; omissions,
 partial observations and truncation remain assessment limits. Check
 `ready_for_assessment`, `focus.ag01` and each record's provenance before assessment.
 A current non-ready marker replaces stale exports when acquisition cannot supply

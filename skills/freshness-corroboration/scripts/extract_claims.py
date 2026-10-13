@@ -211,7 +211,9 @@ def extract_claims(artifacts, deadline):
                     keys.append('description')
                 for key in keys:
                     if key in block:
-                        claims.append({"source": page.url, "subject": block.get("@type", "entity"),
+                        subject=' / '.join(sorted(types_of(block))) or 'entity'
+                        if key=='description' and not isinstance(block[key],str):continue
+                        claims.append({"source": page.url, "subject": subject,
                                         "predicate": key, "value": block[key], "type": "structured",
                                         "category": _STRUCTURED_KEY_CATEGORY.get(key, "operational"),
                                         "importance": 0.8, "confidence": 0.9})

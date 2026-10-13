@@ -33,10 +33,15 @@
   (`low-contrast-text`) and inline-sized targets under 24 by 24 px
   (`tap-target-small`, suspected). Stylesheet colours and sizes need a browser
   and are stated as a limitation.
-- Overlays (`analyze_overlays.py`): aria-modal dialogs, full-screen fixed
+- Overlays (`analyze_overlays.py`): declared-open aria-modal dialogs or modal
+  markup with a page scroll lock, full-screen fixed
   layers, scroll locks, consent-platform markup and scripts, and overlay class
   names (`overlay`, suspected; medium only with a scroll lock). A non-blocking
-  consent banner is never reported. Cookie wording in the meta description,
+  consent banner is never reported. Dialog semantics without an open-state or
+  page scroll-lock signal are recorded with unknown visibility, without an arrival
+  finding. Closed dialogs and conservatively resolved inline display:none rules
+  are excluded from static control observations; this is not computed CSS.
+  Cookie wording in the meta description,
   og:description or title is `consent-text-leak` (confirmed); at the start of
   the page text it is suspected. Cookie and privacy policy pages are skipped.
 - Context retention (`analyze_context_retention.py`, handout appendix E):

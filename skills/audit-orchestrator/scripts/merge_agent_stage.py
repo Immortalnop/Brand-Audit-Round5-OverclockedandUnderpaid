@@ -110,15 +110,23 @@ def workflow_elapsed(timing, now):
     except (KeyError, TypeError, ValueError):
         return None
     elapsed = (now - started).total_seconds()
+    if elapsed<0:return None
     core = timing.get('core_elapsed_s')
     agent_elapsed = max(0., elapsed - core) if type(core) in (int, float) and math.isfinite(core) else None
+    if timing.get('core_finished_at'):
+        try:
+            finished=datetime.fromisoformat(timing['core_finished_at'])
+            if finished.tzinfo is None or finished<started or finished>now:return None
+            agent_elapsed=max(0.,(now-finished).total_seconds())
+        except (TypeError,ValueError):return None
     return {"workflow_elapsed_s": round(elapsed, 3), "workflow_target_s": target,
             "within_workflow_target": elapsed <= target,
             "after_agent_deadline": now > agent_deadline,
             'agent_elapsed_s': round(agent_elapsed, 3) if agent_elapsed is not None else None,
             'within_agent_deadline': now <= agent_deadline,
             "core_elapsed_s": timing.get("core_elapsed_s"),
-            "measured": "from the audit start to this merge; the host agent's time is included but not enforced"}
+            'preparation_elapsed_s':timing.get('preparation_elapsed_s',0),
+            "measured": "from "+('the host first tool' if timing.get('clock_scope')=='host_first_tool' else 'the audit start')+" to this merge; rendering and final reply are not included; host time is measured but not enforced"}
 
 
 def _finish(report, added, record, info, strict_pages=False, warnings=(), limitations=()):

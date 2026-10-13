@@ -21,7 +21,11 @@ old datePublished with a recent dateModified reads as updated. A page whose
 JSON-LD declares an update within the last three years is not reported for old
 editorial dates in its text. Structured dates are categorized commercial for
 Product, Offer, Service and software nodes, legal on legal pages, and editorial
-otherwise. Invalid structured dates (not ISO 8601, in the future, or
+otherwise. Product/book publication dates are historical rather than stale offers.
+Older dates alone yield low review opportunities, never proof that a price or
+contact detail is wrong. Preserve valid publication/history dates and verify
+underlying facts before editing. Explicit expired offers retain their separate
+validity check. Invalid structured dates (not ISO 8601, in the future, or
 dateModified before datePublished) are reported as `structured-date-invalid`
 (low, confirmed).
 
@@ -103,8 +107,11 @@ Authorship (analyze_authorship.py, no requests): on article pages (Article,
 BlogPosting, NewsArticle or similar markup, or a blog or news path with a slug
 and at least 300 words), `author-missing` (medium) when there is no byline, meta
 author, rel=author link or Article author, and `author-credentials-weak` (low)
-when the author is a plain string or an Organization rather than a Person, a
-Person has no url or sameAs (and no author page is linked) or no credentials
+when the author is a plain string or untyped object, a Person or Organization
+has no matching profile, or a Person has no role/credentials
 (jobTitle, description, knowsAbout, alumniOf, award, hasCredential), the markup
 author is not named on the page, or a visible byline has no markup. `@id`
-references to a Person elsewhere in the page's graph are resolved.
+references elsewhere in the page's graph are resolved. Person and Organization
+are both legitimate Article authors; use the actual author type. Navigation text
+such as "Shop by" is not a byline; section indexes are not individual articles.
+See Google's [Article documentation](https://developers.google.com/search/docs/appearance/structured-data/article).

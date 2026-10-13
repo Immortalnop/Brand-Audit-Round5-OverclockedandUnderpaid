@@ -213,11 +213,11 @@ def test_well_formatted_pages_are_quiet():
 
 # ------------------------------------------------------------- 7: personalization and context
 
-def test_location_shown_without_markup_is_a_confirmed_defect_with_two_kinds_of_evidence():
+def test_location_shown_without_markup_is_optional_advice_with_two_kinds_of_evidence():
     html = ('<address>12 High Street, Springfield 4000</address>'
             '<iframe src="https://www.google.com/maps/embed?pb=1"></iframe>')
     finding = by_id(run(analyze_context_signals, page(html)), "location-markup-missing")[0]
-    assert finding["finding_type"] == "defect" and finding["severity"] == "medium"
+    assert finding["finding_type"] == "proactive_improvement" and finding["severity"] == "low"
     assert "12 High Street" in finding["evidence"][0]["description"]
 
 
