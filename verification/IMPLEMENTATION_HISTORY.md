@@ -213,3 +213,18 @@ The packaging review also restored the three documented public localhost TLS tes
 fixtures to an explicit allowlist; unrelated private keys remain excluded. The
 extracted first-frozen package passed **1,287 tests, one skipped build-tool module**
 in 110.57s, including the real TLS controls. The final extraction is checked again.
+
+## Fastly interstitial correction and branch synchronization (2026-10-13)
+
+Committed local results/reference ignores (9506fd6), verified and fixed Fastly
+interstitial classification with 43 new regressions (df925c5), and merged the
+new add_md test-only correction 536bee6 into final_version (f321bf4). The latter
+retains all runtime bytes and test assertions; its three module tests passed.
+The final committed-snapshot archive passes 1,340 tests, with one intentional
+build-tool module skip, after the runtime checkout passed all 1,344 tests.
+Actual frozen-runtime PyPI execution analyzes one real page, records two Fastly
+challenges and stops; no challenged page contributes to affected finding scope.
+Evidence, original-patch counterexamples, prior release identity and remaining
+human/laptop verification steps are retained in fastly-client-challenge/ and
+FINAL_DEMO_CHECKLIST.md. The historical 49-screen/eight-finding totals cannot be
+independently confirmed without the original report.

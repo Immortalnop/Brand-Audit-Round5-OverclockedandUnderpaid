@@ -35,3 +35,10 @@ Additional final-review repairs preserve every supported profile page in JSON,
 reuse the existing companion probe and keep public localhost TLS test assets in
 the package while excluding credentials and unrelated keys. Separate confirmed
 and suspected merge groups prevent weaker observations inheriting confirmation.
+
+Post-release Fastly correction: confirmed HTTP-200 Client Challenge responses are
+excluded using exact title plus provider assets, with normal embedded-script
+controls. File/profile probes use a bounded parsed title; source limits, redirects,
+stdout and scoring stay unchanged. See fastly-client-challenge/record.json for
+baseline failures, the unsafe supplied-patch controls, live observations and full
+checkout/extracted results.

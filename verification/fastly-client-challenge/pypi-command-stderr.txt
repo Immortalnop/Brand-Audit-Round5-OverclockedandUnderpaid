@@ -1,0 +1,2 @@
+[audit] evidence packet written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/fastly-client-challenge/pypi-after-evidence.json (UTF-8; ready)
+[audit] report written to /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/verification/fastly-client-challenge/pypi-after-report.json (UTF-8)

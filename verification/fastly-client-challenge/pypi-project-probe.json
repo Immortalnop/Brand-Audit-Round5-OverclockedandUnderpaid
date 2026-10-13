@@ -1,0 +1,16 @@
+{
+  "site": "https://pypi.org/project/requests/",
+  "outcome": "ok",
+  "status": 200,
+  "requests": 2,
+  "title": "Client Challenge",
+  "visible_chars": 298,
+  "body_bytes": 3038,
+  "sha256": "32ed63159c77e21ee19ca1b9aa3213ccf0218eb59539560b132a8e68ef0e18ea",
+  "before_signals": [],
+  "after_signals": [
+    "fastly_challenge",
+    "challenge_title"
+  ],
+  "verification_scope": "Retained response classified by the repaired production helper with an extracted title/visible count and with file/profile defaults."
+}

@@ -1,0 +1,223 @@
+FFFFFF........................F.....FFFFFFF                              [100%]
+=================================== FAILURES ===================================
+_______________ test_fastly_client_challenge_is_recognized[200] ________________
+
+status = 200
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_______________ test_fastly_client_challenge_is_recognized[202] ________________
+
+status = 202
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_______________ test_fastly_client_challenge_is_recognized[403] ________________
+
+status = 403
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_______________ test_fastly_client_challenge_is_recognized[405] ________________
+
+status = 405
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_______________ test_fastly_client_challenge_is_recognized[429] ________________
+
+status = 429
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_______________ test_fastly_client_challenge_is_recognized[503] ________________
+
+status = 503
+
+    @pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+    def test_fastly_client_challenge_is_recognized(status):
+>       assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:272: AssertionError
+_ test_fastly_interstitial_without_title_or_on_unrelated_error_is_not_assumed __
+
+    def test_fastly_interstitial_without_title_or_on_unrelated_error_is_not_assumed():
+        assert challenge_signals(200, {}, FASTLY_CHALLENGE_PAGE, "", 160) == []
+        assert challenge_signals(404, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == []
+        # File probes supply no visible-text count; the existing small-body guard applies.
+>       assert challenge_signals(200, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge") == [
+            "fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:295: AssertionError
+_______ test_fastly_title_fallback_decodes_html_and_respects_scan_bound ________
+
+    def test_fastly_title_fallback_decodes_html_and_respects_scan_bound():
+        body = FASTLY_CHALLENGE_PAGE.replace('Client Challenge', 'client&#32;challenge')
+>       assert challenge_signals(200, {}, body) == ["fastly_challenge", "challenge_title"]
+E       AssertionError: assert [] == ['fastly_chal...llenge_title']
+E         
+E         Right contains 2 more items, first extra item: 'fastly_challenge'
+E         Use -v to get more diff
+
+tests/test_robustness.py:313: AssertionError
+_________ test_fastly_guarded_report_has_no_content_findings_and_stops _________
+
+audits = {'guarded': ('http://127.0.0.1:42491', {'site': 'http://127.0.0.1:42491/', 'audit_id': '8fa6ffbc14b4443180bdee104b2506...('GET', '/sitemap.xml'), ('GET', '/llms.txt'), ('GET', '/llms-full.txt'), ('GET', '/'), ('GET', '/guides'), ...]), ...}
+
+    def test_fastly_guarded_report_has_no_content_findings_and_stops(audits):
+        from run_audit import SITE_LEVEL_CHECKS
+        from validate_report import validate_report
+        _, report, seen = audits["fastly_guarded"]
+        cov = report["coverage"]
+        assert len(validate_report(report, strict_catalog=True)["findings"]) == len(report["findings"])
+>       assert report["execution_status"] == "insufficient_evidence"
+E       AssertionError: assert 'completed' == 'insufficient_evidence'
+E         
+E         - insufficient_evidence
+E         + completed
+
+tests/test_robustness.py:323: AssertionError
+________________ test_fastly_mixed_report_preserves_real_pages _________________
+
+audits = {'guarded': ('http://127.0.0.1:42491', {'site': 'http://127.0.0.1:42491/', 'audit_id': '8fa6ffbc14b4443180bdee104b2506...('GET', '/sitemap.xml'), ('GET', '/llms.txt'), ('GET', '/llms-full.txt'), ('GET', '/'), ('GET', '/guides'), ...]), ...}
+
+    def test_fastly_mixed_report_preserves_real_pages(audits):
+        base, report, _ = audits["fastly_mixed"]
+        cov = report["coverage"]
+        assert report["execution_status"] != "insufficient_evidence"
+>       assert cov["pages_analyzed"] == 2 and cov["pages_challenged"] == 1
+E       assert (3 == 2)
+
+tests/test_robustness.py:343: AssertionError
+_________ test_fastly_in_place_of_a_file_is_inaccessible[/sitemap.xml] _________
+
+path = '/sitemap.xml'
+
+    @pytest.mark.parametrize("path", ["/sitemap.xml", "/llms.txt", "/llms-full.txt"])
+    def test_fastly_in_place_of_a_file_is_inaccessible(path):
+        site = {"robots": ALLOW_ALL, "pages": {"/": "<h1>Home</h1><p>Public page text.</p>"},
+                "responses": {path: (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")}}
+        _, artifacts, seen = acquire(site)
+        data = (artifacts.sitemap_data if path == "/sitemap.xml" else artifacts.llms_txt_data
+                if path == "/llms.txt" else artifacts.llms_txt_data["full"])
+>       assert data["status"] == "inaccessible"
+E       AssertionError: assert 'malformed' == 'inaccessible'
+E         
+E         - inaccessible
+E         + malformed
+
+tests/test_robustness.py:358: AssertionError
+__________ test_fastly_in_place_of_a_file_is_inaccessible[/llms.txt] ___________
+
+path = '/llms.txt'
+
+    @pytest.mark.parametrize("path", ["/sitemap.xml", "/llms.txt", "/llms-full.txt"])
+    def test_fastly_in_place_of_a_file_is_inaccessible(path):
+        site = {"robots": ALLOW_ALL, "pages": {"/": "<h1>Home</h1><p>Public page text.</p>"},
+                "responses": {path: (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")}}
+        _, artifacts, seen = acquire(site)
+        data = (artifacts.sitemap_data if path == "/sitemap.xml" else artifacts.llms_txt_data
+                if path == "/llms.txt" else artifacts.llms_txt_data["full"])
+>       assert data["status"] == "inaccessible"
+E       AssertionError: assert 'malformed' == 'inaccessible'
+E         
+E         - inaccessible
+E         + malformed
+
+tests/test_robustness.py:358: AssertionError
+________ test_fastly_in_place_of_a_file_is_inaccessible[/llms-full.txt] ________
+
+path = '/llms-full.txt'
+
+    @pytest.mark.parametrize("path", ["/sitemap.xml", "/llms.txt", "/llms-full.txt"])
+    def test_fastly_in_place_of_a_file_is_inaccessible(path):
+        site = {"robots": ALLOW_ALL, "pages": {"/": "<h1>Home</h1><p>Public page text.</p>"},
+                "responses": {path: (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")}}
+        _, artifacts, seen = acquire(site)
+        data = (artifacts.sitemap_data if path == "/sitemap.xml" else artifacts.llms_txt_data
+                if path == "/llms.txt" else artifacts.llms_txt_data["full"])
+>       assert data["status"] == "inaccessible"
+E       AssertionError: assert 'malformed' == 'inaccessible'
+E         
+E         - inaccessible
+E         + malformed
+
+tests/test_robustness.py:358: AssertionError
+____________ test_fastly_off_site_profile_is_unverified_not_broken _____________
+
+    def test_fastly_off_site_profile_is_unverified_not_broken():
+        from check_off_site_profiles import evaluate_profile
+        resp = Response(200, {"Content-Type": "text/html"}, FASTLY_CHALLENGE_PAGE.encode(), "https://social.test/brand")
+>       assert evaluate_profile("https://social.test/brand", resp, "ok", "brand.test", ["Brand"]) == (
+            "unverified", "bot_challenge")
+E       AssertionError: assert ('verified', ...e brand name') == ('unverified'...ot_challenge')
+E         
+E         At index 0 diff: 'verified' != 'unverified'
+E         Use -v to get more diff
+
+tests/test_robustness.py:366: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[200]
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[202]
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[403]
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[405]
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[429]
+FAILED tests/test_robustness.py::test_fastly_client_challenge_is_recognized[503]
+FAILED tests/test_robustness.py::test_fastly_interstitial_without_title_or_on_unrelated_error_is_not_assumed
+FAILED tests/test_robustness.py::test_fastly_title_fallback_decodes_html_and_respects_scan_bound
+FAILED tests/test_robustness.py::test_fastly_guarded_report_has_no_content_findings_and_stops
+FAILED tests/test_robustness.py::test_fastly_mixed_report_preserves_real_pages
+FAILED tests/test_robustness.py::test_fastly_in_place_of_a_file_is_inaccessible[/sitemap.xml]
+FAILED tests/test_robustness.py::test_fastly_in_place_of_a_file_is_inaccessible[/llms.txt]
+FAILED tests/test_robustness.py::test_fastly_in_place_of_a_file_is_inaccessible[/llms-full.txt]
+FAILED tests/test_robustness.py::test_fastly_off_site_profile_is_unverified_not_broken
+14 failed, 29 passed, 69 deselected in 6.07s
