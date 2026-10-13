@@ -128,3 +128,24 @@ rows and disagreements, confirm the intended laptop and capture the complete
 frozen workflow/presentation recording. Presentation budgets (eight-minute target,
 ten-minute stop, seven presented slides, five-minute Q&A) are separate from audit
 and host-stage budgets. No Adobe integration or measured business uplift is claimed.
+
+## Release artifact
+
+The candidate ZIP is `dist/brand-ai-readiness-audit-8.4.0.zip`, built from clean
+committed snapshot `f144c1888e3a3482aa61f9ec375033599eb3a7cf`. It is 745,185 bytes
+and contains 166 intended files plus RELEASE.json. SHA-256:
+`eea21f7cd6823fb19cb832bf01e7ee7c925125a61c6bb3d9fb01c94b7c7ac979`.
+
+All 137 Python files match the full-tested ae61edf runtime. The six changed assets
+are the five actual final examples and one validation reference. Final ZIP
+extraction, portable version and those changed assets were checked separately:
+**85 passed, one expected build-tool module skipped in 9.59s**. Packaging intentionally
+excludes the build tool. The runtime full-suite results above apply to identical
+Python/test files; no additional full run is claimed after documentation/example
+changes. The complete metadata and individual packaged file hashes are in
+[RELEASE_VERIFICATION.json](verification/RELEASE_VERIFICATION.json) and
+[release-files-sha256.json](verification/release-files-sha256.json).
+
+A later evidence-only commit can have a different HEAD; the ZIP accurately names
+its own committed source snapshot. The package is an engineering candidate for
+review, not certification of pending independent human or presentation gates.

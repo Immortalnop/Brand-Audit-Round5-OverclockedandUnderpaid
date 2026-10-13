@@ -1,0 +1,77 @@
+{
+  "version": "8.4.0",
+  "branch": "final_version",
+  "base_commit": "2c6acbd2a2da7e15710a6f66b86181dcba238336",
+  "donor_commit": "c48094d60868e2bf9f404094c4b77aabfd9803ca",
+  "runtime_freeze_commit": "ae61edfd60b47b39fc442ec392845de95696e8d5",
+  "release_snapshot_commit": "f144c1888e3a3482aa61f9ec375033599eb3a7cf",
+  "built_from": "committed Git snapshot, without resetting user changes",
+  "zip": "dist/brand-ai-readiness-audit-8.4.0.zip",
+  "zip_bytes": 745185,
+  "zip_sha256": "eea21f7cd6823fb19cb832bf01e7ee7c925125a61c6bb3d9fb01c94b7c7ac979",
+  "release_metadata": {
+    "name": "brand-ai-readiness-audit",
+    "version": "8.4.0",
+    "commit": "f144c1888e3a3482aa61f9ec375033599eb3a7cf",
+    "uncommitted_changes": false,
+    "source": "committed_git_snapshot",
+    "files": 166
+  },
+  "file_hashes_record": "verification/release-files-sha256.json",
+  "verified_at": "2026-10-13T05:48:00.081296+00:00",
+  "environment": {
+    "os": "Linux",
+    "python": "3.14.8",
+    "test_interpreter": "/tmp/brand-final-venv/bin/python"
+  },
+  "checks": {
+    "frozen_checkout_full_suite": {
+      "passed": 1293,
+      "elapsed_s": 109.19,
+      "log": "verification/phase7-final-candidate-suite.txt"
+    },
+    "frozen_extracted_full_suite": {
+      "passed": 1289,
+      "skipped_modules": 1,
+      "elapsed_s": 110.08,
+      "log": "verification/phase7-extracted-suite.txt"
+    },
+    "final_checkout_assets": {
+      "passed": 89,
+      "elapsed_s": 8.55,
+      "log": "verification/phase7-final-assets.txt"
+    },
+    "final_release_extracted_assets": {
+      "passed": 85,
+      "skipped_modules": 1,
+      "elapsed_s": 9.59,
+      "log": "verification/phase7-release-assets.txt"
+    },
+    "unchanged_python_files_from_tested_runtime": 137,
+    "difference_from_full_tested_extraction": [
+      "examples/sample-report.json",
+      "examples/evidence.json",
+      "examples/agent-outcomes.json",
+      "examples/final-report.json",
+      "examples/final-report.md",
+      "skills/audit-orchestrator/references/validation.md"
+    ],
+    "zip_integrity": "passed",
+    "portable_code_version": "8.4.0+f144c1888e3a",
+    "latest_origin_add_md_rechecked": "2c6acbd2a2da7e15710a6f66b86181dcba238336",
+    "latest_origin_add_md_is_ancestor": true,
+    "source_assets_preserved": true,
+    "source_and_authored_whitespace": "passed; source CSV CRLF retained using Git cr-at-eol interpretation",
+    "compilation": "passed",
+    "scorer_and_saved_review_hashes": "matched",
+    "human_review_labels": "all 64 rows remain blank"
+  },
+  "rehearsals": "verification/rehearsals/final-summary.json",
+  "evaluation": "verification/review-set/summary.json",
+  "pending": [
+    "Independent human correctness/scope/status/severity/action review and accuracy/calibration claims",
+    "Confirmation of intended demonstration laptop",
+    "Complete frozen workflow/presentation recording"
+  ],
+  "claims": "Engineering candidate with verified regression and execution evidence; whole plan is not certified complete. No push, Adobe SDK integration or measured ranking/citation/conversion uplift."
+}
