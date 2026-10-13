@@ -1,7 +1,8 @@
-"""One-pass stdlib HTML extraction. Markup observations are not rendered UX facts."""
+"""Stdlib HTML extraction with a bounded inline-style prepass, without rendering."""
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 import re
+from markup_context import InlineDisplay, in_chrome
 
 _VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
 _TEXT_TAGS = {'a','button','p','h1','h2','h3','h4','h5','h6','span','time'}
@@ -451,9 +452,18 @@ class Document(HTMLParser):
         # Focused body evidence is independent of navigation and metadata, but
         # bounded before it enters an immutable snapshot. IDs stay case-sensitive.
         self.body_opening={'passage':'','paragraph_count':0,'complete':True,'truncated':False}
+        self.has_main=False;self.main_text=[];self.main_text_chars=0
+        self.body_text=[];self.body_text_chars=0;self.main_headings=[];self.main_heading_levels=[]
+        self.content_paragraphs=[]
+        self._inline_display=InlineDisplay()
         self.focus_sections=[];self._focus_active=[];self.focus_sections_limited=False
+    def feed(self,data):
+        # Acquisition supplies a bounded complete response. Pre-read inline styles
+        # because a hiding rule often follows the widget it hides.
+        self._inline_display=InlineDisplay().scan(data)
+        super().feed(data)
     def _focus_start(self,tag,a,frame):
-        if frame['hidden'] or any(f['tag'] in _CHROME_TAGS+('head','script','style','template','noscript') for f in self.stack):return
+        if frame['hidden'] or in_chrome(self.stack) or any(f['tag'] in ('head','script','style','template','noscript') for f in self.stack):return
         level=int(tag[1]) if re.fullmatch('h[1-6]',tag) else None
         if level is not None:
             for entry in list(self._focus_active):
@@ -469,13 +479,17 @@ class Document(HTMLParser):
         entry['_heading_element']=level is not None
         self.focus_sections.append(entry);self._focus_active.append(entry)
     def _focus_paragraph(self,text):
-        if not text or any(f['tag'] in _CHROME_TAGS+('head','script','style','template','noscript') for f in self.stack):return
+        if not text or in_chrome(self.stack) or any(f['tag'] in ('head','script','style','template','noscript') or f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):return
+        in_main=any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack)
+        if (not self.has_main or in_main) and len(self.content_paragraphs)<12:self.content_paragraphs.append(text[:600])
         def append(entry):
-            if entry['paragraph_count']>=2:return
+            # Keep split slogan fragments together with the first prose, without
+            # replacing genuinely vague openings with later copy.
+            if entry['paragraph_count']>=8 or (entry['paragraph_count']>=2 and len(entry['passage'].split())>=12):return
             combined=(entry['passage']+' '+text).strip()
             entry['passage']=combined[:1500];entry['paragraph_count']+=1
             if len(combined)>1500:entry['truncated']=True
-        append(self.body_opening)
+        if not self.has_main or any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack):append(self.body_opening)
         for entry in self._focus_active:append(entry)
     def close(self):
         super().close()
@@ -634,7 +648,8 @@ class Document(HTMLParser):
             self.consent_markup.append(consent.group(0).lower())
         if (a.get('role','').lower() in ('dialog','alertdialog') or (tag=='dialog' and 'open' in a)) and len(self.modal_dialogs)<5:
             frame['collect']=True
-            frame['dialog']={'tag':tag,'modal':a.get('aria-modal','').strip().lower()=='true','consent':bool(consent),'text':''}
+            frame['dialog']={'tag':tag,'modal':a.get('aria-modal','').strip().lower()=='true','consent':bool(consent),'text':'',
+                             'visibility_state':'declared_open' if tag=='dialog' and 'open' in a else 'unknown'}
             self.modal_dialogs.append(frame['dialog'])
         if tag in ('html','body'):
             overflow=(_style_value(style,'overflow') or '')+' '+(_style_value(style,'overflow-y') or '')
@@ -687,7 +702,7 @@ class Document(HTMLParser):
         self.node_count+=1
         if len(self.stack)>=256 or self.node_count>100000:
             raise ValueError("HTML structural parsing budget reached")
-        a={k:(v or '') for k,v in attrs};hidden=('hidden' in a or a.get('aria-hidden','').lower()=='true' or bool(re.search(r'display\s*:\s*none|visibility\s*:\s*hidden',a.get('style',''),re.I)))
+        a={k:(v or '') for k,v in attrs};hidden=('hidden' in a or a.get('aria-hidden','').lower()=='true' or (tag=='dialog' and 'open' not in a) or self._inline_display.matches(a) or bool(re.search(r'display\s*:\s*none|visibility\s*:\s*hidden',a.get('style',''),re.I)))
         frame={'tag':tag,'a':a,'text':[],'hidden':hidden or any(x['hidden'] for x in self.stack)}
         in_head=any(f['tag']=='head' for f in self.stack)
         rel=a.get('rel','').lower().split()
@@ -700,6 +715,10 @@ class Document(HTMLParser):
                 self.bylines.append(' '.join(a['content'].split())[:160])
             frame['capture']=True
         if tag not in _VOID:self.stack.append(frame)
+        if (tag=='main' or a.get('role')=='main') and not frame['hidden'] and not self.has_main:
+            self.has_main=True
+            self.body_opening={'passage':'','paragraph_count':0,'complete':True,'truncated':False}
+            self.content_paragraphs=[]
         # A line break separates words ("12 High Street<br>Springfield"); without
         # this the element's collected text would join them.
         if tag=='br':
@@ -839,6 +858,11 @@ class Document(HTMLParser):
         stripped=data.strip()
         if stripped:
             self.text.append(stripped);self.flow.append(stripped)
+            if not in_chrome(self.stack) and not tags & {'head','noscript'} and not any(f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):
+                if self.body_text_chars<20000:
+                    value=stripped[:20000-self.body_text_chars];self.body_text.append(value);self.body_text_chars+=len(value)+1
+                if any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack) and self.main_text_chars<20000:
+                    value=stripped[:20000-self.main_text_chars];self.main_text.append(value);self.main_text_chars+=len(value)+1
             qa=self._qa
             if qa is not None and qa['chars']<600 and not tags & _HEADING_TAGS:
                 # Where the text after the heading starts: a table or list holds
@@ -914,6 +938,8 @@ class Document(HTMLParser):
                 if heading is not None:heading['link_chars']=heading.get('link_chars',0)+len(text)
             if re.fullmatch('h[1-6]',tag):
                 self.headings.append(text);self.heading_levels.append(int(tag[1]))
+                if any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack) and not in_chrome(self.stack) and not any(f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):
+                    self.main_headings.append(text);self.main_heading_levels.append(int(tag[1]))
                 # A heading inside a link, or one whose text is mostly a link, names
                 # another page; it is not a question this page answers.
                 linked=(any(f['tag']=='a' and f['a'].get('href') for f in self.stack[:idx])
@@ -961,11 +987,15 @@ class Document(HTMLParser):
             for record in frame.get('images',()):record['link_text']=text[:120]
         del self.stack[idx:]
     def features(self):
-        return {'observation_version':2, 'landmarks':sorted(self.landmarks),
+        return {'observation_version':3, 'landmarks':sorted(self.landmarks),
                 'head_blocking_scripts':self.head_blocking_scripts,'images_missing_dims':self.images_missing_dims,
                 'images_lazy':self.images_lazy,'canonical_values':self.canonicals[:20],
                 'opening_paragraphs':self.paragraph_text,
                 'body_opening':dict(self.body_opening),
+                'body_text':' '.join(self.main_text if self.has_main else self.body_text),
+                'content_paragraphs':self.content_paragraphs,
+                'main_region_observed':self.has_main,'main_headings':self.main_headings[:200],
+                'main_heading_levels':self.main_heading_levels[:200],
                 'focus_sections':[{k:v for k,v in e.items() if not k.startswith('_')} for e in self.focus_sections],
                 'focus_sections_limited':self.focus_sections_limited,
                 'full_visible_chars':len(' '.join(self.text)),
@@ -974,7 +1004,7 @@ class Document(HTMLParser):
                 'linked_question_headings':self.linked_question_headings,
                 'linked_headings':self.linked_headings,
                 'viewport':self.meta.get('viewport',[]),'lang':self.lang,'has_nav':self.has_nav,
-                'h1_count':self.heading_levels.count(1),'subheadings':sum(x>1 for x in self.heading_levels),
+                'h1_count':(self.main_heading_levels if self.has_main else self.heading_levels).count(1),'subheadings':sum(x>1 for x in (self.main_heading_levels if self.has_main else self.heading_levels)),
                 'heading_levels':self.heading_levels[:200],'paragraph_lengths':self.paragraphs[:400],
                 'buttons':self.buttons[:50],'anchors':self.links[:200],'scripts':self.scripts,'spa_mount':self.spa,
                 'images':self.images,'missing_alt':self.missing_alt,'forms':self.forms,'email_capture':self.email_capture,

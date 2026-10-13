@@ -81,6 +81,11 @@ def _sentence_around(text, start, end):
 def _date_category(page, text, match):
     """Category of a date mention in visible text: from the page type when it
     implies one, else from an archive path or an operational cue in the sentence."""
+    # The nearby label outranks the URL genre: a book's publication date is
+    # immutable history, even though the book is sold on a product page.
+    before = text[max(0,match.start()-100):match.start()]
+    if page.page_type == 'product' and re.search(r'\b(?:published|publication date|release date|first published)\s*:?\s*$', before, re.I):
+        return 'historical'
     category = _DATE_CATEGORY_BY_PAGE_TYPE.get(page.page_type)
     if category:
         return category
@@ -165,7 +170,9 @@ def structured_date_claims(pages, today=None):
             # Latest date wins; on a tie the declared modification date is reported.
             key = max(parsed, key=lambda k: (parsed[k][0], k == "dateModified"))
             latest, shown = parsed[key]
-            if types & _COMMERCIAL_TYPES:
+            if key == 'datePublished' and types & (_COMMERCIAL_TYPES | {'Book'}):
+                category = 'historical'
+            elif types & _COMMERCIAL_TYPES:
                 category = "commercial"
             elif page.page_type == "legal":
                 category = "legal"

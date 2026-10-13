@@ -13,8 +13,8 @@ only (no requests):
     text: after a label ("Address:", "Visit us at"), as a street line
     ("12 High Street, Springfield"), or as comma-separated parts ending in a
     postal code.
-    Two or more kinds of location evidence make it a confirmed medium defect;
-    one kind makes it a low suggestion.
+    Missing optional location markup is a low improvement even when several
+    kinds of location evidence confirm applicability.
   - local-business-incomplete: LocalBusiness (or a subtype) markup without an
     address, which Google requires (confirmed defect, medium), or with an
     address but neither geo nor areaServed (suggestion, low).
@@ -169,8 +169,8 @@ def analyze_context_signals(artifacts, deadline):
     if evidence and not markup_pages:
         strong = len(kinds) >= 2
         findings.append(make_finding(
-            category="ai_discoverability", finding_type="defect" if strong else "proactive_improvement",
-            severity="medium" if strong else "low", status="confirmed" if strong else "suspected",
+            category="ai_discoverability", finding_type="proactive_improvement",
+            severity="low", status="confirmed" if strong else "suspected",
             confidence=0.85 if strong else 0.55,
             title="Physical location is shown on the page but stated in no structured data",
             root_cause="Assistants answer location-dependent questions from machine-readable addresses, "
@@ -186,7 +186,7 @@ def analyze_context_signals(artifacts, deadline):
                           "Organization or LocalBusiness markup",
                           "Add geo coordinates for each physical location, and areaServed for the regions served",
                           "Keep the visible address, the markup and the business profile identical"],
-                "priority": "medium" if strong else "low", "effort": "low",
+                "priority": "low", "effort": "low",
                 "expected_benefit": "The brand can be matched to location-specific questions",
                 "verification": "Validate the markup and confirm the address matches the visible text"},
             provenance={"skill": "crawl-render-audit", "script": "analyze_context_signals.py",

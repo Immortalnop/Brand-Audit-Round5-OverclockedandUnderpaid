@@ -61,9 +61,11 @@ def analyze_metadata(artifacts, deadline):
     emit('missing-landmarks',lambda s:'No main or article landmark on '+share(s),
          [p for p in pages if len(p.visible_text.split())>=100 and not p.features.get('landmarks')],
          lambda p:'No main or article landmark observed on a page with substantial text.')
+    def outline(p):
+        return p.features.get('main_heading_levels', ()) if p.features.get('main_region_observed') else p.features['heading_levels']
     emit('heading-hierarchy',lambda s:'Heading levels are skipped on '+share(s),
-         [p for p in pages if len(p.features['heading_levels'])>=3 and any(b>a+1 for a,b in zip(p.features['heading_levels'],p.features['heading_levels'][1:]))],
-         lambda p:'Observed heading levels: '+str(list(p.features['heading_levels'][:20])))
+         [p for p in pages if len(outline(p))>=3 and any(b>a+1 for a,b in zip(outline(p),outline(p)[1:]))],
+         lambda p:'Observed '+('main-content ' if p.features.get('main_region_observed') else '')+'heading skips: '+str([(a,b) for a,b in zip(outline(p),outline(p)[1:]) if b>a+1][:10]))
     emit('title-length',lambda s:'Title shorter than 15 or longer than 70 characters on '+share(s),
          [p for p in pages if p.title and not 15<=len(p.title)<=70],
          lambda p:f'Title has {len(p.title)} characters: {p.title[:100]}. Display width was not measured.')

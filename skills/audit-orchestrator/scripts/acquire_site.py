@@ -69,7 +69,8 @@ def _classify_page_type(url,origin,jsonld_blocks,path):
     # The index of an editorial section (/blog/, /news) lists articles; it is not
     # one itself, so it is held to no article markup. It is not a shop category
     # either, so commerce checks leave it alone.
-    if (path or '/').strip('/').lower() in _LISTING_INDEXES:return 'listing'
+    segments=[s.lower() for s in (path or '/').split('/') if s]
+    if segments and segments[-1] in _LISTING_INDEXES:return 'listing'
     for pattern,kind in [('services?','service'),('product|products|item|items|shop|store|sku','product'),('blog|news|article|articles|press|insights|stories','article'),('contact|contact-us|get-in-touch','contact'),('about|about-us|company|team|who-we-are','about'),('privacy|terms|legal|cookie|tos','legal'),('category|categories|collection|collections|catalog','category')]:
         if re.search(r'/(?:'+pattern+r')(?:/|-|$)',path,re.I):return kind
     return 'other'

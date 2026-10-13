@@ -18,7 +18,7 @@ def analyze_performance(artifacts, deadline):
                                    {p.url:detail(p) for p in selected},script='analyze_performance.py'))
     # Retain positive size evidence from byte-capped pages, but never infer absence.
     sized=[p for p in artifacts.pages if p.status_code==200 and p.features
-           and p.features.get('observation_version')==2 and 'non_html_content' not in p.warnings]
+           and p.features.get('observation_version') in (2,3) and 'non_html_content' not in p.warnings]
     emit('heavy-html',lambda s:'HTML response larger than 400 KB on '+page_share(s,sized),
          [p for p in sized if p.features.get('html_bytes',0)>400000 or 'response_truncated_at_byte_budget' in p.warnings],
          lambda p:f"Retained {p.features.get('html_bytes',0)} HTML body bytes; truncated: {'response_truncated_at_byte_budget' in p.warnings}. Asset transfer sizes were not measured.")

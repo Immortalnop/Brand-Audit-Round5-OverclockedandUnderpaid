@@ -80,7 +80,7 @@ def test_multi_brand_site_suppresses_footprint_even_with_provider_configured(mon
 # Stale commercial facts: an old date on a /product page.
 # ---------------------------------------------------------------------------
 
-def test_stale_commercial_facts_are_flagged_high_severity():
+def test_old_commercial_dates_are_scoped_review_opportunities():
     base_url, shutdown, limits, deadline, artifacts = _acquire()
     try:
         claims = extract_claims(artifacts, deadline)
@@ -93,7 +93,8 @@ def test_stale_commercial_facts_are_flagged_high_severity():
         commercial_findings = [f for f in freshness["findings"]
                                 if f["provenance"]["rule_id"] == "stale-dates:commercial"]
         assert commercial_findings
-        assert commercial_findings[0]["severity"] == "high"
+        assert commercial_findings[0]["severity"] == "low"
+        assert commercial_findings[0]['finding_type'] == 'proactive_improvement'
     finally:
         shutdown()
 

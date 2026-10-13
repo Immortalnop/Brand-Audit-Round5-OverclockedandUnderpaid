@@ -52,10 +52,10 @@ def overlay_signals(page):
     f = page.features or {}
     signals, blocking = [], False
     dialogs = list(f.get("modal_dialogs") or ())
-    modal = [d for d in dialogs if d.get("modal")]
+    modal = [d for d in dialogs if d.get("modal") and (d.get('visibility_state')=='declared_open' or f.get('scroll_lock'))]
     if modal:
         blocking = True
-        signals.append(f"{len(modal)} aria-modal dialog(s) in the delivered HTML")
+        signals.append(f"{len(modal)} aria-modal dialog(s) with declared open state or a page scroll lock")
     if f.get("fullscreen_fixed"):
         blocking = True
         signals.append("an inline style fixes an element over the whole viewport")
@@ -185,9 +185,11 @@ def analyze_overlays(artifacts, deadline):
         ))
     return skill_result(
         "engagement-audit", findings=findings,
+        warnings=(["Dialog markup was observed without an open state or page scroll lock; arrival visibility was not assessed."] if any(any(d.get('visibility_state')=='unknown' for d in p.features.get('modal_dialogs',())) and not p.features.get('scroll_lock') for p in pages) else []),
         metrics={"overlay_pages_analyzed": len(pages), "overlay_blocking_pages": len(blocking),
                  "overlay_class_only_pages": len(weak), "consent_platform_pages": consent_pages,
                  "consent_text_summary_pages": len(summary_leaks), "consent_text_opening_pages": len(opening_leaks),
-                 "overlay_timing_measured": False},
+                 "overlay_timing_measured": False,
+                 "overlay_visibility_unknown_pages":sum(any(d.get('visibility_state')=='unknown' for d in p.features.get('modal_dialogs',())) and not p.features.get('scroll_lock') for p in pages)},
         coverage={"pages_analyzed": len(pages), "pages_skipped": len(artifacts.pages) - len(pages),
                   "queries_attempted": 0, "queries_completed": 0})

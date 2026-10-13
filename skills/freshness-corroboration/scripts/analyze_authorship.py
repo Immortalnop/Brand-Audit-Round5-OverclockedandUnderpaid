@@ -31,7 +31,7 @@ ARTICLE_TYPES = frozenset({"Article", "BlogPosting", "NewsArticle", "TechArticle
 _CREDENTIAL_KEYS = ("jobTitle", "description", "knowsAbout", "alumniOf", "award", "hasCredential",
                     "hasOccupation", "worksFor")
 _PROFILE_KEYS = ("url", "sameAs")
-_BYLINE_TEXT = re.compile(r"(?:^|[\s|\u00b7\u2022,(])(?:by|written by|author:)\s+([A-Z][\w.'\u2019-]+"
+_BYLINE_TEXT = re.compile(r"^(?:By|by|Written by|written by|Author:)\s+([A-Z][\w.'\u2019-]+"
                           r"(?:\s+[A-Z][\w.'\u2019-]+){1,3})")
 _AUTHOR_PATH = re.compile(r"/(?:authors?|team|people|contributors?|writers?|staff)/[^/?#]+", re.I)
 _MIN_ARTICLE_WORDS = 300
@@ -70,7 +70,9 @@ def is_article(page):
         segments = [s for s in urlsplit(page.url).path.split("/") if s]
     except ValueError:
         return False
-    return len(segments) >= 2 and len((page.visible_text or "").split()) >= _MIN_ARTICLE_WORDS
+    features = page.features or {}
+    body = features.get('body_text', page.visible_text or '')
+    return len(segments) >= 2 and len(body.split()) >= _MIN_ARTICLE_WORDS
 
 
 def _structured_authors(page):
@@ -101,9 +103,13 @@ def _visible_bylines(page):
     features = page.features or {}
     bylines = [b for b in features.get("bylines", ()) if b]
     bylines += [m for m in (features.get("meta") or {}).get("author", ()) if isinstance(m, str) and m.strip()]
-    match = _BYLINE_TEXT.search((page.visible_text or "")[:1500])
-    if match:
-        bylines.append(match.group(1))
+    # Bare "by" in navigation or narrative is not a byline. Explicit author
+    # elements/meta above remain supported; unmarked bylines start a paragraph.
+    opening = (features.get('body_opening') or {}).get('passage', '')
+    for paragraph in features.get('content_paragraphs', features.get('opening_paragraphs', ())):
+        if paragraph not in opening: continue
+        match = _BYLINE_TEXT.search(paragraph)
+        if match: bylines.append(match.group(1))
     return bylines
 
 

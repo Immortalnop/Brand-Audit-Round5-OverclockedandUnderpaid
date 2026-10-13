@@ -146,9 +146,9 @@ def analyze_experience(artifacts,deadline):
     # A short H1 such as "About us" or "Ian Berry obituary" orients a visitor as well
     # as a long one; only a missing H1, or first headings that are all empty or
     # longer than 14 words, leave the page without one.
-    orient=[p for p in pages if p.page_type not in ('home',) and len(p.visible_text.split())>300 and (not p.features['h1_count'] or not any(1<=len(h.split())<=14 for h in p.headings[:2]))]
-    add('page-orientation','Content pages lack a clear orientation heading above the fold',orient,
-        'Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.',
+    orient=[p for p in pages if p.page_type not in ('home',) and len(p.features.get('body_text',p.visible_text).split())>300 and not any(1<=len(h.split())<=14 for h in (p.features.get('main_headings',()) if p.features.get('main_region_observed') else p.headings)[:2])]
+    add('page-orientation','Content pages lack a short opening orientation heading in the sampled HTML',orient,
+        'Substantial pages were sampled without a short heading in their first content headings. Visual position and visitor behavior were not measured.',
         ['Lead each content page with a descriptive H1 that names the topic','Follow with scannable H2 sections so the page structure is clear at a glance'])
     # 2.3 Internal discoverability gap: substantial pages that expose few or no
     # internal links leave a visitor (and a crawler) no path onward from that page.

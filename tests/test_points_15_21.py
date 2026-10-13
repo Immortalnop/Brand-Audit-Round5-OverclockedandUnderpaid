@@ -438,7 +438,9 @@ def test_blocking_consent_dialog_with_scroll_lock_is_medium():
     assert finding["severity"] == "medium" and finding["status"] == "suspected"
     assert "cookie consent prompt" in text_of(finding) and "onetrust" in text_of(finding)
     assert inner_locked.features["scroll_lock"] is False
-    assert by_id(run(analyze_overlays, inner_locked), "overlay")[0]["severity"] == "low"
+    result = run(analyze_overlays, inner_locked)
+    assert not by_id(result, "overlay")
+    assert result['metrics']['overlay_visibility_unknown_pages'] == 1
 
 
 def test_non_blocking_consent_banner_is_not_an_overlay():

@@ -8,7 +8,7 @@ from structured_data import iter_nodes, types_of
 
 def eligible_pages(artifacts):
     return [p for p in artifacts.pages if p.status_code == 200 and p.features
-            and p.features.get('observation_version') == 2
+            and p.features.get('observation_version') in (2, 3)
             and not {'non_html_content', 'response_truncated_at_byte_budget', 'html_parse_incomplete'} & set(p.warnings)]
 
 

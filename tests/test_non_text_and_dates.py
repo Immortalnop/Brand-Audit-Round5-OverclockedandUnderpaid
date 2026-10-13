@@ -482,7 +482,8 @@ def test_all_text_dates_are_assessed_even_when_ranking_drops_them():
     assert assess_freshness(ranked, artifacts, DEADLINE())["status"] == "insufficient_evidence"
     with_claims = assess_freshness(ranked, artifacts, DEADLINE(), claims)
     [finding] = with_claims["findings"]
-    assert finding["check_id"] == "stale-dates:commercial" and finding["severity"] == "high"
+    assert finding["check_id"] == "stale-dates:commercial" and finding["severity"] == "low"
+    assert finding['finding_type'] == 'proactive_improvement'
 
 
 def test_new_check_ids_are_catalogued():

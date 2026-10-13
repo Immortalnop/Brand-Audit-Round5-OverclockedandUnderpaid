@@ -1,16 +1,13 @@
-"""assess_freshness.py -- dates, expired offers, stale contact/leadership.
-A missing date is never treated as proof of staleness.
+"""assess_freshness.py -- contextual date-review opportunities and invalid dates.
+Missing or older dates do not establish factual staleness. Expired offers have
+their own explicit validity check in check_offer_expiry.py.
 
 Fact-category calibration: an old date means different things depending on what
 it's attached to (see extract_claims.py). "Historical" facts (founding dates,
 company-history mentions) are *supposed* to be old and are never flagged as stale.
-The rest are flagged with a severity that matches the real-world stakes of that
-category being wrong: an expired price/offer (commercial) actively misleads a
-visitor or an AI assistant quoting it, so it's high severity; a stale phone number
-or address (contact) breaks the ability to reach the business, so it's also high;
-operational facts (hours, "last verified" style claims) are medium; editorial dates
-(blog/article timestamps) and legal boilerplate (copyright years) are low -- both
-are common and expected to lag.
+Other older dates produce low review opportunities. A publication date or page
+timestamp does not demonstrate an expired price, an incorrect contact detail or
+a changed operational fact. Verify the underlying fact before recommending edits.
 
 Two date sources are combined:
   - dates mentioned in visible text (extract_claims). When the full claims
@@ -30,8 +27,7 @@ Two date sources are combined:
 """
 from datetime import datetime, timezone
 import re
-from models import (skill_result, make_finding, insufficient_evidence_result,
-                     coverage_ratio, scale_confidence, step_down_severity)
+from models import skill_result, make_finding, coverage_ratio, scale_confidence
 from extract_claims import structured_date_claims
 from update_signals import page_update_claims
 
@@ -228,25 +224,26 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
 
     findings = []
     for category, facts_in_category in by_category.items():
-        severity, label = _CATEGORY_CALIBRATION.get(category, ("medium", f"{category} facts"))
+        _, label = _CATEGORY_CALIBRATION.get(category, ("low", f"{category} facts"))
+        severity = 'low'
         sample_ratio = min(crawl_ratio, coverage_ratio(len(facts_in_category), 3))
         findings.append(make_finding(
-            category="freshness", finding_type="defect",
-            severity=step_down_severity(severity, sample_ratio),
+            category="freshness", finding_type="proactive_improvement",
+            severity=severity,
             status="suspected", confidence=scale_confidence(0.6, sample_ratio),
-            title=f"Old dates found among {label} without recent corroborating updates",
-            root_cause=f"Dated content classified as '{category}' appears outdated relative to the current year"
+            title=f"Review older dates among {label}",
+            root_cause=f"Older dates classified as '{category}' warrant a contextual review; age alone does not establish that a current fact is wrong"
                        + ("" if crawl_ratio >= 0.999 else " (within the pages actually crawled; the "
                                                            "rest of the site was not analyzed)"),
             evidence=[{"type": "date", "description": _describe(f), "urls": [f["source"]]}
                       for f in facts_in_category[:5]],
             affected_pages=sorted({f["source"] for f in facts_in_category if f.get("source")}),
             suggested_action={
-                "summary": f"Review and refresh outdated {label}",
-                "steps": [f"Audit pages with old {label}", "Update or remove stale references"],
+                "summary": f"Verify whether older {label} still describe the current situation",
+                "steps": [f"Review the context and current accuracy of older {label}", "Correct a fact only if it has changed; preserve valid publication and historical dates", "Set an update date only after a meaningful content change"],
                 "priority": severity, "effort": "low",
                 "expected_benefit": "Reduces risk of assistants citing stale facts",
-                "verification": "Re-check dates after the update",
+                "verification": "Check the underlying fact against a current authoritative source; a newer date alone does not prove accuracy",
             },
             provenance={"skill": "freshness-corroboration", "script": "assess_freshness.py",
                         "rule_id": f"stale-dates:{category}"},
