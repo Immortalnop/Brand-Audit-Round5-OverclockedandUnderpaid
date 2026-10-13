@@ -18,6 +18,9 @@ from ingest_agent_findings import validate_envelope, EnvelopeError
 from models import freeze_value
 from test_precision_traps import page, snapshot, SITE
 from run_audit import write_report, _emit_packet
+from identify_important_facts import identify_important_facts
+from models import make_deadline
+from constants import Limits
 
 
 def packet_for(*pages, media=None, identity=None, facts=None):
@@ -25,6 +28,32 @@ def packet_for(*pages, media=None, identity=None, facts=None):
     if media:
         artifacts = replace(artifacts, media_data=freeze_value(media))
     return build_evidence_packet(artifacts, identity or {}, facts or {}, {}, 'a1', snapshot_digest(artifacts), 'now')
+
+
+def test_image_parents_are_jointly_selected_in_a_large_page_pool():
+    pages=[page('<main><p>Acme makes tools for workshops.</p></main>',url=SITE+('/' if i==0 else f'/p/{i}')) for i in range(20)]
+    packet=packet_for(*pages,media={'images':[{'url':SITE+'/specs.png','same_origin':True,'kind':'raster',
+                                            'pages':[SITE+'/p/19'],'keywords':['specification']}]})
+    image,=packet['image_candidates']
+    assert image['page_evidence_ids']
+    assert any(p['requested_url']==SITE+'/p/19' for p in packet['pages'])
+    validate_registry(packet)
+
+
+def test_navigation_is_not_the_entire_generic_packet_passage():
+    packet=packet_for(page('<nav><p>'+('Menu ' * 2000)+'</p></nav><main><p>Acme builds payroll software.</p></main>'))
+    record=packet['pages'][0]
+    assert record['text']=='Acme builds payroll software.'
+    assert record['text_truncated'] and record['text_scope']=='body_text'
+
+
+def test_faq_labels_do_not_starve_material_facts():
+    questions=[{'type':'structured','subject':'Question','predicate':'name','value':f'How is item {i}?',
+                'source':SITE+'/product','importance':.8,'confidence':.9} for i in range(30)]
+    substantive={'type':'structured','subject':'Product','predicate':'description','value':'This kettle holds two litres.',
+                 'source':SITE+'/product','importance':.8,'confidence':.9}
+    ranked=identify_important_facts({'data':{'claims':questions+[substantive]}},make_deadline(Limits()))
+    assert ranked['data']['facts'][0]==substantive
 
 
 def assess(packet):

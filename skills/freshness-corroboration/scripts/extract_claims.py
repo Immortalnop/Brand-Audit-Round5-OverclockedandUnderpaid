@@ -206,7 +206,10 @@ def extract_claims(artifacts, deadline):
             # freeze_value() into MappingProxyType, not plain dict
             # -- Mapping catches both that and plain-dict test fixtures.
             if isinstance(block, Mapping):
-                for key in ("name", "address", "telephone", "sameAs", "priceRange"):
+                keys=["name", "address", "telephone", "sameAs", "priceRange"]
+                if types_of(block) & (_COMMERCIAL_TYPES | {'Organization','Corporation','Brand','Book'}):
+                    keys.append('description')
+                for key in keys:
                     if key in block:
                         claims.append({"source": page.url, "subject": block.get("@type", "entity"),
                                         "predicate": key, "value": block[key], "type": "structured",

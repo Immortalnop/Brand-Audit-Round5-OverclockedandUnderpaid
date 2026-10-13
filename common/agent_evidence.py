@@ -156,6 +156,7 @@ def _retained_observations(page):
     features = page.features or {}
     return _jsonable({'jsonld': page.jsonld_blocks, 'opening_paragraphs': features.get('opening_paragraphs', ()),
                      'body_opening': features.get('body_opening'), 'sections': features.get('focus_sections', ()),
+                     'body_text':features.get('body_text'), 'content_paragraphs':features.get('content_paragraphs',()),
                      'anchors': features.get('anchors', ()), 'observation': page_observation(page)})
 
 
@@ -181,7 +182,7 @@ def _bounded(text, limit):
     return (text[:limit], True) if len(text) > limit else (text, False)
 
 
-def _select_pages(pages, site_url, facts, focused_url=None, aliases=None):
+def _select_pages(pages, site_url, facts, focused_url=None, aliases=None, images=()):
     """(selected, eligible, about_status): the home page, the About page and the
     pages holding the top-ranked claims, then the rest by page type."""
     eligible = []
@@ -199,12 +200,32 @@ def _select_pages(pages, site_url, facts, focused_url=None, aliases=None):
         page = item[0]
         home = page.url.rstrip("/") == (site_url or "").rstrip("/") or page.page_type == "home"
         focused = focused_url and resolve_identity(page.url, aliases) == resolve_identity(focused_url, aliases)
-        return (0 if home else 1 if focused or _is_about(page) else 2 if page.url in claim_rank else 3,
+        return (0 if home else 1 if focused or (not focused_url and _is_about(page)) else 2 if page.url in claim_rank else 3,
                 claim_rank.get(page.url, 99), _TYPE_RANK.get(page.page_type, 9), page.url)
     eligible.sort(key=order)
     about = any(_is_about(p) for p, _ in eligible)
     about_status = "observed" if about else "not_discovered"
-    return eligible[:MAX_PACKET_PAGES], eligible, about_status
+    selected=[item for item in eligible if order(item)[0]<=1][:MAX_PACKET_PAGES]
+    # Keep up to two useful image parents before filling the remaining slots.
+    # All associations come from acquisition; never infer a page from a filename.
+    parent_keys=[resolve_identity(u, aliases) for image in images for u in image.get('pages', ())]
+    added=0
+    for key in dict.fromkeys(parent_keys):
+        if added>=2 or len(selected)>=MAX_PACKET_PAGES:break
+        item=next((item for item in eligible if resolve_identity(item[0].url,aliases)==key or resolve_identity(item[0].final_url,aliases)==key),None)
+        if item is not None and item not in selected:
+            selected.append(item);added+=1
+    for item in eligible:
+        if len(selected)>=MAX_PACKET_PAGES:break
+        if item not in selected:selected.append(item)
+    selected.sort(key=order)
+    return selected, eligible, about_status
+
+
+def _image_candidates(artifacts):
+    candidates=[i for i in ((getattr(artifacts,'media_data',None) or {}).get('images') or ())
+                if i.get('same_origin') and not i.get('excluded') and i.get('kind')!='svg' and not _sensitive(i.get('url'))]
+    return sorted(candidates,key=lambda i:(not bool(i.get('keywords')),i.get('url') or ''))
 
 
 def _about_target(artifacts):
@@ -303,14 +324,18 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
     recorded_aliases = (getattr(artifacts, 'acquisition_metadata', None) or {}).get('url_aliases') or {}
     aliases_map = alias_identities(recorded_aliases)
     about_target = _about_target(artifacts)
-    selected, eligible, about_status = _select_pages(getattr(artifacts, "pages", ()) or (), site_url, fact_list, about_target, aliases_map)
+    candidates=_image_candidates(artifacts)
+    selected, eligible, about_status = _select_pages(getattr(artifacts, "pages", ()) or (), site_url, fact_list, about_target, aliases_map, candidates)
     if about_target and about_status == 'not_discovered':
         about_status = 'known_unassessed'
 
     pages, page_ids, truncated = [], {}, 0
     aliases = (getattr(artifacts, 'acquisition_metadata', None) or {}).get('url_aliases') or {}
     for index, (page, observation) in enumerate(selected, 1):
-        text, cut = _bounded(page.visible_text, MAX_PAGE_CHARS)
+        features=page.features or {}
+        retained=features.get('body_text') or page.visible_text
+        text, cut = _bounded(retained, MAX_PAGE_CHARS)
+        cut=bool(cut or retained!=page.visible_text or features.get('visible_text_complete') is False)
         truncated += cut
         page_id = f"P{index:03d}"
         evidence_id = f"E{index:03d}"
@@ -323,6 +348,7 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
                   "final_url": getattr(page, "final_url", None) or page.url, "title": page.title,
                   "page_type": page.page_type, "is_about_page": _is_about(page),
                   "source_kind": _source_kind(page), "text": text, "text_truncated": cut,
+                  "text_scope":"body_text" if retained!=page.visible_text else "full_retained_page_text",
                   "text_chars_observed": len(page.visible_text or ""),
                   "observation_status": observation["status"],
                   "markup_comparison_available": bool(observation['local_absence'] and
@@ -339,7 +365,7 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
         if len(claims) >= MAX_PACKET_CLAIMS:
             break
         source = fact.get("source")
-        if _sensitive(source):
+        if _sensitive(source) or source not in page_ids:
             continue
         raw_value = fact.get('value', '')
         if not isinstance(raw_value, (str, int, float)) or isinstance(raw_value, bool):
@@ -351,13 +377,14 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
                        "page_evidence_id": page_ids.get(source)})
 
     images = []
-    for entry in ((getattr(artifacts, "media_data", None) or {}).get("images") or ()):
+    for entry in candidates:
         if len(images) >= MAX_IMAGE_CANDIDATES:
             break
         if not entry.get("same_origin") or entry.get("excluded") or entry.get("kind") == "svg" \
                 or _sensitive(entry.get("url")):
             continue
-        associated = list(entry.get('pages') or ())[:8]
+        associated = sorted(entry.get('pages') or (),key=lambda u:u not in page_ids)[:8]
+        if not any(u in page_ids for u in associated):continue
         images.append({"image_id": f"I{len(images) + 1:03d}", "url": entry.get("url"),
                        "alt": entry.get("alt"), "pages": associated,
                        "associated_pages_omitted": max(0, len(entry.get('pages') or ()) - len(associated)),
@@ -394,7 +421,9 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
         limitations.append("Pages " + ", ".join(partial) + " were not read in full by the audit; what they "
                            "lack cannot be judged from the packet.")
     if not images:
-        limitations.append("No same-origin raster image candidates were recorded, so AG-04 has nothing to view.")
+        limitations.append("No eligible same-origin raster image with an exported parent page is available for AG-04.")
+    if len(images)<len(candidates):
+        limitations.append(f"{len(candidates)-len(images)} eligible image candidate(s) omitted by the image/page association budgets.")
 
     packet = {
         "schema_version": PACKET_SCHEMA_VERSION,
