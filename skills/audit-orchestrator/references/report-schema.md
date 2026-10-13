@@ -231,3 +231,28 @@ robots_attempt_outcomes and robots_permission. Failed robots acquisition means
 permission unknown, zero inferred blocks and degraded execution. Exact TLS
 verification details and recovered attempt outcomes are retained separately from
 site findings. An HTTP status is not a TLS error.
+
+## Evidence/outcome contract 1.1
+
+The report stores `packet_sha256` for the final evidence packet. The packet and
+outcome envelope use schema 1.1 and bind audit, snapshot and packet digests. The
+project digest encoding is sorted compact UTF-8 JSON (ensure_ascii=False,
+allow_nan=False), excluding only the packet's top-level packet_sha256. Timing
+and focused evidence are finalized before hashing. The snapshot digest includes
+retained JSON-LD, opening/section observations, anchors and observation states,
+as well as page identity/status/title and visible-text digests; no omitted raw
+bytes are covered.
+
+`coverage.evidence_packet_bytes` holds the exact emitted UTF-8 byte count with
+digest and newline; it is not stored inside the packet. `evidence_packet_ready`
+and optional `evidence_packet_write_failed` distinguish assessment eligibility
+and export failures. Non-ready exports carry the current audit and actual reason.
+
+`focus.ag01` binds the selected body opening, exact fragment ID, E page reference,
+source kind, completeness, selection reason and limitations. Page generic and
+focused text share the 4,000-character allowance. Every retained C parent, I
+association and identity/focus source reference resolves after fitting.
+
+Old schema 1.0 assessments require regenerated export/assessment. Legacy arrays
+remain partial and clear no missing-capability limits. Per-check semantic fields
+and scope are described in entity-corroboration-agent/SKILL.md.

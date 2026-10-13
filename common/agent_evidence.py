@@ -23,11 +23,14 @@ import hashlib
 import json
 import os
 import re
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urljoin, unquote
 
 from check_helpers import page_observation
+from packet_contract import SCHEMA_VERSION, fit_packet
+from url_identity import page_identity, alias_identities, resolve_identity
+from url_safety import same_origin
 
-PACKET_SCHEMA_VERSION = "1.0"
+PACKET_SCHEMA_VERSION = SCHEMA_VERSION
 # The release in marketplace.json; code_version() appends the commit.
 RELEASE_VERSION = "8.3.0"
 
@@ -123,7 +126,8 @@ def snapshot_digest(artifacts):
         pages.append({"url": page.url, "final_url": getattr(page, "final_url", None),
                       "status": page.status_code, "content_type": page.content_type,
                       "title": page.title, "text_sha256": _sha256(page.visible_text),
-                      "jsonld_blocks": len(page.jsonld_blocks or ())})
+                      "jsonld_blocks": len(page.jsonld_blocks or ()),
+                      "retained_observations": _retained_observations(page)})
     pages.sort(key=lambda p: (p["url"] or "", p["final_url"] or ""))
     observed = {
         "site_url": getattr(artifacts, "site_url", None),
@@ -132,8 +136,16 @@ def snapshot_digest(artifacts):
         "sitemap_status": (getattr(artifacts, "sitemap_data", None) or {}).get("status"),
         "pages": pages,
     }
-    return hashlib.sha256(json.dumps(observed, sort_keys=True, ensure_ascii=True, default=str)
+    return hashlib.sha256(json.dumps(observed, sort_keys=True, ensure_ascii=True, allow_nan=False)
                           .encode("ascii")).hexdigest()
+
+
+def _retained_observations(page):
+    from models import _jsonable
+    features = page.features or {}
+    return _jsonable({'jsonld': page.jsonld_blocks, 'opening_paragraphs': features.get('opening_paragraphs', ()),
+                     'body_opening': features.get('body_opening'), 'sections': features.get('focus_sections', ()),
+                     'anchors': features.get('anchors', ()), 'observation': page_observation(page)})
 
 
 def _sensitive(url):
@@ -158,7 +170,7 @@ def _bounded(text, limit):
     return (text[:limit], True) if len(text) > limit else (text, False)
 
 
-def _select_pages(pages, site_url, facts):
+def _select_pages(pages, site_url, facts, focused_url=None, aliases=None):
     """(selected, eligible, about_status): the home page, the About page and the
     pages holding the top-ranked claims, then the rest by page type."""
     eligible = []
@@ -175,12 +187,98 @@ def _select_pages(pages, site_url, facts):
     def order(item):
         page = item[0]
         home = page.url.rstrip("/") == (site_url or "").rstrip("/") or page.page_type == "home"
-        return (0 if home else 1 if _is_about(page) else 2 if page.url in claim_rank else 3,
+        focused = focused_url and resolve_identity(page.url, aliases) == resolve_identity(focused_url, aliases)
+        return (0 if home else 1 if focused or _is_about(page) else 2 if page.url in claim_rank else 3,
                 claim_rank.get(page.url, 99), _TYPE_RANK.get(page.page_type, 9), page.url)
     eligible.sort(key=order)
     about = any(_is_about(p) for p, _ in eligible)
     about_status = "observed" if about else "not_discovered"
     return eligible[:MAX_PACKET_PAGES], eligible, about_status
+
+
+def _about_target(artifacts):
+    """Observed About target, including nonstandard paths and exact fragments."""
+    pages = getattr(artifacts, 'pages', ()) or ()
+    origin = getattr(artifacts, 'normalized_origin', None) or getattr(artifacts, 'site_url', None)
+    label = re.compile(r'^(?:about(?:\s+us)?|who\s+we\s+are|our\s+(?:story|company)|company)(?:\b|$)', re.I)
+    for page in pages:
+        for href, text in (page.features or {}).get('anchors', ()):
+            if not isinstance(href, str) or len(href) > 2000:
+                continue
+            try:
+                url = urljoin(page.final_url or page.url, href)
+                conventional = bool(_ABOUT_PATH.search(urlsplit(url).path))
+            except ValueError:
+                continue
+            if same_origin(url, origin) and (label.match((text or '').strip()) or conventional):
+                return url
+    return next((p.url for p in pages if _is_about(p)), None)
+
+
+def _select_focus(artifacts, pages, target, aliases):
+    """Focused body opening from already acquired observations only."""
+    descriptor = {'source_kind': 'none', 'assessable': False, 'page_ref': None,
+                  'requested_about_url': target, 'section_id': None, 'opening_passage': '',
+                  'opening_complete': False, 'selection_reason': '', 'limitations': []}
+    all_pages = getattr(artifacts, 'pages', ()) or ()
+    selected = None
+    if target:
+        if _sensitive(target):
+            descriptor.update(requested_about_url=None, source_kind='about_page',
+                              selection_reason='Observed About target was excluded as sensitive.',
+                              limitations=['Known About target is excluded by the sensitive-route policy.'])
+            return descriptor
+        descriptor['source_kind'] = 'about_page'
+        selected = next((p for p in all_pages if resolve_identity(p.url, aliases) == resolve_identity(target, aliases)
+                          or resolve_identity(p.final_url, aliases) == resolve_identity(target, aliases)), None)
+        if selected is None:
+            observations = (getattr(artifacts, 'acquisition_metadata', None) or {}).get('observations', ())
+            observed = next((o for o in observations if resolve_identity(o.get('requested_url'), aliases) == resolve_identity(target, aliases)), {})
+            reason = ', '.join(observed.get('reasons') or []) or observed.get('scope') or 'not acquired within bounded discovery/budget'
+            descriptor['limitations'] = ['Known About target was not acquired: ' + str(reason)[:200]]
+            descriptor['selection_reason'] = 'Known target; homepage fallback is not assessable.'
+            return descriptor
+        fragment = unquote(urlsplit(target).fragment)
+        descriptor['section_id'] = fragment or None
+        if fragment:
+            descriptor['source_kind'] = 'about_section'
+    else:
+        selected = next((p for p in all_pages if p.page_type == 'home' or
+                         page_identity(p.url) == page_identity(getattr(artifacts, 'site_url', None))), None)
+        descriptor['source_kind'] = 'homepage_fallback'
+        descriptor['selection_reason'] = 'No About target was observed in bounded discovery; homepage body opening fallback.'
+    if selected is None:
+        descriptor['limitations'] = ['No eligible body opening was acquired.']
+        return descriptor
+    observation = page_observation(selected)
+    record = next((p for p in pages if p['requested_url'] == selected.url), None)
+    if record is None or observation['status'] not in ('complete', 'partial') or observation['script_dependent']:
+        descriptor['limitations'] = ['Selected target is not eligible/exported: ' + ', '.join(observation['reasons'] or ['packet omission'])]
+        return descriptor
+    features = selected.features or {}
+    descriptor['page_ref'] = record['evidence_id']
+    descriptor['evidence_source_kind'] = _source_kind(selected)
+    if descriptor['section_id']:
+        matches = [s for s in features.get('focus_sections', ()) if s.get('section_id') == descriptor['section_id']]
+        opening = matches[0] if len(matches) == 1 else {}
+        descriptor['selection_reason'] = 'Observed About link targets this exact section ID.'
+    else:
+        opening = features.get('body_opening') or {}
+        descriptor['selection_reason'] = descriptor['selection_reason'] or 'Eligible acquired About body opening.'
+    passage = opening.get('passage') or ''
+    fatal = set(selected.warnings or ()) & {'response_truncated_at_byte_budget', 'html_parse_incomplete', 'pdf_text_truncated'}
+    complete = bool(passage) and not opening.get('truncated') and (
+        opening.get('paragraph_count', 0) >= 2 or (opening.get('complete') is True and not fatal))
+    descriptor.update(opening_passage=passage[:1500], opening_complete=complete,
+                      assessable=complete, opening_paragraph_count=opening.get('paragraph_count', 0))
+    if not complete:
+        descriptor['limitations'] = ['Selected body opening could not be isolated completely' + (': ' + ', '.join(sorted(fatal)) if fatal else '.')]
+    # Focus consumes part of this page's declared 4,000-character allowance.
+    record['focus_text'] = passage[:1500]
+    record['text'] = record['text'][:MAX_PAGE_CHARS - len(record['focus_text'])]
+    if len(record['text']) < record['text_chars_observed']:
+        record['text_truncated'] = True
+    return descriptor
 
 
 def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit_id, snapshot_sha256,
@@ -191,21 +289,35 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
     coverage = coverage or {}
     site_url = getattr(artifacts, "site_url", None)
     fact_list = list(((facts or {}).get("data") or {}).get("facts") or ())
-    selected, eligible, about_status = _select_pages(getattr(artifacts, "pages", ()) or (), site_url, fact_list)
+    recorded_aliases = (getattr(artifacts, 'acquisition_metadata', None) or {}).get('url_aliases') or {}
+    aliases_map = alias_identities(recorded_aliases)
+    about_target = _about_target(artifacts)
+    selected, eligible, about_status = _select_pages(getattr(artifacts, "pages", ()) or (), site_url, fact_list, about_target, aliases_map)
+    if about_target and about_status == 'not_discovered':
+        about_status = 'known_unassessed'
 
     pages, page_ids, truncated = [], {}, 0
+    aliases = (getattr(artifacts, 'acquisition_metadata', None) or {}).get('url_aliases') or {}
     for index, (page, observation) in enumerate(selected, 1):
         text, cut = _bounded(page.visible_text, MAX_PAGE_CHARS)
         truncated += cut
         page_id = f"P{index:03d}"
         evidence_id = f"E{index:03d}"
         page_ids[page.url] = evidence_id
+        page_ids[getattr(page, 'final_url', None) or page.url] = evidence_id
+        recorded_aliases = [u for u, final in aliases.items() if final in (page.url, getattr(page, 'final_url', None))]
+        for alias in recorded_aliases:
+            page_ids[alias] = evidence_id
         record = {"page_id": page_id, "evidence_id": evidence_id, "requested_url": page.url,
                   "final_url": getattr(page, "final_url", None) or page.url, "title": page.title,
                   "page_type": page.page_type, "is_about_page": _is_about(page),
                   "source_kind": _source_kind(page), "text": text, "text_truncated": cut,
                   "text_chars_observed": len(page.visible_text or ""),
                   "observation_status": observation["status"],
+                  "markup_comparison_available": bool(observation['local_absence'] and
+                      (page.features or {}).get('jsonld_block_count') == 0 and
+                      not (page.features or {}).get('alternative_structured_markup')),
+                  "aliases": recorded_aliases[:5],
                   "observation_reasons": list(observation.get("reasons") or ())}
         if _INSTRUCTION_LIKE.search(page.visible_text or ""):
             record["instruction_like_text"] = True
@@ -218,10 +330,13 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
         source = fact.get("source")
         if _sensitive(source):
             continue
-        value, _ = _bounded(str(fact.get("value", "")), _MAX_CLAIM_CHARS)
+        raw_value = fact.get('value', '')
+        if not isinstance(raw_value, (str, int, float)) or isinstance(raw_value, bool):
+            continue
+        value, value_cut = _bounded(str(raw_value), _MAX_CLAIM_CHARS)
         claims.append({"claim_id": f"C{len(claims) + 1:03d}", "type": fact.get("type"),
                        "category": fact.get("category"), "subject": fact.get("subject"),
-                       "predicate": fact.get("predicate"), "value": value, "source_url": source,
+                       "predicate": fact.get("predicate"), "value": value, "value_truncated": value_cut, "source_url": source,
                        "page_evidence_id": page_ids.get(source)})
 
     images = []
@@ -231,9 +346,11 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
         if not entry.get("same_origin") or entry.get("excluded") or entry.get("kind") == "svg" \
                 or _sensitive(entry.get("url")):
             continue
+        associated = list(entry.get('pages') or ())[:8]
         images.append({"image_id": f"I{len(images) + 1:03d}", "url": entry.get("url"),
-                       "alt": entry.get("alt"), "pages": list(entry.get("pages") or ())[:5],
-                       "page_evidence_ids": [page_ids[u] for u in entry.get("pages") or () if u in page_ids],
+                       "alt": entry.get("alt"), "pages": associated,
+                       "associated_pages_omitted": max(0, len(entry.get('pages') or ()) - len(associated)),
+                       "page_evidence_ids": [page_ids[u] for u in associated if u in page_ids],
                        "fact_keywords": list(entry.get("keywords") or ()),
                        "audit_fetch_status": entry.get("fetch_status"),
                        "viewing": "not viewed by the audit; header bytes are not a viewable raster"})
@@ -242,10 +359,13 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
     name = data.get("canonical_name")
     identity = {"name": name, "confidence": data.get("confidence", 0.0),
                 "entity_type": data.get("entity_type"), "aliases": list(data.get("aliases") or ())[:5],
+                "aliases_omitted": max(0, len(data.get('aliases') or ()) - 5),
                 "same_as_urls": list(data.get("same_as_urls") or ())[:10],
+                "same_as_urls_omitted": max(0, len(data.get('same_as_urls') or ()) - 10),
                 "ambiguity_type": data.get("ambiguity_type"),
                 "source_refs": [p["evidence_id"] for p in pages
                                 if name and name.lower() in (p["text"] + " " + (p["title"] or "")).lower()][:5]}
+    focus = _select_focus(artifacts, pages, about_target, aliases_map)
 
     caps = dict(capabilities or {})
     limitations = []
@@ -269,14 +389,15 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
         "schema_version": PACKET_SCHEMA_VERSION,
         "audit_id": audit_id,
         "snapshot_sha256": snapshot_sha256,
-        "snapshot_scope": "SHA-256 of page identities, statuses, titles and the SHA-256 of each page's "
-                          "extracted visible text; not raw response bytes",
+        "snapshot_scope": "SHA-256 of page identities, statuses, titles, visible-text digests and retained "
+                          "JSON-LD, body openings, sections, anchors and observation states; not raw response bytes",
         "code_version": code_version(),
         "captured_at": captured_at,
         "site": site_url,
         "audited_url": getattr(artifacts, "normalized_origin", None) or site_url,
         "content_policy": CONTENT_POLICY,
         "identity": identity,
+        "focus": {'ag01': focus},
         "about_page": about_status,
         "pages": pages,
         "claims": claims,
@@ -295,6 +416,7 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
                    "pages_eligible": len(eligible), "pages_selected": len(pages),
                    "pages_omitted": max(0, len(eligible) - len(pages)), "pages_text_truncated": truncated,
                    "claims_available": len(fact_list), "claims_selected": len(claims),
+                   "images_available": len((getattr(artifacts, 'media_data', None) or {}).get('images') or ()),
                    "pages_analyzed": coverage.get("pages_analyzed"),
                    "robots_permission": coverage.get("robots_permission")},
         "limitations": limitations,
@@ -306,23 +428,7 @@ def build_evidence_packet(artifacts, entity_identity, facts, capabilities, audit
 def _fit(packet):
     """packet shrunk until its JSON is at most MAX_PACKET_BYTES: page passages
     are halved, then pages are dropped from the end, and the cuts are listed."""
-    def size():
-        return len(json.dumps(packet, ensure_ascii=False).encode("utf-8"))
-    while size() > MAX_PACKET_BYTES and any(len(p["text"]) > 500 for p in packet["pages"]):
-        for page in packet["pages"]:
-            if len(page["text"]) > 500:
-                page["text"] = page["text"][:len(page["text"]) // 2]
-                page["text_truncated"] = True
-        packet["budget"]["shrunk_to_fit"] = True
-    while size() > MAX_PACKET_BYTES and packet["pages"]:
-        dropped = packet["pages"].pop()
-        packet["budget"]["pages_omitted"] += 1
-        packet["budget"]["pages_selected"] -= 1
-        packet["limitations"].append(f"{dropped['evidence_id']} was dropped to keep the packet under "
-                                     f"{MAX_PACKET_BYTES} bytes.")
-    packet["budget"]["packet_bytes"] = size()
-    packet["ready_for_assessment"] = bool(packet["pages"])
-    return packet
+    return fit_packet(packet, MAX_PACKET_BYTES)
 
 
 def evidence_ids(packet):
@@ -348,7 +454,7 @@ def evidence_ids(packet):
             for key in ('text', 'title', 'requested_url', 'final_url', 'source_url', 'url', 'value', 'subject', 'predicate'):
                 if key in record and record[key] is not None and not isinstance(record[key], str):
                     raise ValueError(f'packet record {key} must be a string')
-            for key in ('pages', 'page_evidence_ids', 'observation_reasons', 'fact_keywords'):
+            for key in ('pages', 'page_evidence_ids', 'observation_reasons', 'fact_keywords', 'aliases'):
                 if key in record and (not isinstance(record[key], list) or any(not isinstance(v, str) for v in record[key])):
                     raise ValueError(f'packet record {key} must be a list of strings')
             for key in ('text_truncated', 'is_about_page'):

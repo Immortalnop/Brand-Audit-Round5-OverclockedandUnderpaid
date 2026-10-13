@@ -27,14 +27,19 @@ from test_precision_traps import page, snapshot, LIMITS, SITE
 
 def binding():
     report = {'audit_id': 'a1', 'snapshot_sha256': 's1', 'site': SITE, 'coverage': {}}
-    packet = dict(report, pages=[{'evidence_id': 'E001', 'text': 'Acme builds payroll software.',
+    packet = dict(report, schema_version='1.1', ready_for_assessment=True, identity={'name': 'Acme', 'source_refs': ['E001']}, pages=[{'evidence_id': 'E001', 'text': 'Acme builds payroll software.', 'focus_text': 'Acme builds payroll software.',
                                   'requested_url': SITE, 'final_url': SITE, 'observation_status': 'complete'}],
                   claims=[], image_candidates=[])
-    envelope = {'schema_version': '1.0', 'audit_id': 'a1', 'snapshot_sha256': 's1',
+    packet['focus'] = {'ag01': {'page_ref': 'E001', 'assessable': True, 'opening_complete': True,
+                              'opening_passage': 'Acme builds payroll software.'}}
+    envelope = {'schema_version': '1.1', 'audit_id': 'a1', 'snapshot_sha256': 's1',
                 'capabilities': {'local_reading': True},
                 'checks': [{'check': 'AG-01', 'outcome': 'finding', 'source_refs': ['E001'],
                             'reason': 'The opening does not identify its audience.',
                             'observation': {'passage': 'Acme builds payroll software.', 'unanswered': ['who']}}]}
+    from packet_contract import packet_digest
+    packet['packet_sha256'] = packet_digest(packet)
+    report['packet_sha256'] = envelope['packet_sha256'] = packet['packet_sha256']
     return report, packet, envelope
 
 

@@ -43,6 +43,10 @@ from check_catalog import get_entry
 from url_safety import same_origin
 from agent_evidence import AG_CHECKS, evidence_ids
 from json_boundary import read_json, validate_tree
+from packet_contract import SCHEMA_VERSION, packet_digest, validate_registry, emitted_bytes
+from agent_evidence import MAX_PACKET_BYTES
+from agent_semantics import validate_semantics, norm
+from url_identity import page_identity
 
 # Environment variable naming the agent's findings file. Kept as an env var (not a
 # fixed workdir path) so nothing about this stage assumes the donor's subprocess
@@ -159,7 +163,7 @@ _SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 # Without the envelope's evidence contract no agent entry earns more than this.
 _LEGACY_MAX_SEVERITY = "medium"
 
-ENVELOPE_SCHEMA_VERSION = "1.0"
+ENVELOPE_SCHEMA_VERSION = SCHEMA_VERSION
 OUTCOMES = ("pass", "finding", "not_assessed", "error")
 ASSESSED_OUTCOMES = ("pass", "finding")
 _SOURCE_KINDS = {"inspected_page", "search_result", "search_snippet", "viewed_image", "knowledge_graph_page"}
@@ -369,7 +373,7 @@ def _build_finding(raw, origin=None):
     status = str(raw.get("status") or rule["default_status"]).lower()
     if status not in _VALID_STATUS:
         status = rule["default_status"]
-    if check == "AG-03" and status == "confirmed":
+    if check in ('AG-01', 'AG-03', 'AG-04', 'AG-05') and status == "confirmed":
         status = "suspected"
     severity = str(raw.get("severity") or rule["default_severity"]).lower()
     if severity not in _VALID_SEVERITY:
@@ -454,7 +458,7 @@ def not_supplied_record():
 # ---------------------------------------------------------------- outcome envelope
 
 def _norm(text):
-    return " ".join((text or "").split()).lower()
+    return norm(text)
 
 
 def _refs(raw, ids, errors):
@@ -495,6 +499,7 @@ def _sources(raw, errors):
             continue
         out.append({"url": url.strip(), "kind": kind, "quote": _text(item.get("quote"), _MAX_TEXT),
                     "title": _text(item.get("title"), _MAX_TITLE),
+                    "authorship": _text(item.get('authorship'), 300), 'platform': _text(item.get('platform'), 80),
                     "accessed_at": _text(item.get("accessed_at"), 40)})
     return out
 
@@ -515,8 +520,14 @@ def _queries(raw, errors):
         if isinstance(count, bool) or not isinstance(count, int) or count < 0:
             errors.append(f"query {_text(item.get('query'), 80)!r} needs a result_count (0 or more)")
             continue
+        matching, independent = item.get('matching_result_count'), item.get('independent_result_count')
+        if any(isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= count for v in (matching, independent)):
+            errors.append('each query needs bounded matching_result_count and independent_result_count integers')
+            continue
         out.append({"query": _text(item["query"], 300), "platform": _text(item.get("platform"), 80),
-                    "result_count": count, "executed_at": _text(item.get("executed_at"), 40)})
+                    "result_count": count, "executed_at": _text(item.get("executed_at"), 40),
+                    'matching_result_count': item.get('matching_result_count'),
+                    'independent_result_count': item.get('independent_result_count')})
     return out
 
 
@@ -525,7 +536,7 @@ def _domain(url):
     return host[4:] if host.startswith("www.") else host
 
 
-def _validate_check(check, outcome, raw, ids, have, origin):
+def _validate_check(check, outcome, raw, ids, have, origin, packet, build=True):
     """(record, finding_or_None, errors) for one envelope entry."""
     errors = []
     spec = AG_CHECKS[check]
@@ -552,6 +563,18 @@ def _validate_check(check, outcome, raw, ids, have, origin):
     image_refs = [r for r in refs if ids[r]["ref_kind"] == "image"]
     if queries:
         record["queries"] = queries
+    supported_refs, semantic_details, problems = validate_semantics(check, outcome, refs, sources, queries,
+                                                                    observation, packet, ids, origin)
+    errors.extend(problems)
+    for url in raw.get('affected_pages') or []:
+        if not _is_url(url) or not any(page_identity(url) in {page_identity(u) for u in
+                [ids[r].get('requested_url'), ids[r].get('final_url'), *ids[r].get('aliases', [])]}
+                for r in supported_refs if r in ids and ids[r]['ref_kind'] == 'page'):
+            errors.append('affected_pages cannot expand validated acquired support (unacquired/uncompared URL)')
+    record.update(semantic_details)
+    record['observation'] = observation
+    if sources:
+        record['sources'] = sources
 
     if outcome == "pass":
         if check == "AG-01" and not page_refs:
@@ -591,8 +614,6 @@ def _validate_check(check, outcome, raw, ids, have, origin):
             unanswered = []
         if not passage:
             errors.append("an AG-01 finding needs observation.passage, the text it judged")
-        elif page_refs and not any(_norm(passage) in _norm(ids[r].get("text")) for r in page_refs):
-            errors.append("observation.passage is not in the referenced packet page")
         if unanswered and passage:
             root_cause = (f"The passage read does not say {', '.join(sorted(unanswered))}: \"{passage[:300]}\"")
             evidence.insert(0, {"type": "agent_reading", "description": root_cause})
@@ -628,12 +649,15 @@ def _validate_check(check, outcome, raw, ids, have, origin):
             errors.append("an AG-03 finding needs observation.material (true or false)")
         if not material:
             ceiling = "medium"
-        domains = {_domain(s["url"]) for s in inspected}
-        status = "confirmed" if len(domains) >= 2 else "suspected"
-        confidence = 0.75 if len(domains) >= 2 else 0.6
-        method = "heuristic: distinct inspected source domains"
-        if inspected and claim:
-            root_cause = (f"The site states \"{claim[:300]}\"; {inspected[0]['url']} states "
+        substantive = semantic_details.get('independent_substantive_conflict') is True
+        status = "confirmed" if substantive else "suspected"
+        confidence = 0.75 if substantive else 0.6
+        if not substantive:
+            ceiling = 'medium'
+        method = "heuristic: acquired quote binding and inspected independently authored conflict; semantic judgment is declared"
+        source_quote = _text(observation.get('site_quote'), _MAX_TEXT)
+        if inspected and source_quote:
+            root_cause = (f"The site states \"{source_quote[:300]}\"; {inspected[0]['url']} states "
                           f"\"{inspected[0]['quote'][:300]}\". {same_entity[:200]} Which source is right is "
                           "not established by the conflict itself.")
     elif check == "AG-04":
@@ -646,11 +670,7 @@ def _validate_check(check, outcome, raw, ids, have, origin):
         if not comparison:
             errors.append("an AG-04 finding needs observation.text_comparison: why the page text does not "
                           "state the fact")
-        pages = sorted({u for r in image_refs for u in ids[r].get("pages") or ()})
-        page_records = [i for i in ids.values() if i["ref_kind"] == "page"
-                        and (i.get("requested_url") in pages or i.get("final_url") in pages)]
-        complete = bool(page_records) and all(p.get("observation_status") == "complete"
-                                              and not p.get("text_truncated") for p in page_records)
+        complete = semantic_details.get('complete_comparison') is True
         # Incomplete page text cannot prove a fact appears only in the image.
         status = "confirmed" if complete else "suspected"
         confidence = 0.7 if complete else 0.55
@@ -714,14 +734,27 @@ def _validate_check(check, outcome, raw, ids, have, origin):
     if isinstance(raw.get("status"), str) and raw["status"].lower() == "suspected":
         status = "suspected"
 
+    supported = {ref: ids[ref] for ref in supported_refs if ref in ids and ids[ref]['ref_kind'] == 'page'}
+    affected = raw.get('affected_pages') or []
+    def supported_ref(url):
+        return next((ref for ref, item in supported.items() if page_identity(url) in
+                     {page_identity(u) for u in [item.get('requested_url'), item.get('final_url'), *item.get('aliases', [])]}), None)
+    narrowed = []
+    for url in affected:
+        ref = supported_ref(url) if _is_url(url) else None
+        if ref is None:
+            errors.append('affected_pages cannot expand validated acquired support (unacquired/uncompared URL)')
+        else:
+            narrowed.append(ref)
     if errors:
         return record, None, errors
     if not root_cause:
         root_cause = get_entry(rule["rule_id"])["mechanism"]
-    if origin:
-        pages = [u for u in pages if same_origin(u, origin)]
-    affected = _urls(raw.get("affected_pages"))
-    pages = sorted(set(pages) | {u for u in affected if not origin or same_origin(u, origin)})
+    pages = sorted({supported[r].get('final_url') or supported[r]['requested_url'] for r in
+                    (narrowed if affected else supported) if not origin or same_origin(supported[r].get('final_url'), origin)})
+    record.update(severity=severity, status=status)
+    if not build:
+        return record, None, []
     finding = _make_agent_finding(rule, severity, status, confidence, title, root_cause,
                                   evidence[:_MAX_EVIDENCE_ITEMS + _MAX_SOURCES + _MAX_QUERIES], pages,
                                   confidence_method=method)
@@ -757,7 +790,7 @@ def _validate_envelope_types(envelope):
                 if key in raw and (not isinstance(raw[key], list) or len(raw[key]) > cap or
                                    any(not isinstance(v, str) for v in raw[key])):
                     errors.append(f'{where}.{key} must be a bounded list of strings')
-            for key, cap, fields in (('sources', _MAX_SOURCES, ('url', 'kind', 'quote', 'title', 'accessed_at')),
+            for key, cap, fields in (('sources', _MAX_SOURCES, ('url', 'kind', 'quote', 'title', 'accessed_at', 'authorship', 'platform')),
                                      ('queries', _MAX_QUERIES, ('query', 'platform', 'executed_at'))):
                 items = raw.get(key, [])
                 if not isinstance(items, list) or len(items) > cap:
@@ -774,12 +807,12 @@ def _validate_envelope_types(envelope):
                 continue
             text_fields(obs, ('passage', 'identity', 'site_claim', 'site_quote', 'same_entity', 'context',
                              'transcription', 'text_comparison', 'business_applicability', 'independence',
-                             'conflict_explanation', 'comparison_scope'), where + '.observation')
+                             'conflict_explanation', 'comparison_scope', 'subject', 'predicate', 'markup_limitation'), where + '.observation')
             for key in ('unanswered', 'platforms_missing', 'compared_page_refs'):
                 if key in obs and (not isinstance(obs[key], list) or len(obs[key]) > _MAX_REFS or
                                    any(not isinstance(v, str) for v in obs[key])):
                     errors.append(f'{where}.observation.{key} must be a bounded list of strings')
-            for key in ('material', 'image_viewed'):
+            for key in ('material', 'image_viewed', 'markup_comparison_complete'):
                 if key in obs and not isinstance(obs[key], bool):
                     errors.append(f'{where}.observation.{key} must be a boolean')
             if 'competing_entities' in obs:
@@ -840,8 +873,24 @@ def validate_envelope(envelope, report, packet):
             errors.append("the evidence packet belongs to a different audit or snapshot")
         try:
             ids = evidence_ids(packet)
+            validate_registry(packet)
+            if packet.get('schema_version') != SCHEMA_VERSION:
+                errors.append('packet schema_version must be 1.1; regenerate the export and assessment')
+            if packet.get('ready_for_assessment') is not True:
+                errors.append('the evidence packet is not ready for assessment')
+            if emitted_bytes(packet) > MAX_PACKET_BYTES:
+                errors.append('the evidence packet exceeds its emitted byte limit')
+            digest = packet.get('packet_sha256')
+            if not isinstance(digest, str) or len(digest) != 64 or digest != packet_digest(packet):
+                errors.append('packet_sha256 does not match the final packet contents')
+            if report.get('packet_sha256') != digest or not report.get('packet_sha256'):
+                errors.append('packet_sha256 does not match the saved report')
+            if envelope.get('packet_sha256') != digest:
+                errors.append('packet_sha256 does not match the outcome envelope')
         except ValueError as exc:
             raise EnvelopeError([str(exc)]) from exc
+    if errors:
+        raise EnvelopeError(errors)
     caps = envelope.get("capabilities") if isinstance(envelope.get("capabilities"), dict) else {}
     have = {"local_reading": caps.get("local_reading", True) is not False,
             "search": caps.get("search") is True, "vision": caps.get("vision") is True}
@@ -869,13 +918,20 @@ def validate_envelope(envelope, report, packet):
         if outcome not in OUTCOMES:
             errors.append(f"{check}: outcome {str(outcome)[:40]!r} is not one of {list(OUTCOMES)}")
             continue
-        record, finding, problems = _validate_check(check, outcome, raw, ids, have, origin)
+        record, finding, problems = _validate_check(check, outcome, raw, ids, have, origin, packet, build=False)
         errors.extend(f"{check}: {p}" for p in problems)
         records[check] = record
         if finding is not None:
             findings.append(finding)
     if errors:
         raise EnvelopeError(errors)
+    # No finding is constructed until the complete envelope has passed all
+    # contracts and semantics. The report remains untouched on any rejection.
+    for raw in checks:
+        check = raw['check'].strip().upper()
+        if raw['outcome'] == 'finding':
+            _, finding, _ = _validate_check(check, 'finding', raw, ids, have, origin, packet)
+            findings.append(finding)
     for check in _AG_RULES:
         records.setdefault(check, {"outcome": "not_assessed", "reason": OMITTED_NOT_ASSESSED})
     return {"checks": {c: records[c] for c in _AG_RULES}, "findings": findings, "capabilities": have}

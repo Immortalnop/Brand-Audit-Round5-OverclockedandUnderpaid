@@ -448,6 +448,42 @@ class Document(HTMLParser):
         # Scripts that run: external or inline JavaScript. JSON-LD and other data
         # blocks are not counted.
         self.executable_scripts=0
+        # Focused body evidence is independent of navigation and metadata, but
+        # bounded before it enters an immutable snapshot. IDs stay case-sensitive.
+        self.body_opening={'passage':'','paragraph_count':0,'complete':True,'truncated':False}
+        self.focus_sections=[];self._focus_active=[];self.focus_sections_limited=False
+    def _focus_start(self,tag,a,frame):
+        if frame['hidden'] or any(f['tag'] in _CHROME_TAGS+('head','script','style','template','noscript') for f in self.stack):return
+        level=int(tag[1]) if re.fullmatch('h[1-6]',tag) else None
+        if level is not None:
+            for entry in list(self._focus_active):
+                if entry['level'] is not None and level<=entry['level']:
+                    entry['complete']=True;self._focus_active.remove(entry)
+        element_id=a.get('id')
+        if not element_id or tag in _VOID:return
+        if len(element_id)>200 or len(self.focus_sections)>=32:
+            self.focus_sections_limited=True;return
+        entry={'section_id':element_id,'heading':'','level':level,'passage':'','paragraph_count':0,
+               'complete':False,'truncated':False,'source':'raw_html_text'}
+        frame['focus_entry']=entry
+        entry['_heading_element']=level is not None
+        self.focus_sections.append(entry);self._focus_active.append(entry)
+    def _focus_paragraph(self,text):
+        if not text or any(f['tag'] in _CHROME_TAGS+('head','script','style','template','noscript') for f in self.stack):return
+        def append(entry):
+            if entry['paragraph_count']>=2:return
+            combined=(entry['passage']+' '+text).strip()
+            entry['passage']=combined[:1500];entry['paragraph_count']+=1
+            if len(combined)>1500:entry['truncated']=True
+        append(self.body_opening)
+        for entry in self._focus_active:append(entry)
+    def close(self):
+        super().close()
+        # A heading-defined section can end at EOF. An unclosed structural
+        # element/paragraph is retained but cannot prove a complete opening.
+        for entry in self._focus_active:
+            entry['complete']=entry.get('_heading_element',False) and not any(f['tag']=='p' for f in self.stack)
+        self.body_opening['complete']=not self.body_opening['truncated'] and not any(f['tag']=='p' for f in self.stack)
     def _add_state_source(self,label):
         if label not in self.state_sources and len(self.state_sources)<5:self.state_sources.append(label)
     def _observe_state_attrs(self,a):
@@ -704,6 +740,7 @@ class Document(HTMLParser):
         if not self.framework_hint and (tag in ('app-root',) or any(k in a for k in _FRAMEWORK_ATTRS)):
             self.framework_hint=True
         self._observe_state_attrs(a)
+        self._focus_start(tag,a,frame)
         if 'itemscope' in a or 'typeof' in a:self.microdata=True
         if a.get('itemtype') and len(self.microdata_types)<30:
             for value in a['itemtype'].split()[:5]:
@@ -849,6 +886,15 @@ class Document(HTMLParser):
         idx=next((i for i in range(len(self.stack)-1,-1,-1) if self.stack[i]['tag']==tag),None)
         if idx is None:return
         frame=self.stack[idx];text=' '.join(''.join(frame['text']).split());a=frame['a']
+        if not frame['hidden'] and re.fullmatch('h[1-6]',tag):
+            for entry in self._focus_active:
+                if not entry['heading']:
+                    entry['heading']=text[:300];entry['level']=int(tag[1])
+        if not frame['hidden'] and tag=='p':self._focus_paragraph(text)
+        for closing in self.stack[idx:]:
+            entry=closing.get('focus_entry')
+            if entry and not entry.get('_heading_element') and entry in self._focus_active:
+                entry['complete']=closing is frame;self._focus_active.remove(entry)
         if tag=='ol' and frame.get('items',0)>=3:
             self.ordered_lists+=1;self.max_ordered_list_items=max(self.max_ordered_list_items,frame['items'])
         if tag=='ul' and frame.get('items',0)>=3 and not frame['hidden']:self.unordered_lists+=1
@@ -919,6 +965,9 @@ class Document(HTMLParser):
                 'head_blocking_scripts':self.head_blocking_scripts,'images_missing_dims':self.images_missing_dims,
                 'images_lazy':self.images_lazy,'canonical_values':self.canonicals[:20],
                 'opening_paragraphs':self.paragraph_text,
+                'body_opening':dict(self.body_opening),
+                'focus_sections':[{k:v for k,v in e.items() if not k.startswith('_')} for e in self.focus_sections],
+                'focus_sections_limited':self.focus_sections_limited,
                 'full_visible_chars':len(' '.join(self.text)),
                 'full_visible_bytes':len(' '.join(self.text).encode('utf-8')),
                 'question_headings':self.question_heading_count,

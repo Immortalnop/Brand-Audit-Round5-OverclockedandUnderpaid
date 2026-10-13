@@ -26,9 +26,9 @@ are preserved outside the release package.
 | --- | --- | --- |
 | 0 baseline | Passed | Isolated reviewed base plus A01/A02 fixture corrections: 1,100 passed in 106.67s |
 | 1 input/numeric boundaries | Passed | 59 new production/API/CLI regressions; full candidate suite passes (see verification below) |
-| 2 packet 1.1 | Pending | Bounds, references, final-content digest |
-| 3 focused About | Pending | Corrected selective donor port |
-| 4 semantic AG validation | Pending | Acquired support and affected scope |
+| 2 packet 1.1 | Targeted checks passed | Exact emitted bounds, final references, final-content digest and current non-ready exports |
+| 3 focused About | Targeted checks passed | Acquired body opening, exact fragments, aliases, unread targets and labeled fallback |
+| 4 semantic AG validation | Targeted checks passed | Actual acquired quotations, eligible page scope and explicit search/vision support |
 | 5 native/schema | Pending | Extraction states, money, facts, limited context semantics |
 | 6 reporting/policy/docs | Pending | Roles, explanations, Google policy, portable version |
 | 7 integration/release | Pending | Full suite, host workflow, extraction and evaluation limits |
@@ -92,3 +92,23 @@ correction before the selected schema port.
 
 No release ZIP, real host workflow, holdout accuracy claim, or remote push is
 claimed at this checkpoint. Existing source documents and ZIP remain untouched.
+
+## Phases 2–4 checkpoint
+
+Packet and outcome schema 1.1 bind the final exported contents to the saved report.
+Packet fitting counts exact UTF-8 serialization, preserves selected About support,
+reconciles dropped references and emits a current non-ready marker on failure.
+About selection uses acquired body paragraphs and exact fragment identity; an
+observed failed or excluded target never becomes an assessed homepage fallback.
+Agent merge validates every check before constructing findings, requires acquired
+quotes and explicit image comparisons, and limits search advice to its query scope.
+Legacy findings cannot clear assessment limits or become confirmed defects.
+
+Targeted production/API/CLI regression command (CPython 3.14.8):
+`python -m pytest -q tests/test_final_agent_semantics.py tests/test_round5_agent_handoff.py tests/test_final_packet_contract.py tests/test_final_about_focus.py tests/test_final_input_boundaries.py tests/test_agent_stage_merge.py`
+Result: **179 passed in 2.48s**. Full integration, regenerated example replay and
+actual host execution remain Phase 7 gates. New schema 1.1 examples will be
+generated from the candidate in Phase 6, rather than manually changing digests.
+
+Phase 5 native/schema repairs are now in progress. These targeted results do not
+establish independent precision, recall, calibration or host budget enforcement.

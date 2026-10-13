@@ -95,10 +95,10 @@ def test_workflow_acquires_once_and_the_merged_report_is_consistent(tmp_path, mo
         # (the ledger also holds the HTTPS probe to port 443, which nothing answers here).
         assert 0 < requests_after_audit <= report["coverage"]["network_budget"]["pools"]["site"]["requests"]
         about = next(p for p in packet["pages"] if p["requested_url"].endswith("/about"))
-        envelope = {"schema_version": "1.0", "audit_id": report["audit_id"],
-                    "snapshot_sha256": report["snapshot_sha256"],
+        envelope = {"schema_version": "1.1", "audit_id": report["audit_id"],
+                    "snapshot_sha256": report["snapshot_sha256"], "packet_sha256": report["packet_sha256"],
                     "capabilities": {"local_reading": True, "search": False, "vision": False},
-                    "checks": [{"check": "AG-01", "outcome": "pass", "source_refs": [about["evidence_id"]],
+                    "checks": [{"check": "AG-01", "outcome": "pass", "source_refs": [about["evidence_id"]], "observation": {"passage": packet["focus"]["ag01"]["opening_passage"]},
                                 "reason": "The About passage names Acme, its bicycle repair service and its "
                                           "local market."}]}
         files = {}

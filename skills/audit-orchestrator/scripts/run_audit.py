@@ -46,6 +46,7 @@ for _rel in (
 from constants import DEFAULT_LIMITS
 from models import make_deadline, _jsonable
 from json_boundary import validate_tree
+from packet_contract import emitted_json, emitted_bytes, fit_packet, nonready_packet
 from instrumentation import Instrumentation
 from capabilities import detect_capabilities, capability_report
 from field_vitals import start_field_lookup
@@ -557,12 +558,23 @@ def _run_bounded(site_url, limits, allow_private_targets, export_evidence):
         else:
             report, packet = result.value, None
         report["timing"] = timing
+        if export_evidence and packet is None:
+            reason = next((w for w in report.get('warnings', []) if 'packet' in w),
+                          'No eligible page was analyzed for the agent evidence packet.')
+            packet = nonready_packet(audit_id, report.get('snapshot_sha256'), reason, site_url)
         if packet is not None:
             packet["timing"] = {k: timing[k] for k in ("agent_deadline_at", "agent_stage_budget_s",
                                                         "agent_time_left_s", "agent_stage_recommended")}
+            from agent_evidence import MAX_PACKET_BYTES
+            packet = fit_packet(packet, MAX_PACKET_BYTES)
+            report['packet_sha256'] = packet['packet_sha256']
+            report['coverage']['evidence_packet_bytes'] = emitted_bytes(packet)
+            report['coverage']['evidence_packet_ready'] = packet['ready_for_assessment']
+            if not packet['ready_for_assessment']:
+                report.setdefault('limitations', []).extend(packet['limitations'])
         return report, packet
     # A timeout is an execution limitation, never a fabricated site defect.
-    return validate_report({"timing": timing,
+    report = validate_report({"timing": timing,
         "site": site_url, "audit_id": audit_id, "snapshot_sha256": None, "code_version": code_version(),
         "audited_at": datetime.now(timezone.utc).isoformat(), "summary": {},
         "findings": [], "recommendations": generate_recommendations([], []),
@@ -573,7 +585,12 @@ def _run_bounded(site_url, limits, allow_private_targets, export_evidence):
         "confidence": unfinished_confidence(),
         # Nothing was assessed, so nothing can be shown as passed.
         "whats_working": [],
-        "warnings": [result.error or "Worker failed"]}, strict_catalog=True), None
+        "warnings": [result.error or "Worker failed"]}, strict_catalog=True)
+    packet = nonready_packet(audit_id, None, result.error or 'Audit worker did not return.', site_url) if export_evidence else None
+    if packet is not None:
+        report['packet_sha256'] = packet['packet_sha256']
+        report['coverage'].update(evidence_packet_bytes=emitted_bytes(packet), evidence_packet_ready=False)
+    return report, packet
 
 
 # Hard ceiling for --max-pages. Above it a polite, paced crawl (crawl-delay, a
@@ -611,8 +628,7 @@ def write_report(report, path):
     handle, temp = tempfile.mkstemp(prefix=".report-", suffix=".tmp", dir=folder)
     try:
         with os.fdopen(handle, "w", encoding="utf-8", newline="\n") as out:
-            validate_tree(report)
-            out.write(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
+            out.write(emitted_json(report))
         os.replace(temp, path)
     except BaseException:
         try:
@@ -646,19 +662,32 @@ def _check_distinct(parser, **paths):
         seen[key] = option
 
 
-def _emit_packet(packet, path):
+def _emit_packet(packet, path, report=None):
     """Write the agent evidence packet to path, or say why there is none."""
     if path is None:
         return
-    if not packet or not packet.get("ready_for_assessment"):
-        print(f"[audit] no evidence packet written to {path}: the audit analyzed no page, so nothing is ready "
-              "for the agent stage", file=sys.stderr)
-        return
+    if packet is None:
+        packet = nonready_packet((report or {}).get('audit_id'), (report or {}).get('snapshot_sha256'),
+                                 'No evidence packet returned for the current audit.', (report or {}).get('site'))
+    from agent_evidence import MAX_PACKET_BYTES
+    if emitted_bytes(packet) > MAX_PACKET_BYTES:
+        packet = nonready_packet(packet.get('audit_id'), packet.get('snapshot_sha256'),
+                                 'Evidence export exceeded the packet byte limit.', packet.get('site'))
+        if report is not None:
+            report['packet_sha256'] = packet['packet_sha256']
+            report.setdefault('coverage', {}).update(evidence_packet_bytes=emitted_bytes(packet), evidence_packet_ready=False)
     try:
         written = write_report(packet, path)
-        print(f"[audit] evidence packet written to {written} (UTF-8)", file=sys.stderr)
-    except OSError as exc:
-        print(f"[audit] could not write the evidence packet to {path} ({exc})", file=sys.stderr)
+        state = 'ready' if packet.get('ready_for_assessment') else 'not ready: ' + '; '.join(packet.get('limitations', []))
+        print(f"[audit] evidence packet written to {written} (UTF-8; {state})", file=sys.stderr)
+        return True
+    except (OSError, ValueError) as exc:
+        reason = f"Could not write the evidence packet: {str(exc)[:300]}"
+        print(f"[audit] {reason}", file=sys.stderr)
+        if report is not None:
+            report.setdefault('warnings', []).append(reason)
+            report.setdefault('coverage', {})['evidence_packet_write_failed'] = True
+        return False
 
 
 def _emit(report, out):
@@ -812,8 +841,8 @@ def main(argv=None):
             report, packet = run_audit_with_evidence(parsed.site, limits=active_limits)
         else:
             report, packet = run_audit(parsed.site, limits=active_limits), None
+        _emit_packet(packet, parsed.evidence_out, report)
         _emit(report, parsed.out)
-        _emit_packet(packet, parsed.evidence_out)
         if report.get("coverage",{}).get("cancelled"):raise SystemExit(130)
     except KeyboardInterrupt:
         print("[audit] cancelled",file=sys.stderr)

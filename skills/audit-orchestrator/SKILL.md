@@ -56,7 +56,8 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    it, with no request:
    `python3 scripts/run_audit.py --from-report report.json --agent-findings envelope.json --evidence packet.json --out final.json`.
    The envelope is checked against the report and the packet (audit ID,
-   snapshot digest, evidence IDs, per-check evidence, severity ceilings) and
+   snapshot and final packet digests (schema 1.1), final references, focused source,
+   per-check semantics, supported affected scope and severity ceilings) and
    rejected as a whole, with reasons, if anything fails; report.json is left
    unchanged either way and stays the merge base. AG-01 needs only the packet;
    AG-02, AG-03, AG-05 and AG-06 need a search tool; AG-04 needs image viewing.

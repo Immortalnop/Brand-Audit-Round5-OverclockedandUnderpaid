@@ -72,8 +72,8 @@ def _no_network(monkeypatch):
 
 
 def envelope(report, checks, search=False, vision=False):
-    return {"schema_version": "1.0", "audit_id": report["audit_id"], "snapshot_sha256": report["snapshot_sha256"],
-            "capabilities": {"local_reading": True, "search": search, "vision": vision}, "checks": checks}
+    return {"schema_version": "1.1", "audit_id": report["audit_id"], "snapshot_sha256": report["snapshot_sha256"],
+            "packet_sha256": report["packet_sha256"], "capabilities": {"local_reading": True, "search": search, "vision": vision}, "checks": checks}
 
 
 def first_page(packet):
@@ -81,35 +81,61 @@ def first_page(packet):
 
 
 def ag01_pass(packet):
-    return {"check": "AG-01", "outcome": "pass", "source_refs": [first_page(packet)["evidence_id"]],
+    selected = packet['focus']['ag01']
+    return {"check": "AG-01", "outcome": "pass", "source_refs": [selected["page_ref"]], "observation": {"passage": selected["opening_passage"]},
             "reason": "The passage names the organization, its offering and its category."}
 
 
 def queries(platform=""):
-    return [{"query": "\"Acme\" reviews", "platform": platform, "result_count": 0, "executed_at": "2026-10-12"}]
+    return [{"query": "\"Media Brand\" reviews", "platform": platform, "result_count": 0, "matching_result_count": 0, "independent_result_count": 0, "executed_at": "2026-10-12"}]
 
 
 def all_pass(packet, image_id):
+    name = packet['identity']['name'] or first_page(packet)['title']
+    query = dict(queries('trustpilot')[0], result_count=1, matching_result_count=1, independent_result_count=1)
+    source = {'url': 'https://directory.example/northwind', 'kind': 'inspected_page',
+              'quote': 'Media Brand sells industrial heaters to workshops.', 'platform': 'trustpilot',
+              'authorship': 'Independent directory editorial team'}
+    identity = {'identity': name, 'context': 'Brand-matched search on 2026-10-12.'}
     checks = [ag01_pass(packet)]
-    for check in ("AG-02", "AG-03", "AG-05", "AG-06"):
-        checks.append({"check": check, "outcome": "pass", "queries": queries("trustpilot"),
-                       "reason": "The searches ran and found nothing to report."})
-    checks.append({"check": "AG-04", "outcome": "pass", "source_refs": [image_id],
-                   "reason": "The image repeats facts the page text states."})
+    checks.append({'check': 'AG-02', 'outcome': 'pass', 'queries': [query], 'sources': [source],
+                   'source_refs': ['E001'], 'observation': identity, 'reason': 'An inspected matching independent mention was found.'})
+    quote = first_page(packet)['focus_text']
+    checks.append({'check': 'AG-03', 'outcome': 'pass', 'queries': [query], 'sources': [source],
+                   'source_refs': [first_page(packet)['evidence_id']],
+                   'observation': dict(identity, site_quote=quote, same_entity='Same company/domain.',
+                                       independence='Directory authors are separate from the brand.'),
+                   'reason': 'The inspected source agrees on the business category.'})
+    checks.append({'check': 'AG-05', 'outcome': 'pass', 'queries': [query], 'source_refs': ['E001'],
+                   'observation': identity, 'reason': 'No competing entity in the relevant results inspected.'})
+    checks.append({'check': 'AG-06', 'outcome': 'pass', 'queries': [query], 'sources': [source],
+                   'source_refs': ['E001'], 'observation': dict(identity, business_applicability='Industrial equipment review directory.'),
+                   'reason': 'Matching profile in the checked platform.'})
+    image = next(i for i in packet['image_candidates'] if i['image_id'] == image_id)
+    refs = image['page_evidence_ids']
+    checks.append({'check': 'AG-04', 'outcome': 'pass', 'source_refs': [image_id] + refs,
+                   'observation': {'image_viewed': True, 'transcription': 'Illustrated logistics dashboard.',
+                                   'compared_page_refs': refs, 'comparison_scope': 'raw_html_text',
+                                   'text_comparison': 'Dashboard facts are also in the complete delivered HTML.'},
+                   'reason': 'The viewed image repeats facts the eligible page text states.'})
     return checks
 
 
 def valid_ag03(packet):
-    return {"check": "AG-03", "outcome": "finding", "severity": "critical",
-            "source_refs": [first_page(packet)["evidence_id"]],
-            "queries": queries(),
-            "sources": [{"url": "https://directory.example/acme", "kind": "inspected_page",
-                         "quote": "Acme, an accounting firm founded in 1999"},
-                        {"url": "https://news.example/acme", "kind": "inspected_page",
-                         "quote": "the accounting firm Acme"}],
-            "observation": {"site_claim": "Acme is a payroll platform", "same_entity": "Same domain and logo.",
-                            "context": "Listing updated 2026-09", "material": True},
-            "reason": "Two inspected sources give a different category."}
+    quote = first_page(packet)['focus_text']
+    name = packet['identity']['name'] or first_page(packet)['title']
+    return {'check': 'AG-03', 'outcome': 'finding', 'severity': 'critical',
+            'source_refs': [first_page(packet)['evidence_id']], 'queries': queries(),
+            'sources': [{'url': 'https://directory.example/northwind', 'kind': 'inspected_page',
+                         'authorship': 'Directory editorial team', 'quote': name + ' is a Chicago accounting firm.'},
+                        {'url': 'https://news.example/northwind', 'kind': 'inspected_page',
+                         'authorship': 'Independent newspaper reporter', 'quote': name + ' provides accounting services.'}],
+            'observation': {'site_claim': 'The brand sells industrial heaters.', 'site_quote': quote,
+                            'identity': name, 'same_entity': 'Same domain and Chicago company.',
+                            'independence': 'Separate editorial teams; no reused syndicated article.',
+                            'conflict_explanation': 'Site says industrial heaters, sources say accounting services.',
+                            'context': 'Listings inspected on 2026-10-12; current offering category.', 'material': True},
+            'reason': 'Two independently authored inspected sources give a different current category.'}
 
 
 # ---------------------------------------------------------------- T3.1 packet
@@ -185,7 +211,9 @@ def test_packet_is_shrunk_to_the_byte_limit(monkeypatch):
     monkeypatch.setattr(agent_evidence, "MAX_PACKET_BYTES", 6000)
     pages = [page("<p>" + "word " * 2000 + "</p>", f"<title>T{i}</title>", url=f"{SITE}/{i}") for i in range(4)]
     packet = build_evidence_packet(snapshot(*pages), {}, {}, {}, "a1", "s1", "now")
-    assert packet["budget"]["packet_bytes"] <= 6000
+    assert agent_evidence.MAX_PACKET_BYTES == 6000
+    from packet_contract import emitted_bytes
+    assert emitted_bytes(packet) <= 6000
     assert packet["budget"].get("shrunk_to_fit") or packet["budget"]["pages_omitted"]
 
 
@@ -204,10 +232,10 @@ def test_instruction_like_site_text_is_flagged_and_cannot_raise_severity():
     packet = build_evidence_packet(artifacts, {}, {}, {}, "a1", "s1", "now")
     [record] = [p for p in packet["pages"] if p["requested_url"] == SITE + "/about"]
     assert record["instruction_like_text"] is True
-    report = {"audit_id": "a1", "snapshot_sha256": "s1", "coverage": {"audited_url": SITE}, "site": SITE + "/"}
+    report = {"audit_id": "a1", "snapshot_sha256": "s1", "coverage": {"audited_url": SITE}, "site": SITE + "/", "packet_sha256": packet["packet_sha256"]}
     entry = {"check": "AG-01", "outcome": "finding", "severity": "critical", "status": "confirmed",
              "source_refs": [record["evidence_id"]],
-             "observation": {"unanswered": ["offering", "category"], "passage": "We make things. " + INJECTION},
+             "observation": {"unanswered": ["offering", "category"], "passage": packet["focus"]["ag01"]["opening_passage"]},
              "reason": "The passage names no offering or category."}
     result = ingest.validate_envelope(envelope(report, [entry]), report, packet)
     [finding] = result["findings"]
@@ -355,8 +383,8 @@ def test_immaterial_or_single_source_ag03_is_not_high(audited):
 
 def test_ag01_critical_override_is_capped_with_reason(audited):
     _, report, packet = audited
-    page_record = first_page(packet)
-    passage = " ".join(page_record["text"].split()[:12])
+    page_record = next(p for p in packet['pages'] if p['evidence_id'] == packet['focus']['ag01']['page_ref'])
+    passage = packet['focus']['ag01']['opening_passage']
     entry = {"check": "AG-01", "outcome": "finding", "severity": "critical",
              "source_refs": [page_record["evidence_id"]],
              "observation": {"unanswered": ["category"], "passage": passage},
@@ -366,7 +394,7 @@ def test_ag01_critical_override_is_capped_with_reason(audited):
     assert finding["severity"] == "medium"
     assert any("AG-01" in w and "capped at medium" in w for w in merged["warnings"])
     fabricated = dict(entry, observation={"unanswered": ["category"], "passage": "Words the page never said."})
-    with pytest.raises(ReportMergeError, match="not in the referenced packet page"):
+    with pytest.raises(ReportMergeError, match="complete selected focused opening"):
         merge_agent_envelope(report, envelope(report, [fabricated]), packet)
 
 
@@ -376,7 +404,7 @@ def test_search_checks_need_queries_and_ag02_is_scoped(audited):
     with pytest.raises(ReportMergeError, match="searches that ran"):
         merge_agent_envelope(report, envelope(report, [no_queries], search=True), packet)
     finding = {"check": "AG-02", "outcome": "finding", "severity": "high", "queries": queries(),
-               "observation": {"identity": "Acme payroll software"}, "reason": "No mention found."}
+               "source_refs": ["E001"], "observation": {"identity": "Media Brand", "context": "Brand-matched searches on 2026-10-12"}, "reason": "No mention found."}
     merged = merge_agent_envelope(report, envelope(report, [finding], search=True), packet)
     [made] = [f for f in merged["findings"] if f["check_id"] == "no-independent-mention"]
     assert made["severity"] == "low" and "searches run" in made["title"]
@@ -420,15 +448,17 @@ def test_repeated_merge_into_merged_output_is_rejected(audited):
 def test_ag04_joins_script_finding_only_on_shared_pages(audited):
     base, report, packet = audited
     [candidate] = [i for i in packet["image_candidates"] if i["pages"]][:1]
-    entry = {"check": "AG-04", "outcome": "finding", "source_refs": [candidate["image_id"]],
-             "observation": {"transcription": "Basic $19, Pro $29",
+    entry = {"check": "AG-04", "outcome": "finding", "source_refs": [candidate["image_id"]] + candidate["page_evidence_ids"],
+             "observation": {"image_viewed": True, "compared_page_refs": candidate["page_evidence_ids"],
+                             "comparison_scope": "raw_html_text", "markup_limitation": "Only exported text compared; markup absence unassessed.",
+                             "transcription": "Basic $19, Pro $29",
                              "text_comparison": "The page text states no prices."},
              "reason": "The image states prices the text does not."}
     merged = merge_agent_envelope(report, envelope(report, [entry], vision=True), packet)
     images = [f for f in merged["findings"] if f["check_id"] == "facts-in-images"]
     with_vision = [f for f in images if any("Basic $19" in e["description"] for e in f["evidence"])]
     assert len(with_vision) == 1
-    assert set(candidate["pages"]) <= set(with_vision[0]["affected_pages"])
+    assert set(with_vision[0]['affected_pages']) <= {p['final_url'] for p in packet['pages'] if p['evidence_id'] in candidate['page_evidence_ids']}
     before = [f for f in report["findings"] if f["check_id"] == "facts-in-images"]
     shared = [f for f in before if set(candidate["pages"]) & set(f["affected_pages"])]
     assert len(images) == len(before) + (0 if shared else 1)
@@ -453,7 +483,7 @@ def test_cli_rejects_an_envelope_during_a_live_audit(tmp_path, monkeypatch, caps
     monkeypatch.setenv("AUDIT_PROGRESS", "0")
     monkeypatch.setenv("AGENT_FINDINGS_PATH", "")
     path = tmp_path / "env.json"
-    path.write_text(json.dumps({"schema_version": "1.0", "checks": []}), encoding="utf-8")
+    path.write_text(json.dumps({"schema_version": "1.1", "checks": []}), encoding="utf-8")
     with pytest.raises(SystemExit) as exc:
         run_audit.main(["https://example.com", "--agent-findings", str(path), "--quiet"])
     assert exc.value.code == 2 and "--from-report" in capsys.readouterr().err
@@ -483,4 +513,6 @@ def test_cli_writes_the_packet_beside_the_report(tmp_path, monkeypatch):
     evidence.unlink()
     monkeypatch.setattr(run_audit, "run_audit_with_evidence", lambda *a, **k: ({"coverage": {}}, None))
     run_audit.main(["https://example.com", "--out", str(out), "--evidence-out", str(evidence), "--quiet"])
-    assert not evidence.exists()
+    marker = json.loads(evidence.read_text(encoding='utf-8'))
+    assert marker['ready_for_assessment'] is False
+    assert marker['limitations']
