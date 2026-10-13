@@ -38,6 +38,16 @@ def test_allowlist_omits_databases_journals_keys_plans_and_caches(tmp_path):
     assert (root/'donor.zip').read_bytes()==b'preserve'
 
 
+def test_replay_prompt_is_packaged_without_loading_unrelated_source_assets(tmp_path):
+    root=tree(tmp_path)
+    (root/'replay').mkdir()
+    (root/'replay'/'FINAL_AUDIT_PROMPT.txt').write_text('Actual demo prompt')
+    (root/'data').mkdir();(root/'data'/'store.sqlite').write_bytes(b'old database')
+    files=package.release_files(root)
+    assert 'replay/FINAL_AUDIT_PROMPT.txt' in files
+    assert not any(name.startswith('data/') for name in files)
+
+
 def test_symlinks_cannot_pull_unlisted_external_content_into_release(tmp_path):
     root=tree(tmp_path)
     (root/'common'/'alias.py').symlink_to('/etc/hostname')

@@ -7,7 +7,7 @@ Writes <out_dir>/brand-ai-readiness-audit-<version>.zip (default out_dir: dist/,
 which git ignores) and prints what it packed. Only the intended runtime,
 reference, example and test assets are packed:
 
-    marketplace.json, README.md, skills/, common/, examples/, tests/
+    marketplace.json, README.md, skills/, common/, examples/, tests/, replay/
 
 Left out on purpose, and never deleted from the working copy: the planning
 PDFs and notes (*.pdf, Plan.md, ROUND5_PLAN.md, Comparison.md), data/store.sqlite
@@ -31,7 +31,7 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INCLUDE_FILES = ("marketplace.json", "README.md")
-INCLUDE_DIRS = ("skills", "common", "examples", "tests")
+INCLUDE_DIRS = ("skills", "common", "examples", "tests", "replay")
 _SKIP_DIRS = {"__pycache__", ".pytest_cache", "benchmark_runs", ".git", '.venv', '.mypy_cache', '.ruff_cache', 'node_modules'}
 _SKIP_FILE = re.compile(r"\.(?:pyc|pyo|pdf|sqlite3?|db)(?:-(?:wal|shm|journal))?$|^\.env(?:\..*)?$|\.(?:pem|key)$|^id_(?:rsa|ed25519)$", re.I)
 _SECRET = re.compile(rb"(?:PAGESPEED_API_KEY|SEARCH_API_KEY)\s*=\s*['\"]?[A-Za-z0-9_\-]{16,}")
