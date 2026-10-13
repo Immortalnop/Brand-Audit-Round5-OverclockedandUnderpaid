@@ -619,8 +619,9 @@ def limits_for_pages(limits, max_pages):
 
 def write_report(report, path):
     """Write the JSON report to path as UTF-8, whatever the console or shell
-    encoding (PowerShell 5's > redirect writes UTF-16). The text is the same as
-    the stdout output. The file is written next to its destination and then
+    encoding (PowerShell 5's > redirect writes UTF-16). JSON values are the same
+    as stdout; the file retains literal Unicode while stdout escapes it for
+    legacy console encodings. The file is written next to its destination and then
     moved into place, so a failed run never leaves half a report."""
     import json
     import tempfile
@@ -705,7 +706,9 @@ def _emit(report, out):
             # The finished audit is never lost: it goes to stdout instead.
             print(f"[audit] could not write {out} ({exc}); printing the report instead", file=sys.stderr)
     if written is None:
-        print(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False))
+        # Redirected Windows stdout may use a legacy code page. JSON escapes
+        # preserve every Unicode value without changing the host's stream.
+        print(json.dumps(report, indent=2, ensure_ascii=True, allow_nan=False))
 
 
 def _merge_main(parser, parsed):

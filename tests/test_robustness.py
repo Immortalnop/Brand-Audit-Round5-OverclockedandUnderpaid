@@ -13,6 +13,7 @@ Every site is served from 127.0.0.1 (tests/archetype_sites.py); nothing here
 touches the network.
 """
 import json
+import io
 import os
 import sys
 from dataclasses import replace
@@ -336,7 +337,7 @@ def _fake_run(monkeypatch, report):
 
 
 def test_out_writes_utf8_json_and_keeps_stdout_clean(monkeypatch, tmp_path, capsys):
-    report = {"site": "https://site.test/", "note": "caf" + E_ACUTE + " we" + CURLY + "re", "coverage": {}}
+    report = {"site": "https://site.test/", "note": "caf" + E_ACUTE + " we" + CURLY + "re \u0420\u0435\u0448\u0435\u043d\u0438\u044f \u4e2d\u6587 \U0001f600", "coverage": {}}
     module, calls = _fake_run(monkeypatch, report)
     target = tmp_path / "report.json"
     module.main(["https://site.test/", "--out", str(target), "--quiet"])
@@ -345,6 +346,7 @@ def test_out_writes_utf8_json_and_keeps_stdout_clean(monkeypatch, tmp_path, caps
     raw = target.read_bytes()
     assert not raw.startswith((b"\xff\xfe", b"\xfe\xff", b"\xef\xbb\xbf"))
     assert json.loads(raw.decode("utf-8")) == report
+    assert report['note'].encode('utf-8') in raw  # --out keeps literal Unicode
     assert [p.name for p in tmp_path.iterdir()] == ["report.json"]  # no temporary file left
 
 
@@ -366,6 +368,32 @@ def test_out_falls_back_to_stdout_when_the_file_cannot_be_written(monkeypatch, t
     module.main(["https://site.test/", "--out", str(tmp_path / "r.json"), "--quiet"])
     captured = capsys.readouterr()
     assert json.loads(captured.out) == report and "could not write" in captured.err
+
+
+@pytest.mark.parametrize('encoding', ['ascii', 'cp1252', 'cp1251', 'utf-8'])
+@pytest.mark.parametrize('fallback', [False, True])
+def test_cli_unicode_json_survives_strict_stdout_encodings(monkeypatch, tmp_path, encoding, fallback):
+    # Windows redirection uses a strict legacy text stream. Exercise the real
+    # CLI emitter, including its file-failure fallback, without a live crawl.
+    report = {'site': 'https://site.test/', 'coverage': {},
+              '\u4fe1\u606f': '\u0420\u0435\u0448\u0435\u043d\u0438\u044f caf\u00e9 \u4e2d\u6587 \U0001f600',
+              'packet_sha256': 'a' * 64, 'confidence': .75}
+    module, calls = _fake_run(monkeypatch, report)
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding=encoding, errors='strict')
+    monkeypatch.setattr(sys, 'stdout', stream)
+    args = ['https://site.test/', '--quiet']
+    if fallback:
+        def fail(*_args, **_kwargs):
+            raise PermissionError('denied')
+        monkeypatch.setattr(module, 'write_report', fail)
+        args.extend(['--out', str(tmp_path / 'report.json')])
+    module.main(args)
+    stream.flush()
+    raw = buffer.getvalue()
+    assert raw.isascii() and json.loads(raw.decode(encoding)) == report
+    assert calls == ['https://site.test/']
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_markdown_tool_reads_a_report_written_with_out(monkeypatch, tmp_path, audits):

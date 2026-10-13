@@ -1,0 +1,49 @@
+{
+  "baseline_commit": "dbd88e2d5c30b2c6e7e0a4f2bf3d2911ec36a810",
+  "defect": "Literal Unicode stdout JSON fails on legacy strict streams after the audit finishes.",
+  "fix": "Restore ASCII escapes only in stdout json.dumps; retain allow_nan=False. UTF-8 file output, all JSON values and packet canonicalization are unchanged.",
+  "before_probe": "New CLI regressions copied into an archive of the exact parent commit; 8 failures (six encoding failures, two UTF-8 outputs violating the portable ASCII representation).",
+  "targeted_suite": {
+    "passed": 156,
+    "elapsed_s": 29.3,
+    "scope": "stdout/file output; page limits and sampling; safe redirects; core timeout/cancellation; released examples"
+  },
+  "actual_windows_execution": "Not performed here; strict ASCII/cp1252/cp1251/UTF-8 streams exercise the encoding boundary. The user reports --out working on Windows.",
+  "user_reports": "report-round-trips.json preserves original file hashes; every parsed value round-trips under cp1252; input files untouched.",
+  "comparison": {
+    "adobewithoutwww.json": {
+      "pages": 50,
+      "findings": 8,
+      "aliases": 1
+    },
+    "adobe.json": {
+      "pages": 50,
+      "findings": 9,
+      "aliases": 0
+    },
+    "report.json": {
+      "pages": 100,
+      "findings": 18
+    },
+    "extra_www_finding": {
+      "check_id": "cwv-risk",
+      "status": "suspected",
+      "severity": "low",
+      "metric": "LCP",
+      "pages": [
+        "https://www.adobe.com/ae_ar/",
+        "https://www.adobe.com/at/"
+      ],
+      "observed_arrival_ms": [
+        2079,
+        1983
+      ]
+    },
+    "explanation": "The WWW run records a lazy-loaded first image plus arrival times above the 1800 ms moderate threshold on two pages. The other reports record zero static LCP estimate hits. Timing-sensitive observations can vary across independent runs; no redirect-related finding distinguishes these reports. Exact raw feature/redirect chains were not saved in these reports."
+  },
+  "full_suite": {
+    "passed": 1301,
+    "elapsed_s": 126.06,
+    "log": "verification/stdout-compatibility/full-suite.txt"
+  }
+}

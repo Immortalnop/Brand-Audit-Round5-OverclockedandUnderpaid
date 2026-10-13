@@ -112,7 +112,10 @@ python3 skills/audit-orchestrator/scripts/run_audit.py --max-pages 100 https://e
 python3 common/report_markdown.py report.json        # optional: writes report.md
 ```
 
-In Windows PowerShell, `>` writes UTF-16. Use `--out`, which always writes UTF-8 (the same text the command prints) and prints nothing to stdout:
+Stdout JSON escapes non-ASCII characters so legacy console encodings can print it;
+JSON readers recover the original Unicode text. In Windows PowerShell 5, `>`
+writes UTF-16. Use `--out` for a UTF-8 file with literal Unicode and the same JSON
+values; it prints nothing to stdout:
 
 ```powershell
 python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in --out results.json; python common/report_markdown.py results.json

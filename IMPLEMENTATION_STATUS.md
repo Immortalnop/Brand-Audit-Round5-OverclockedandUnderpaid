@@ -1,5 +1,13 @@
 # Final candidate status
 
+Latest compatibility repair: stdout JSON again escapes Unicode for strict legacy
+console encodings. Parsed report values and UTF-8 file output are unchanged. The
+updated complete suite passed **1,301 tests in 126.06s**; see
+[stdout verification](verification/stdout-compatibility/record.json). This
+supersedes the original runtime's stdout compatibility claim. Historical freeze,
+host/evaluation records and original package evidence below remain dated evidence.
+The independent human/presentation gates remain pending.
+
 The engineering changes in required Phases 0–6 are implemented on `final_version`.
 Phase 7 regression, package execution and actual host rehearsals are verified.
 Independent human accuracy review and the intended-laptop presentation recording
