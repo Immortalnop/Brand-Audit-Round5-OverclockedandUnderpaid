@@ -45,5 +45,10 @@
     "passed": 1301,
     "elapsed_s": 126.06,
     "log": "verification/stdout-compatibility/full-suite.txt"
+  },
+  "extracted_targeted_suite": {
+    "passed": 156,
+    "elapsed_s": 29.43,
+    "log": "verification/stdout-compatibility/extracted-suite.txt"
   }
 }
