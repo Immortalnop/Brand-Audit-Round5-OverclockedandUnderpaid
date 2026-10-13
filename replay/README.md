@@ -12,9 +12,9 @@ page/time overrides or manual archive/file checksum steps. Required packet
 binding fields are copied for automatic engine validation.
 
 The Claude harness-version and model fields are intentionally blank for now.
-The launch uses the account's configured model. Fill the fields from the actual
-session when recording the demonstration. Configure optional dependencies before
-running and report the capabilities actually exercised.
+The launch explicitly requests Opus 5.5 with `--model claude-opus-5-5`. Fill the
+fields from the actual session when recording the demonstration. Configure optional
+dependencies before running and report the capabilities actually exercised.
 
 The supplied source ZIP has no RELEASE.json, so reading it is optional. An engine
 code_version ending in +unknown is preserved rather than treated as failure.

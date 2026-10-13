@@ -1,0 +1,253 @@
+{
+  "review_date": "2026-10-13",
+  "scope": "Analysis only; source reports, runtime, tests, skills and standalone audit prompt unchanged. Replay model pin and accompanying documentation updated.",
+  "audit_id": "a611a72bba10476bb7edfb9a18f1736c",
+  "reported_code_version": "8.4.0+unknown",
+  "supplied_archive": {
+    "path": "/home/dionysus/Downloads/out_barenecessities.zip",
+    "bytes": 87230,
+    "crc_ok": true,
+    "files": [
+      {
+        "file": "evidence.json",
+        "bytes": 48972,
+        "unchanged": true
+      },
+      {
+        "file": "agent-outcomes.json",
+        "bytes": 2623,
+        "unchanged": true
+      },
+      {
+        "file": "agent-stage-notes.md",
+        "bytes": 1787,
+        "unchanged": true
+      },
+      {
+        "file": "final-report.md",
+        "bytes": 70592,
+        "unchanged": true
+      },
+      {
+        "file": "run-audit.log",
+        "bytes": 1164,
+        "unchanged": true
+      },
+      {
+        "file": "merge.log",
+        "bytes": 261,
+        "unchanged": true
+      },
+      {
+        "file": "final-report.json",
+        "bytes": 225375,
+        "unchanged": true
+      },
+      {
+        "file": "merge.stdout",
+        "bytes": 0,
+        "unchanged": true
+      },
+      {
+        "file": "base-report.json",
+        "bytes": 216352,
+        "unchanged": true
+      },
+      {
+        "file": "run-audit.stdout",
+        "bytes": 0,
+        "unchanged": true
+      }
+    ]
+  },
+  "production_checks": {
+    "safe_json_files": 4,
+    "base_shape_valid": true,
+    "final_shape_valid": true,
+    "base_strict_validation_unchanged": true,
+    "final_strict_validation_unchanged": true,
+    "packet_content_digest_valid": true,
+    "all_bindings_match": true,
+    "envelope_accepted": true,
+    "exact_merge_except_new_clock": true,
+    "full_native_findings_preserved_except_ids_and_ranks": true,
+    "markdown_byte_identical": true,
+    "offline_network_attempts": 0
+  },
+  "base_summary": {
+    "total_findings": 21,
+    "critical": 0,
+    "high": 0,
+    "medium": 3,
+    "low": 18,
+    "proactive_improvements": 17,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 18
+  },
+  "final_summary": {
+    "total_findings": 22,
+    "critical": 0,
+    "high": 0,
+    "medium": 4,
+    "low": 18,
+    "proactive_improvements": 18,
+    "insufficient_evidence_items": 0,
+    "total_recommendations": 19
+  },
+  "timing": {
+    "workflow_elapsed_s": 130.857,
+    "workflow_target_s": 270.0,
+    "within_workflow_target": true,
+    "after_agent_deadline": true,
+    "agent_elapsed_s": 70.602,
+    "within_agent_deadline": false,
+    "core_elapsed_s": 60.255,
+    "measured": "from the audit start to this merge; the host agent's time is included but not enforced"
+  },
+  "agent_outcomes": {
+    "AG-01": "finding",
+    "AG-02": "not_assessed",
+    "AG-03": "not_assessed",
+    "AG-04": "not_assessed",
+    "AG-05": "not_assessed",
+    "AG-06": "not_assessed"
+  },
+  "packet_usability": {
+    "exported_pages": 8,
+    "truncated_exports": 8,
+    "image_association_counts": {
+      "I001": 0,
+      "I002": 0,
+      "I003": 0,
+      "I004": 0
+    },
+    "claim_predicates": {
+      "C001": "name",
+      "C002": "name",
+      "C003": "name",
+      "C004": "name",
+      "C005": "name",
+      "C006": "name",
+      "C007": "name",
+      "C008": "name",
+      "C009": "name",
+      "C010": "name",
+      "C011": "name",
+      "C012": "name"
+    },
+    "faq_question_name_claims": 10
+  },
+  "current_source_probes": {
+    "scope": "Fresh robots-allowed static HTML corroboration, not the original snapshot and not browser-rendered evidence. In-memory counterfactual source attribution only.",
+    "page_urls": [
+      "https://barenecessities.in/",
+      "https://barenecessities.in/pages/about-us",
+      "https://barenecessities.in/products/bare-necessities-how-to-live-a-zero-waste-life-book",
+      "https://barenecessities.in/pages/press"
+    ],
+    "responses": "HTTP 200, not truncated",
+    "reported_focus_reproduced": true,
+    "focus_paragraph_container": "announcement-bar dropdown before main",
+    "cart_notification_css_display_none": true,
+    "publication_date_misclassified_commercial": true,
+    "navigation_byline_reproduced": "Shop Body Care Soap",
+    "cart_template_attribution": {
+      "about": {
+        "actual_current_html": {
+          "unnamed_controls": 1,
+          "modal_dialogs": 2,
+          "heading_jumps": []
+        },
+        "counterfactual_without_cart_templates": {
+          "unnamed_controls": 0,
+          "modal_dialogs": 0,
+          "heading_jumps": []
+        },
+        "interpretation": "In-memory source attribution experiment only; neither runtime nor audit reports modified, and not a browser visibility measurement."
+      },
+      "home": {
+        "actual_current_html": {
+          "unnamed_controls": 4,
+          "modal_dialogs": 2,
+          "heading_jumps": [
+            [
+              2,
+              4
+            ]
+          ]
+        },
+        "counterfactual_without_cart_templates": {
+          "unnamed_controls": 3,
+          "modal_dialogs": 0,
+          "heading_jumps": []
+        },
+        "interpretation": "In-memory source attribution experiment only; neither runtime nor audit reports modified, and not a browser visibility measurement."
+      },
+      "book": {
+        "actual_current_html": {
+          "unnamed_controls": 1,
+          "modal_dialogs": 2,
+          "heading_jumps": []
+        },
+        "counterfactual_without_cart_templates": {
+          "unnamed_controls": 0,
+          "modal_dialogs": 0,
+          "heading_jumps": []
+        },
+        "interpretation": "In-memory source attribution experiment only; neither runtime nor audit reports modified, and not a browser visibility measurement."
+      },
+      "press": {
+        "actual_current_html": {
+          "unnamed_controls": 1,
+          "modal_dialogs": 2,
+          "heading_jumps": [
+            [
+              2,
+              4
+            ]
+          ]
+        },
+        "counterfactual_without_cart_templates": {
+          "unnamed_controls": 0,
+          "modal_dialogs": 0,
+          "heading_jumps": []
+        },
+        "interpretation": "In-memory source attribution experiment only; neither runtime nor audit reports modified, and not a browser visibility measurement."
+      }
+    }
+  },
+  "tests": {
+    "passed": 212,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 3.66,
+    "python": "/tmp/brand-final-venv/bin/python",
+    "files": [
+      "tests/test_round5_agent_handoff.py",
+      "tests/test_agent_stage_merge.py",
+      "tests/test_final_agent_semantics.py",
+      "tests/test_report_markdown.py",
+      "tests/test_media_schema_authorship.py",
+      "tests/test_final_packet_contract.py",
+      "tests/test_final_about_focus.py"
+    ],
+    "note": "Existing tests with localhost fixture permission; no new regressions or runtime fixes yet."
+  },
+  "replay": {
+    "requested_model": "claude-opus-5-5",
+    "launch_flag": "--model claude-opus-5-5",
+    "embedded_prompt_matches_standalone": true,
+    "standalone_prompt_unchanged": true,
+    "runtime_code_unchanged": true,
+    "prior_run_actual_model_unverified": true
+  },
+  "limitations": [
+    "Original full acquisition snapshot absent",
+    "Full Claude tool transcript absent",
+    "Prior run model and harness metadata absent",
+    "True user-request-to-final-output timing absent",
+    "No browser visibility measurement",
+    "Reported full-package immutability not independently established",
+    "Entire 49-page finding accuracy not independently replayed"
+  ]
+}
