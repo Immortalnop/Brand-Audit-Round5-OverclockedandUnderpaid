@@ -20,7 +20,10 @@ from fixtures_server import start_server
 def test_acquisition_respects_budget_against_slow_fixture():
     base_url, shutdown = start_server(slow_delay_s=1.5)
     try:
-        limits = replace(Limits(), ACQUISITION_BUDGET_S=1.0, PER_FETCH_TIMEOUT_MS=3000, MAX_FETCH_RETRIES=0)
+        # /slow is the start URL, which gets the critical timeout; keep it equal
+        # to the ordinary one so the bound below holds.
+        limits = replace(Limits(), ACQUISITION_BUDGET_S=1.0, PER_FETCH_TIMEOUT_MS=3000,
+                         CRITICAL_FETCH_TIMEOUT_MS=3000, MAX_FETCH_RETRIES=0)
         deadline = make_deadline(limits)
         instrumentation = Instrumentation()
 
