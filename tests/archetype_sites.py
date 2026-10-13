@@ -505,6 +505,16 @@ CHALLENGE_PAGE = ('<!DOCTYPE html><html lang="en"><head><title>Just a moment...<
                   '<noscript>Enable JavaScript and cookies to continue</noscript>'
                   '<script>window._cf_chl_opt={cvId:"3",cType:"managed"};</script></body></html>')
 
+# Reduced from PyPI's HTTP-200 interstitial observed on 2026-10-13. Fastly
+# also embeds /_fs-ch-.../ scripts in real pages, so the path alone is not proof.
+FASTLY_CHALLENGE_PAGE = ('<!DOCTYPE html><html lang="en"><head><title>Client Challenge</title>'
+                         '<link href="/_fs-ch-1T1wmsGaOgGaSxcX/assets/styles.css" rel="stylesheet">'
+                         '</head><body><noscript>JavaScript is disabled in your browser. '
+                         'Please enable JavaScript to proceed.</noscript>'
+                         '<div>A required part of this site couldn’t load. Please check your connection.</div>'
+                         '<script>loadScript("/_fs-ch-1T1wmsGaOgGaSxcX/errors.js");'
+                         'script.src="/_fs-ch-1T1wmsGaOgGaSxcX/script.js?reload=true";</script></body></html>')
+
 _GUARD_PATHS = ("/", "/about", "/pricing", "/blog/", "/contact")
 
 # 10. A site behind bot protection: every page answers 403 with a challenge. The

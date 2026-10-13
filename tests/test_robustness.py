@@ -26,7 +26,7 @@ for _rel in ("common", "skills/audit-orchestrator/scripts", "skills/crawl-render
     if os.path.join(_ROOT, _rel) not in sys.path:
         sys.path.insert(0, os.path.join(_ROOT, _rel))
 
-from archetype_sites import ALLOW_ALL, CHALLENGE_PAGE, ROBUSTNESS, serve
+from archetype_sites import ALLOW_ALL, CHALLENGE_PAGE, FASTLY_CHALLENGE_PAGE, ROBUSTNESS, serve
 from acquire_site import acquire_site, acquisition_failure
 from bot_challenge import challenge_signals
 from constants import Limits
@@ -62,6 +62,13 @@ def audits():
     sites = {
         "guarded": ROBUSTNESS["guarded"],
         "mixed_guard": ROBUSTNESS["mixed_guard"],
+        "fastly_guarded": {**ROBUSTNESS["guarded"], "responses": {
+            p: (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")
+            for p in ROBUSTNESS["guarded"]["responses"]}},
+        "fastly_mixed": {**ROBUSTNESS["mixed_guard"], "pages": {
+            path: body.replace('</body>', '<script src="/_fs-ch-example/challenge.js" defer></script></body>')
+            for path, body in ROBUSTNESS["mixed_guard"]["pages"].items()}, "responses": {
+                "/members": (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")}},
         "forbidden": {"robots": ALLOW_ALL, "pages": {},
                       "responses": {"/": (403, "<html><body><h1>Forbidden</h1></body></html>", "text/html")}},
         "disallowed": {"robots": "User-agent: *\nDisallow: /\n", "pages": {"/": "<p>Hello</p>"}},
@@ -256,6 +263,106 @@ def test_challenge_in_place_of_a_file_is_inaccessible_not_malformed():
 def test_off_site_profile_challenge_is_unverified_not_broken():
     from check_off_site_profiles import evaluate_profile
     resp = Response(403, {"Content-Type": "text/html"}, CHALLENGE_PAGE.encode(), "https://social.test/brand")
+    assert evaluate_profile("https://social.test/brand", resp, "ok", "brand.test", ["Brand"]) == (
+        "unverified", "bot_challenge")
+
+
+@pytest.mark.parametrize("status", [200, 202, 403, 405, 429, 503])
+def test_fastly_client_challenge_is_recognized(status):
+    assert challenge_signals(status, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == [
+        "fastly_challenge", "challenge_title"]
+
+
+@pytest.mark.parametrize("status", [200, 201, 204, 302, 404, 500])
+@pytest.mark.parametrize("title,body,chars", [
+    # Fastly's documented embedded script is allowed on an ordinary thin page.
+    ("Home", '<h1>Welcome</h1><script src="/_fs-ch-1T1wmsGaOgGaSxcX/challenge.js" defer></script>', 40),
+    # A title without a provider marker is not sufficient.
+    ("Client Challenge", '<h1>Client Challenge</h1><p>Our client design brief.</p>', 60),
+    # A short article can discuss the title and show the provider's path.
+    ("Client Challenge integration guide", '<p>Example: /_fs-ch-example/challenge.js</p>', 60),
+    # Even an exact title and provider marker do not exclude substantial content.
+    ("Client Challenge", FASTLY_CHALLENGE_PAGE + '<p>' + 'Documentation. ' * 100 + '</p>', 1500),
+])
+def test_fastly_markers_do_not_hide_normal_pages(status, title, body, chars):
+    assert challenge_signals(status, {}, body, title, chars) == []
+
+
+def test_fastly_interstitial_without_title_or_on_unrelated_error_is_not_assumed():
+    assert challenge_signals(200, {}, FASTLY_CHALLENGE_PAGE, "", 160) == []
+    assert challenge_signals(404, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge", 160) == []
+    # File probes supply no visible-text count; the existing small-body guard applies.
+    assert challenge_signals(200, {}, FASTLY_CHALLENGE_PAGE, "Client Challenge") == [
+        "fastly_challenge", "challenge_title"]
+    assert challenge_signals(200, {}, FASTLY_CHALLENGE_PAGE + " " * 20000, "Client Challenge") == []
+
+
+@pytest.mark.parametrize("body", [
+    '<title>Home</title><script src="/_fs-ch-example/challenge.js" defer></script>',
+    '<title>Client Challenge integration guide</title><p>Example: /_fs-ch-example/challenge.js</p>',
+    '<!-- <title>Client Challenge</title> --><p>Example: /_fs-ch-example/challenge.js</p>',
+    '<svg><title>Client Challenge</title></svg><p>Example: /_fs-ch-example/challenge.js</p>',
+    '<title>Client<!-- comment -->Challenge</title><p>Example: /_fs-ch-example/challenge.js</p>',
+])
+def test_fastly_title_fallback_preserves_embedded_scripts_and_examples(body):
+    assert challenge_signals(200, {}, body) == []
+
+
+def test_fastly_title_fallback_decodes_html_and_respects_scan_bound():
+    body = FASTLY_CHALLENGE_PAGE.replace('Client Challenge', 'client&#32;challenge')
+    assert challenge_signals(200, {}, body) == ["fastly_challenge", "challenge_title"]
+    assert challenge_signals(200, {}, " " * 65536 + body, "Client Challenge", 160) == []
+
+
+def test_fastly_guarded_report_has_no_content_findings_and_stops(audits):
+    from run_audit import SITE_LEVEL_CHECKS
+    from validate_report import validate_report
+    _, report, seen = audits["fastly_guarded"]
+    cov = report["coverage"]
+    assert len(validate_report(report, strict_catalog=True)["findings"]) == len(report["findings"])
+    assert report["execution_status"] == "insufficient_evidence"
+    assert cov["pages_analyzed"] == 0 and cov["pages_challenged"] == 2
+    assert cov["acquisition_failure"]["reason"] == "blocked_by_challenge"
+    assert cov["crawl_stopped_by_challenge"] is True
+    assert all(p["http_status"] == 200 and p["signals"] == ["fastly_challenge", "challenge_title"]
+               for p in cov["challenged_pages"])
+    for item in report["findings"] + report["recommendations"]:
+        assert all(check_id in SITE_LEVEL_CHECKS or check_id.startswith("baseline:")
+                   for check_id in item.get("check_ids") or [item["check_id"]])
+    # No retry, rendering or Fastly asset fetch occurs; crawl ends after two pages.
+    page_requests = [path for _, path in seen if path not in (
+        "/robots.txt", "/sitemap.xml", "/llms.txt", "/llms-full.txt")]
+    assert page_requests == ["/", "/about"]
+    assert seen[-2:] == [("GET", "/"), ("GET", "/about")]
+
+
+def test_fastly_mixed_report_preserves_real_pages(audits):
+    base, report, _ = audits["fastly_mixed"]
+    cov = report["coverage"]
+    assert report["execution_status"] != "insufficient_evidence"
+    assert cov["pages_analyzed"] == 2 and cov["pages_challenged"] == 1
+    assert cov["crawl_stopped_by_challenge"] is False
+    assert [p["url"] for p in cov["challenged_pages"]] == [base + "/members"]
+    for item in report["findings"] + report["recommendations"]:
+        assert base + "/members" not in item.get("affected_pages", []), item["check_id"]
+    assert any("bot-protection challenge" in line for line in report["limitations"])
+
+
+@pytest.mark.parametrize("path", ["/sitemap.xml", "/llms.txt", "/llms-full.txt"])
+def test_fastly_in_place_of_a_file_is_inaccessible(path):
+    site = {"robots": ALLOW_ALL, "pages": {"/": "<h1>Home</h1><p>Public page text.</p>"},
+            "responses": {path: (200, FASTLY_CHALLENGE_PAGE, "text/html; charset=utf-8")}}
+    _, artifacts, seen = acquire(site)
+    data = (artifacts.sitemap_data if path == "/sitemap.xml" else artifacts.llms_txt_data
+            if path == "/llms.txt" else artifacts.llms_txt_data["full"])
+    assert data["status"] == "inaccessible"
+    assert len(artifacts.pages) == 1
+    assert sum(request_path == path for _, request_path in seen) == 1
+
+
+def test_fastly_off_site_profile_is_unverified_not_broken():
+    from check_off_site_profiles import evaluate_profile
+    resp = Response(200, {"Content-Type": "text/html"}, FASTLY_CHALLENGE_PAGE.encode(), "https://social.test/brand")
     assert evaluate_profile("https://social.test/brand", resp, "ok", "brand.test", ["Brand"]) == (
         "unverified", "bot_challenge")
 

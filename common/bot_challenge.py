@@ -48,6 +48,11 @@ _ON_ERROR_ONLY = (
     ("ddos_guard", re.compile(r"ddos-guard", re.I)),
 )
 
+# Fastly also embeds this path in ordinary pages. It is an interstitial only
+# beside the exact holding-page title (plus the usual status/thinness guards).
+_FASTLY_CHALLENGE_PATH = re.compile(r"/_fs-ch-[\w-]+/", re.I)
+_FASTLY_CHALLENGE_TITLE = re.compile(r"\s*client challenge\s*", re.I)
+
 # Titles and headings of challenge pages.
 _CHALLENGE_TITLE = re.compile(
     r"just a moment|attention required|checking your browser|verify(?:ing)? (?:that )?you are (?:a )?human"
@@ -180,7 +185,8 @@ def challenge_signals(status, headers, body_text, title=None, visible_chars=None
     response. status is the HTTP status, headers a mapping, body_text the decoded
     body, title the page title and visible_chars the visible-text length (both
     optional; without visible_chars a 2xx page is judged by markers alone only
-    when its body is small)."""
+    when its body is small). For Fastly file/profile probes that omit title,
+    the title is parsed from the bounded body scan."""
     signals = []
     lowered = {str(k).lower(): str(v) for k, v in (headers or {}).items()}
     for name, pattern in _CHALLENGE_HEADERS:
@@ -189,8 +195,25 @@ def challenge_signals(status, headers, body_text, title=None, visible_chars=None
     if signals:
         return signals
     body = (body_text or "")[:_SCAN_CHARS]
+    fastly_marker = bool(_FASTLY_CHALLENGE_PATH.search(body))
+    fastly_title = title
+    if fastly_marker and title is None:
+        # Reuse the HTML parser: quoted examples, comments and SVG titles do not
+        # provide a document title. No script is executed and no asset fetched.
+        from html_features import Document
+        doc = Document()
+        try:
+            doc.feed(body)
+            doc.close()
+        except (ValueError, RecursionError):
+            fastly_title = None
+        else:
+            fastly_title = " ".join("".join(doc.title_parts).split())
     title = title or ""
+    fastly_interstitial = fastly_marker and bool(_FASTLY_CHALLENGE_TITLE.fullmatch(fastly_title or ""))
     if status in _CHALLENGE_STATUSES:
+        if fastly_interstitial:
+            return ["fastly_challenge", "challenge_title"]
         signals += [name for name, pattern in _INTERSTITIAL_ONLY + _ON_ERROR_ONLY if pattern.search(body)]
         if _CHALLENGE_TITLE.search(title):
             signals.append("challenge_title")
@@ -202,6 +225,8 @@ def challenge_signals(status, headers, body_text, title=None, visible_chars=None
     thin = visible_chars < _THIN_PAGE_CHARS if visible_chars is not None else len(body_text or "") < 20000
     if not thin:
         return []
+    if fastly_interstitial:
+        return ["fastly_challenge", "challenge_title"]
     signals += [name for name, pattern in _INTERSTITIAL_ONLY if pattern.search(body)]
     # A challenge title on a short 2xx page counts only beside a protection
     # marker: a real short page may be titled "Security check".
