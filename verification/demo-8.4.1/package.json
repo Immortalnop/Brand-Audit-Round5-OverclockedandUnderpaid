@@ -1,0 +1,25 @@
+{
+  "archive": "Brand-AI-Readiness-Audit-round5-final_version.zip",
+  "bytes": 803020,
+  "root": "Brand-AI-Readiness-Audit-round5-final_version/",
+  "files": 176,
+  "release": {
+    "name": "brand-ai-readiness-audit",
+    "version": "8.4.1",
+    "commit": "72f9b35fea35a8b0c8eb1cb29f9470053244a13e",
+    "uncommitted_changes": false,
+    "source": "committed_git_snapshot",
+    "files": 175
+  },
+  "crc_verified": true,
+  "prompt_matches_canonical": true,
+  "extracted_tests": {
+    "passed": 1373,
+    "skipped_modules": 1,
+    "duration_s": 123.19,
+    "skip_reason": "Build tooling intentionally excluded from runtime archive"
+  },
+  "packaging_and_prompt_tests": {
+    "passed": 7
+  }
+}

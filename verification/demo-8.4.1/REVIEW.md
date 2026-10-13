@@ -35,3 +35,13 @@ Independent finding review and presentation recording are also still pending.
 
 Original uploads, historical results and the user's fastmail.json/tartarine.json
 are preserved. No add_md changes were pulled into this revision.
+
+The deliverable archive was built from committed source 72f9b35 and extracted
+outside the checkout. Its full distributed suite passed **1,373 tests, with one
+expected module skip** for excluded build tooling, in 123.19 seconds. Seven
+checkout packaging/prompt tests also passed after adding replay to the allowlist.
+The archive is 803,020 bytes, has the expected folder root, portable RELEASE.json
+provenance, and the exact canonical prompt. CRC verification passed. Data stores,
+user result files, caches and uploaded planning/source archives are excluded by
+the release allowlist without deleting them from the workspace. See package.json
+and extracted-suite.txt. No manual archive hash check is added to the replay.
