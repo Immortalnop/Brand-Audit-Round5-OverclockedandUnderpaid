@@ -1,0 +1,149 @@
+[
+  {
+    "scope": "Native default-50 acquisition and all-not-assessed local handoff verification; no Claude research.",
+    "site": "https://tartinebakery.com/",
+    "code_version": "8.4.2+bca14234516f.dirty",
+    "audit_id": "df01f392954741e2843501bc5385befe",
+    "elapsed_through_render_s": 22.261,
+    "execution_status": "completed",
+    "pages_analyzed": 26,
+    "summary": {
+      "total_findings": 14,
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 12,
+      "proactive_improvements": 13,
+      "insufficient_evidence_items": 0,
+      "total_recommendations": 15
+    },
+    "immutable_inputs": true,
+    "native_findings_unchanged_by_merge": true,
+    "remaining_agent_s_after_core": 203.01,
+    "phone_claims": [
+      "(415) 487-2600",
+      "(415) 742-5005",
+      "(628) 245-3328",
+      "(424) 238-8125",
+      "(323) 552-6054",
+      "213-952-1588",
+      "323-364-5886",
+      "626-282-1981",
+      "(424) 443-7727",
+      "+82 2-792-2423",
+      "+82 2-2012-3782",
+      "+82 70-5223-2630"
+    ],
+    "images": [
+      {
+        "image_id": "I001",
+        "url": "https://tartinebakery.com/wp-content/uploads/2025/08/233_Tartine_07122019_paigegreen-683x1024.jpg",
+        "page_evidence_ids": [
+          "E007"
+        ],
+        "compared_text_complete": false
+      },
+      {
+        "image_id": "I002",
+        "url": "https://tartinebakery.com/wp-content/uploads/2025/08/DC2-2025.png",
+        "page_evidence_ids": [
+          "E008"
+        ],
+        "compared_text_complete": false
+      }
+    ]
+  },
+  {
+    "scope": "Native default-50 acquisition and all-not-assessed local handoff verification; no Claude research.",
+    "site": "https://www.fastmail.com/",
+    "code_version": "8.4.2+bca14234516f.dirty",
+    "audit_id": "3273631fec7b4def82793467d2dc9666",
+    "elapsed_through_render_s": 21.712,
+    "execution_status": "completed",
+    "pages_analyzed": 50,
+    "summary": {
+      "total_findings": 18,
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 16,
+      "proactive_improvements": 15,
+      "insufficient_evidence_items": 0,
+      "total_recommendations": 16
+    },
+    "immutable_inputs": true,
+    "native_findings_unchanged_by_merge": true,
+    "remaining_agent_s_after_core": 203.555,
+    "phone_claims": [
+      "(917) 591-3008",
+      "+61 2 9475 0859"
+    ],
+    "images": [
+      {
+        "image_id": "I001",
+        "url": "https://www.fastmail.com/assets/images/20-years-JLgpyecDZs-816.png",
+        "page_evidence_ids": [
+          "E006"
+        ],
+        "compared_text_complete": false
+      },
+      {
+        "image_id": "I002",
+        "url": "https://www.fastmail.com/assets/images/About-PZ5_Qq7Dko-816.png",
+        "page_evidence_ids": [
+          "E002"
+        ],
+        "compared_text_complete": false
+      },
+      {
+        "image_id": "I003",
+        "url": "https://www.fastmail.com/assets/images/Fastest-Email-V2-X1cXvuyr56-952.png",
+        "page_evidence_ids": [
+          "E008"
+        ],
+        "compared_text_complete": false
+      }
+    ]
+  },
+  {
+    "scope": "Native default-50 acquisition and all-not-assessed local handoff verification; no Claude research.",
+    "site": "https://barenecessities.in/",
+    "code_version": "8.4.2+bca14234516f.dirty",
+    "audit_id": "0ead0be5a262452682fcab9c2849bda3",
+    "elapsed_through_render_s": 48.265,
+    "execution_status": "completed",
+    "pages_analyzed": 49,
+    "summary": {
+      "total_findings": 18,
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 17,
+      "proactive_improvements": 17,
+      "insufficient_evidence_items": 0,
+      "total_recommendations": 18
+    },
+    "immutable_inputs": true,
+    "native_findings_unchanged_by_merge": true,
+    "remaining_agent_s_after_core": 177.008,
+    "phone_claims": [],
+    "images": [
+      {
+        "image_id": "I001",
+        "url": "https://barenecessities.in/cdn/shop/files/4_4.webp?v=1743490413&width=600",
+        "page_evidence_ids": [
+          "E008"
+        ],
+        "compared_text_complete": false
+      },
+      {
+        "image_id": "I002",
+        "url": "https://barenecessities.in/cdn/shop/files/5X1A1787copy.webp?v=1739513199&width=500",
+        "page_evidence_ids": [
+          "E005"
+        ],
+        "compared_text_complete": false
+      }
+    ]
+  }
+]

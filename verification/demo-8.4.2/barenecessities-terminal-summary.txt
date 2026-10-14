@@ -1,0 +1,45 @@
+Layout preview of the ORIGINAL teammate report (8.4.1), not a new Claude run.
+Outcomes/reasons are preserved; REVIEW.md explains the inaccurate timing/parent reasons.
+
+Audit of https://barenecessities.in/: completed.
+Findings: 0 critical, 0 high, 2 medium, 17 low; 19 total, 19 recommendations.
+Coverage: 49/281 pages; 0 challenged, 0 out of scope.
+Version: 8.4.1+72f9b35fea35; audit ID: c414d6e78a9f440480f5d818f9852230.
+
+Agent checks (unassessed checks are audit limits, not website defects):
+- AG-01: finding (F-002, medium, suspected); The selected About opening (E002) names the brand (Bare Necessities) and implies the personal-care category, but does not say what it actually sells (e.g. which products) — 'Formulations that perform. Packaging that disappears.' is a slogan
+- AG-02: pass; Two scoped identity/category searches returned independent matching coverage; one independent article (The Better India, by Raajwrita Dutta) was inspected and describes the same Bengaluru zero-waste personal care brand.
+- AG-03: not_assessed; Deadline: the host agent stage reached its limit (agent_deadline_at 2026-10-14T03:08:41Z) before this check's searches/inspection could be completed and saved; not assessed, not passed.
+- AG-04: not_assessed; The packet's image candidates have no exported E parent page association, and no full image was fetched or viewed; vision false.
+- AG-05: not_assessed; Deadline: the host agent stage reached its limit (agent_deadline_at 2026-10-14T03:08:41Z) before this check's searches/inspection could be completed and saved; not assessed, not passed.
+- AG-06: not_assessed; Deadline: the host agent stage reached its limit (agent_deadline_at 2026-10-14T03:08:41Z) before this check's searches/inspection could be completed and saved; not assessed, not passed.
+
+First two findings, in the report's priority order:
+- F-001: Links or buttons have no accessible name (medium, confirmed, defect; 5 affected pages).
+  Evidence: 3 unnamed control(s): <a href=https://www.nykaa.com/brands/bare-necessities/c/75924> with only an icon, <a href=https://www.amazon.in/stores/Barenecessities/page/41701A58-F80A-462B-990B-2C04C1> with only an icon, <a href=https://www.breakfreefromplastic.org/> with only an icon
+  Example page: https://barenecessities.in/
+  Fix: Name every icon-only link and button
+  - Add an aria-label that says what the control does, such as aria-label="Open cart"
+  - Or add visually hidden text inside the control
+  Suggested roles: developer, seo
+- F-002: About-page self-description is not concrete enough to quote (medium, suspected, proactive_improvement; 1 affected pages).
+  Evidence: The passage read does not say offering: "Most personal care brands make you choose — between what works and what's responsible. We built Bare Necessities to make that choice irrelevant. Formulations that perform. Packaging that disappears. Nothing left to regret. Our Bare Necessities Journey"
+  Example page: https://barenecessities.in/pages/about-us
+  Fix: Rewrite the opening of the About page to name who the organization is, what it sells or does, and in which category.
+  - State plainly who the organization is in the first two sentences
+  - Name the specific product or service and its market or category
+  Suggested roles: content, developer, seo
+
+Starting action: F-001 Name every icon-only link and button
+Top defect action: F-001 Name every icon-only link and button
+Quick win: F-001 Name every icon-only link and button
+
+Relevant limits:
+- 231 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 281 discovered); findings reflect only the 50 page(s) actually crawled, not the whole site. The sample reached 3 of 10 site sections (f
+- Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.
+- No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as "nothing found").
+- 1 linked off-site profile(s) could not be verified: the platform's robots.txt forbids crawlers, it answered with a bot challenge or login wall, or the per-audit cap was reached (see coverage.off_site_profiles). They are unchecked, not broke
+Measured through merge: 150.798 s; rendering and the final reply are additional.
+
+Files: final-report.json, final-report.md, base-report.json, evidence.json, agent-outcomes.json, agent-stage-notes.md.
+The complete report retains every finding and recommendation. This is a bounded sample; it does not predict rankings or business gains.

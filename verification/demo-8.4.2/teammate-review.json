@@ -1,0 +1,82 @@
+{
+  "scope": "Read-only verification of supplied archives; historical clock re-evaluation, not a new Claude run.",
+  "runs": [
+    {
+      "site": "tartine",
+      "audit_id": "cc58eb13a1a5451f8328704eb3213b0d",
+      "code_version": "8.4.1+72f9b35fea35",
+      "assessed": [
+        "AG-01",
+        "AG-02"
+      ],
+      "native_findings_preserved": true,
+      "merge_elapsed_s": 154.783,
+      "remaining_agent_s_at_saved_merge": 55.217,
+      "preflight_issues_at_saved_merge": [
+        "AG-03: deadline has not expired; 55.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-04: deadline has not expired; 55.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-05: deadline has not expired; 55.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-06: deadline has not expired; 55.2 seconds remain. Continue eligible work or give the actual non-time limitation."
+      ],
+      "eligible_image_ids": [
+        "I001",
+        "I002"
+      ],
+      "first_two_ids": [
+        "F-001",
+        "F-002"
+      ]
+    },
+    {
+      "site": "fastmail",
+      "audit_id": "d63dd15fcb3c42caa9b5bba7e5235777",
+      "code_version": "8.4.1+72f9b35fea35",
+      "assessed": [
+        "AG-01"
+      ],
+      "native_findings_preserved": true,
+      "merge_elapsed_s": 97.586,
+      "remaining_agent_s_at_saved_merge": 112.414,
+      "preflight_issues_at_saved_merge": [
+        "AG-02: deadline has not expired; 112.4 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-03: deadline has not expired; 112.4 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-05: deadline has not expired; 112.4 seconds remain. Continue eligible work or give the actual non-time limitation."
+      ],
+      "eligible_image_ids": [
+        "I001",
+        "I002",
+        "I003"
+      ],
+      "first_two_ids": [
+        "F-001",
+        "F-002"
+      ]
+    },
+    {
+      "site": "barenecessities",
+      "audit_id": "c414d6e78a9f440480f5d818f9852230",
+      "code_version": "8.4.1+72f9b35fea35",
+      "assessed": [
+        "AG-01",
+        "AG-02"
+      ],
+      "native_findings_preserved": true,
+      "merge_elapsed_s": 150.798,
+      "remaining_agent_s_at_saved_merge": 59.202,
+      "preflight_issues_at_saved_merge": [
+        "AG-03: deadline has not expired; 59.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-05: deadline has not expired; 59.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-06: deadline has not expired; 59.2 seconds remain. Continue eligible work or give the actual non-time limitation.",
+        "AG-04: packet image_candidates do have exported page_evidence_ids; use the actual image/viewing/text limit."
+      ],
+      "eligible_image_ids": [
+        "I001",
+        "I002"
+      ],
+      "first_two_ids": [
+        "F-001",
+        "F-002"
+      ]
+    }
+  ]
+}

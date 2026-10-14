@@ -1,0 +1,46 @@
+Layout preview of the ORIGINAL teammate report (8.4.1), not a new Claude run.
+Outcomes/reasons are preserved; REVIEW.md explains the inaccurate timing/parent reasons.
+
+Audit of https://tartinebakery.com/: completed.
+Findings: 0 critical, 0 high, 3 medium, 13 low; 16 total, 16 recommendations.
+Coverage: 26/27 pages; 0 challenged, 0 out of scope.
+Version: 8.4.1+72f9b35fea35; audit ID: cc58eb13a1a5451f8328704eb3213b0d.
+
+Agent checks (unassessed checks are audit limits, not website defects):
+- AG-01: finding (F-003, medium, suspected); The selected About opening (E002) is a founding anecdote: it names the founders and a 'corner bakery' (category), but does not name the organization (Tartine Bakery) or say what it offers (e.g. bread, pastries, cafe service, locations). Sus
+- AG-02: pass; One identity/category search returned 10 results, 4 clearly about the brand on non-owned domains; the Wikipedia article was inspected and independently describes Tartine as a bakery chain whose original bakery opened in 2002 at 600 Guerrero
+- AG-03: not_assessed; Agent deadline (02:51:52Z) left no time to bind a site quote and inspect independent sources for conflict.
+- AG-04: not_assessed; No full image was fetched or viewed within the agent deadline; vision false.
+- AG-05: not_assessed; Namesake search and distinguishing-source inspection not run before the agent deadline.
+- AG-06: not_assessed; One Yelp-oriented search ran (10 results, no Yelp page returned) but no platform profile was inspected before the deadline; absence is not inferred.
+
+First two findings, in the report's priority order:
+- F-001: No structured data (JSON-LD) found on any crawled page (medium, confirmed, proactive_improvement; 26 affected pages).
+  Evidence: 0/26 pages contain JSON-LD
+  Example page: https://tartinebakery.com/
+  Fix: Add Organization/Product/Article JSON-LD to key pages
+  - Identify page types
+  - Add matching schema.org JSON-LD blocks
+  Suggested roles: developer, seo
+- F-002: Articles do not name an author (medium, confirmed, proactive_improvement; 2 affected pages).
+  Evidence: No byline, meta author, rel=author link or Article author was found
+  Example page: https://tartinebakery.com/stories/country-bread
+  Fix: Name the author of every article, on the page and in Article markup
+  - Show a byline with the author's name near the article title
+  - Add author to the Article markup as a Person with name and url
+  Suggested roles: content, developer, seo
+
+Starting action: No confirmed defect is marked start_here.
+Top defect action: F-016 Publish the key facts from these PDFs on an HTML page
+Quick win: F-002 Name the author of every article, on the page and in Article markup
+Quick win: F-005 State the address, coordinates and service area in Organization or LocalBusiness JSON-LD
+
+Relevant limits:
+- 1 discovered URL(s) were never fetched (permission, acquisition failure, or budget constraints; out of 27 discovered); findings reflect only the 26 page(s) actually crawled, not the whole site. The sample reached 11 of 12 site sections (fir
+- Headless browser rendering was not available in this environment; rendering-gap findings are based on a static-content heuristic only and are reported as suspected/insufficient_evidence rather than confirmed.
+- No external search provider was configured; claim corroboration and off-site footprint assessment were not checked this run (not the same as "nothing found").
+- 8 linked PDF(s) were not fetched (robots rules, a cross-origin redirect, the per-audit cap of 3, or remaining budget; see coverage.non_text_media.pdf_outcomes); their contents were not assessed.
+Measured through merge: 154.783 s; rendering and the final reply are additional.
+
+Files: final-report.json, final-report.md, base-report.json, evidence.json, agent-outcomes.json, agent-stage-notes.md.
+The complete report retains every finding and recommendation. This is a bounded sample; it does not predict rankings or business gains.
