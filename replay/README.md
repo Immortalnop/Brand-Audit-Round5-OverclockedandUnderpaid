@@ -16,6 +16,15 @@ passes a shared host clock to bound the remaining allowance. There are no reduce
 page settings or manual archive/file checksum steps. Required packet
 binding fields are copied for automatic engine validation.
 
+Use `/brand-audit:audit <url> --max-pages 100` for an optional larger sample.
+The accepted range is 1-100, with 50 still the default. Request/byte allowances
+follow the engine's existing scaling; the time limits and full AG/report/handoff
+workflow remain the same. A larger cap does not guarantee that many acquired pages.
+Main reports, agent-outcomes.json and repair-prompt.md stay at the run root.
+Its `verification/` directory contains the bounded evidence packet, AG notes,
+optional image/receipt and workflow metadata. Its README explains when each file
+is created and how they connect. No source/report content is changed by the layout.
+
 The Claude harness-version and model fields are intentionally blank for now.
 The launch explicitly requests Opus 5.5 with `--model claude-opus-5-5`. Fill the
 fields from the actual session when recording the demonstration. Configure optional
@@ -28,7 +37,7 @@ If the archive includes historical prompts, use the revised prompt supplied here
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
 steps. The example URL is Tartine; change it for the actual public URL.
-Runtime and skills are updated for 8.5.0. The earlier evidence in
+Runtime and skills are updated for 8.5.1. The earlier evidence in
 `verification/replay-manifest/record.json` describes its historical candidate; exact
 Claude/laptop execution of this revision,
 independent finding review and presentation recording remain pending.

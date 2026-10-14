@@ -25,6 +25,13 @@ The deterministic saved report remains the merge base. Merge and rendering make
 no network requests. Do not crawl the target again, read process memory, submit
 forms, access authenticated areas, bypass challenges or automatically edit a site.
 
+Use the current run's configured paths. The URL command keeps base/final reports,
+agent-outcomes.json and repair-prompt.md at the run root; its evidence packet,
+notes, optional downloaded image/receipt and workflow metadata are under
+verification/. The directory contains supporting records, not a certificate that
+all findings were verified. Older flat runs remain valid inputs to the local
+repair exporter; do not move or rewrite their immutable evidence during assessment.
+
 The ordinary core ceiling is 270 seconds with 50 pages by default. Pass the
 host clock captured before contract reading via `--workflow-started-at`; the
 worker then receives only remaining workflow time after the 45-second finalization
@@ -67,11 +74,13 @@ query/source counts and failures. Fetch/View one eligible image early enough to
 save its scoped outcome; decorative images and partial text may remain unassessed.
 
 An optional full raster fetch uses `scripts/fetch_agent_image.py --report base.json
---evidence packet.json --image-id I001 --out-dir out`. Select an actual exported I
+--evidence packet.json --image-id I001 --out-dir out/verification`. Select an actual exported I
 with an E parent. It permits one fetch per output directory, requires 25 seconds
 remaining, and enforces a 20-second process cap, four requests including robots
 and redirects, and 3 MiB image bytes. It uses public-DNS/TLS/robots/same-origin
 safeguards without changing the audit User-Agent. Preserve its separate receipt.
+Run the helper directly; its own process cap enforces the timeout. Do not require
+the shell's timeout/gtimeout utilities, which may be unavailable on macOS.
 Fetch and writes stay sequential. Actually Read the saved image before declaring
 vision; fetching, alt text and header bytes never prove viewing. No alternate
 fetches or retries after failure.

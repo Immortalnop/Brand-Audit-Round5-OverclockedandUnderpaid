@@ -1,6 +1,8 @@
 """Runtime, memory, and concurrency limits."""
 from dataclasses import dataclass
 
+MAX_PAGES_CEILING = 100
+
 
 @dataclass(frozen=True)
 class Limits:

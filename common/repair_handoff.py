@@ -16,6 +16,7 @@ from json_boundary import read_json, validate_report_shape, validate_tree, loads
 from packet_contract import SCHEMA_VERSION, packet_digest, validate_registry
 from report_markdown import read_report
 from ingest_agent_findings import validate_envelope
+from artifact_layout import supporting_file, image_files
 
 REPAIR_INSTRUCTIONS = """Verify this website audit, then repair supported issues in the website's source repository supplied by the user.
 
@@ -93,7 +94,7 @@ def evidence_snapshot(report_path):
         validate_report_shape(base)
         _same_run(report, base, 'The base report')
         payload['artifact_paths']['base_report'] = str(base_path)
-    packet_path = folder / 'evidence.json'
+    packet_path = supporting_file(folder, 'evidence.json')
     if packet_path.exists():
         packet = read_json(packet_path, MAX_PACKET_BYTES)
         if not isinstance(packet, dict):
@@ -131,7 +132,7 @@ def evidence_snapshot(report_path):
         payload['artifact_paths']['agent_outcomes'] = str(outcomes_path)
     else:
         validation['agent_outcomes'] = 'not available; no tool trace or observation is invented'
-    notes = folder / 'agent-stage-notes.md'
+    notes = supporting_file(folder, 'agent-stage-notes.md')
     if notes.exists():
         with notes.open('rb') as handle:
             raw = handle.read(1024 * 1024 + 1)
@@ -139,12 +140,16 @@ def evidence_snapshot(report_path):
             raise ValueError('Agent stage notes exceed the handoff input limit')
         payload['agent_stage_notes'] = raw.decode('utf-8-sig')
         payload['artifact_paths']['agent_stage_notes'] = str(notes)
-    for name in ('final-report.md', 'workflow-start.json', 'agent-image-fetch.json'):
-        if (folder / name).is_file():
-            payload['artifact_paths'][name] = str(folder / name)
+    if (folder / 'final-report.md').is_file():
+        payload['artifact_paths']['final-report.md'] = str(folder / 'final-report.md')
+    for name in ('workflow-start.json', 'workflow-context.json', 'workflow-instructions.md',
+                 'agent-image-fetch.json'):
+        path = supporting_file(folder, name)
+        if path.is_file():
+            payload['artifact_paths'][name] = str(path)
     # Binary images remain separate; listing them never counts as an image view.
     image_ids = {i['image_id'] for i in (payload['evidence_packet'] or {}).get('image_candidates', [])}
-    payload['image_attachments'] = [str(p) for p in sorted(folder.iterdir())
+    payload['image_attachments'] = [str(p) for p in image_files(folder)
                                     if p.is_file() and p.stem in image_ids
                                     and p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp', '.gif')]
     return payload

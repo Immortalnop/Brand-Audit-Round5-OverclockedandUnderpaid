@@ -126,7 +126,7 @@ def _line(value,limit=300):
     return ' '.join(str(value or '').split())[:limit]
 
 
-def terminal_summary(report, repair_prompt=None):
+def terminal_summary(report, repair_prompt=None, run_dir=None):
     """A fixed, evidence-based reply scaffold; no new ranking or assessment."""
     c=report.get('coverage') or {}; counts=report.get('summary') or {}
     stage=c.get('agent_stage') or {}; checks=stage.get('checks') or {}
@@ -165,7 +165,13 @@ def terminal_summary(report, repair_prompt=None):
     if limits:lines+=['','Relevant limits:']+['- '+_line(v,240) for v in limits[:4]]
     measured=(c.get('agent_corroboration') or {}).get('workflow_timing') or {}
     if measured:lines.append(f"Measured through merge: {measured.get('workflow_elapsed_s')} s; rendering and the final reply are additional.")
-    lines+=['','Files: final-report.json, final-report.md, base-report.json, evidence.json, agent-outcomes.json, agent-stage-notes.md.',
+    if run_dir is not None:
+        from artifact_layout import artifact_listing
+        main_files, supporting = artifact_listing(run_dir)
+        lines+=['', 'Main outputs: '+', '.join(main_files)+'.',
+                'Supporting records: '+', '.join(supporting)+'.',
+                'verification/ holds acquired evidence, AG research/download records and workflow metadata; it does not certify every finding.']
+    lines+=['',
             'The complete report retains every finding and recommendation. This is a bounded sample; it does not predict rankings or business gains.']
     text = '\n'.join(lines)
     if repair_prompt:
@@ -203,7 +209,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     try:
         if args.mode=='terminal':
-            print(terminal_summary(read_report(args.report), args.repair_prompt));return
+            print(terminal_summary(read_report(args.report), args.repair_prompt, Path(args.report).resolve().parent));return
         if args.mode in ('status','preflight'):
             value=checkpoint(read_report(args.report),read_json(args.evidence,MAX_PACKET_BYTES),read_json(args.outcomes,MAX_PACKET_BYTES))
             if args.mode=='preflight' and value['preflight_issues']:

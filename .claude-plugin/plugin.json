@@ -1,6 +1,6 @@
 {
   "name": "brand-audit",
-  "version": "8.5.0",
+  "version": "8.5.1",
   "description": "Audit a public website for AI readiness and engagement, then export an evidence-based repair handoff.",
   "author": {"name": "Overclocked & Underpaid"}
 }

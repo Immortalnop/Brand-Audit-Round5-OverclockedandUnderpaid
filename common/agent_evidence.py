@@ -32,7 +32,7 @@ from url_safety import same_origin
 
 PACKET_SCHEMA_VERSION = SCHEMA_VERSION
 # The release in marketplace.json; code_version() appends the commit.
-RELEASE_VERSION = "8.5.0"
+RELEASE_VERSION = "8.5.1"
 
 MAX_PACKET_BYTES = 512 * 1024
 MAX_PACKET_PAGES = 8

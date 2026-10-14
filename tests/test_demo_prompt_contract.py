@@ -29,7 +29,7 @@ def test_clock_command_is_executable_and_cannot_replace_previous_outputs(tmp_pat
     args=shlex.split(command);args[0]=sys.executable
     result=subprocess.run(args,cwd=tmp_path,capture_output=True,text=True)
     assert result.returncode==0
-    marker=out/'workflow-start.json';original=marker.read_bytes()
+    marker=out/'verification/workflow-start.json';original=marker.read_bytes()
     assert json.loads(original)['workflow_started_at']==result.stdout.strip()
     repeated=subprocess.run(args,cwd=tmp_path,capture_output=True,text=True)
     assert repeated.returncode!=0 and marker.read_bytes()==original

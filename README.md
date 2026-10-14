@@ -118,14 +118,23 @@ In Claude Code, run:
 
 ```text
 /brand-audit:audit https://tartinebakery.com/
+/brand-audit:audit https://www.adobe.com/ --max-pages 100
 ```
 
 Change only the URL for another site. Each invocation creates a fresh
 out/<UTC-run-id>/ folder and uses the maintained full audit procedure. It keeps
-the normal 50-page cap, shared clock, supported AG checks and local merge. The
+the default 50-page cap, shared clock, supported AG checks and local merge. An
+optional --max-pages integer from 1 to 100 changes the cap and its existing
+request/byte allowance; it leaves time limits and all workflow stages intact. The
 final summary includes a short next prompt and links repair-prompt.md, which
 contains the full report and available evidence/outcomes for verification and
 repairs in the website's source repository. It does not apply repairs itself.
+
+Each run's root contains base-report.json, agent-outcomes.json, final-report.json,
+final-report.md and repair-prompt.md. Its verification/ folder holds evidence.json,
+agent-stage-notes.md, optional downloaded images/receipts and workflow metadata.
+The generated verification/README.md explains creation order and connections.
+The folder contains supporting records; it does not certify every finding as true.
 
 For persistent use, install the extracted release once from its local catalog:
 
@@ -162,9 +171,10 @@ python skills/audit-orchestrator/scripts/run_audit.py snu.edu.in --out results.j
 The full workflow with the optional agent stage acquires the site once. The audit writes the report and a bounded evidence packet; the host agent reads the packet, runs the `entity-corroboration-agent` checks (AG-01 to AG-06) its tools allow and writes one outcome per check; the merge and the Markdown make no request:
 
 ```bash
-python3 skills/audit-orchestrator/scripts/run_audit.py <site> --out out/base-report.json --evidence-out out/evidence.json
-# the host agent reads out/evidence.json and writes out/agent-outcomes.json (see the entity-corroboration-agent SKILL.md)
-python3 skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
+mkdir -p out/verification
+python3 skills/audit-orchestrator/scripts/run_audit.py <site> --out out/base-report.json --evidence-out out/verification/evidence.json
+# the host agent reads out/verification/evidence.json and writes out/agent-outcomes.json (see the entity-corroboration-agent SKILL.md)
+python3 skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/verification/evidence.json --out out/final-report.json
 python3 common/report_markdown.py out/final-report.json out/final-report.md
 python3 common/repair_handoff.py --report out/final-report.json --out out/repair-prompt.md
 ```
@@ -178,6 +188,12 @@ The handoff retains every finding, recommendation and available bound evidence
 without reclassifying them. Its file checks establish consistency, not truth;
 the next agent must verify the findings and obtain the website's editable source.
 The audit engine, AG rules, native stdout and timing/crawl defaults are unchanged.
+
+Release 8.5.1 exposes the existing optional page cap in the Claude URL command
+and groups supporting records under verification/. Local repair export accepts
+both this layout and older flat outputs, validating their same-run binding and
+preserving all input bytes. The image helper enforces its own timeout and needs
+no platform-specific timeout command.
 
 The base report is never overwritten (the merge refuses to write over its input) and stays the merge base. AG-01 needs only the packet; checks that need search or vision are recorded as not assessed when the host did not run them. `examples/` holds one complete run of this workflow: `sample-report.json` (the base report), `evidence.json`, `agent-outcomes.json`, `final-report.json` and `final-report.md`. `tests/test_round5_release.py` replays the same workflow offline on a fixture site.
 

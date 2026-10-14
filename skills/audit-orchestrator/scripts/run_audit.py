@@ -43,7 +43,7 @@ for _rel in (
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from constants import DEFAULT_LIMITS
+from constants import DEFAULT_LIMITS, MAX_PAGES_CEILING
 from models import make_deadline, _jsonable
 from json_boundary import validate_tree
 from packet_contract import emitted_json, emitted_bytes, fit_packet, nonready_packet
@@ -632,7 +632,6 @@ def _run_bounded(site_url, limits, allow_private_targets, export_evidence, workf
 # Hard ceiling for --max-pages. Above it a polite, paced crawl (crawl-delay, a
 # 0.2-second gap, 3.5-second fetch timeout) no longer fits the acquisition budget
 # of the 5-minute audit limit on an ordinary site.
-MAX_PAGES_CEILING = 100
 
 
 def limits_for_pages(limits, max_pages):

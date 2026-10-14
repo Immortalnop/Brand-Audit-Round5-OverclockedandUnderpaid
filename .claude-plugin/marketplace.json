@@ -6,7 +6,7 @@
     {
       "name": "brand-audit",
       "source": "./",
-      "version": "8.5.0",
+      "version": "8.5.1",
       "description": "Full URL-based Brand AI-Readiness Audit with reports and a verification/repair handoff."
     }
   ]
