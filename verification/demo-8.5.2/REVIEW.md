@@ -50,5 +50,17 @@ authenticated Claude demo run was performed here. Existing reports, packets,
 user archives and source HTML remain unchanged; fresh acquisition is required
 to obtain corrected report observations.
 
-Package and extracted-release checks are recorded alongside this review after
-building from the committed runtime source.
+The 842,446-byte canonical ZIP was built from committed runtime b870dcf, with
+clean RELEASE metadata, 183 payload files and 184 entries. Every packaged
+payload matches both that commit and the checkout. The previous canonical ZIP
+was preserved separately. The extracted suite passed 1,505 tests in 129.58
+seconds, with one expected module skip for the six release-builder tests
+excluded by the runtime allowlist. Actual Claude validation, local marketplace
+registration and plugin installation passed in a fresh isolated temporary
+configuration. Installed-cache tests retain one shared clock and correct
+main/supporting paths for default 50 and explicit 100 page caps, and the cached
+parser suppresses an inactive named button while retaining a real unnamed
+control. Its runtime version is 8.5.2+b870dcf3b605. No core or authenticated
+host stage was executed by those cache bootstraps; no user Claude settings
+were changed. Package, suite, installation and bootstrap records are saved
+alongside this review.

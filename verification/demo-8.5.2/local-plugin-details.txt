@@ -1,0 +1,14 @@
+[
+  {
+    "id": "brand-audit@brand-audit-marketplace",
+    "version": "8.5.2",
+    "scope": "user",
+    "enabled": true,
+    "installPath": "/tmp/brand-8.5.2-claude-config/plugins/cache/brand-audit-marketplace/brand-audit/8.5.2",
+    "readFromFolder": "/tmp/brand-8.5.2-release-arnjm8lf/Brand-AI-Readiness-Audit-round5-final_version",
+    "folderVersion": "8.5.2",
+    "installedAt": "2026-10-14T13:55:26.731Z",
+    "lastUpdated": "2026-10-14T13:55:26.731Z",
+    "projectEnabled": false
+  }
+]
