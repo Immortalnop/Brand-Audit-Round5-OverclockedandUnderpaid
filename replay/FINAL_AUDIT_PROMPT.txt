@@ -1,4 +1,4 @@
-SITE_URL: https://barenecessities.in/
+SITE_URL: https://tartinebakery.com/
 PACKAGE_DIR: ./Brand-AI-Readiness-Audit-round5-final_version
 OUTPUT_DIR: ./out
 PYTHON_COMMAND: python3
@@ -39,7 +39,9 @@ skills; do not run those scripts separately or create other agents.
 Use only the current run. No previous reports, sample outcomes or remembered
 brand facts may supply audit evidence. Preserve all package files and base
 outputs; write only within OUTPUT_DIR. Set PYTHONDONTWRITEBYTECODE=1 for Python
-commands. Only the workflow-start.json just created for this run may already exist.
+commands. Before acquisition, only this invocation's workflow-start.json and
+optional bootstrap context/instruction files may already exist. Report, packet
+and outcomes paths must be fresh.
 Read independent contract files in small parallel batches of two or three where
 Claude Code supports it; preserve their full contents and the single workflow.
 
@@ -278,9 +280,25 @@ For the successful merged report or explicit unchanged-base fallback, run:
 python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/final-report.json out/final-report.md
 Merge and rendering are local; make no new website requests during those steps.
 
+Export the verification and repair handoff from these current saved artifacts:
+python3 Brand-AI-Readiness-Audit-round5-final_version/common/repair_handoff.py --report out/final-report.json --out out/repair-prompt.md
+This helper makes no requests or website/source changes. It includes the complete
+final JSON, all findings/recommendations, available bound packet/outcomes, notes
+and image attachment paths without inventing verification or repairs. It writes
+a new file exclusively and prints a short suggested next prompt. If export fails,
+keep the final report and disclose the actual error; do not alter evidence, use a
+stale prompt or overwrite an earlier handoff to make it pass.
+
 5. Deliver a concise explanation of the actual final report.
 After rendering, use the deterministic terminal-summary scaffold:
-python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py terminal --report out/final-report.json
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py terminal --report out/final-report.json --repair-prompt out/repair-prompt.md
+Include --repair-prompt only after the handoff export succeeded. End the final
+reply with its suggested next prompt and link to repair-prompt.md. The next agent
+must verify every finding before repairing the supplied website source; a finding
+is not automatically true, an improvement is not automatically a defect and an
+unassessed AG check is not a website issue. The full file carries the evidence;
+attach it (and image files when needed) if the next agent cannot access this folder.
+Do not perform verification/repairs of the live site as part of this audit stage.
 Use its content in the final reply, adding real file links and the last measured
 time. Include all six AG outcomes with actual reasons, and explain BOTH first
 findings (or all available if fewer than two), each with ID, severity/status/type,

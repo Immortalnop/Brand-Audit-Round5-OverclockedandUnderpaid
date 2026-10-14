@@ -126,7 +126,7 @@ def _line(value,limit=300):
     return ' '.join(str(value or '').split())[:limit]
 
 
-def terminal_summary(report):
+def terminal_summary(report, repair_prompt=None):
     """A fixed, evidence-based reply scaffold; no new ranking or assessment."""
     c=report.get('coverage') or {}; counts=report.get('summary') or {}
     stage=c.get('agent_stage') or {}; checks=stage.get('checks') or {}
@@ -167,7 +167,11 @@ def terminal_summary(report):
     if measured:lines.append(f"Measured through merge: {measured.get('workflow_elapsed_s')} s; rendering and the final reply are additional.")
     lines+=['','Files: final-report.json, final-report.md, base-report.json, evidence.json, agent-outcomes.json, agent-stage-notes.md.',
             'The complete report retains every finding and recommendation. This is a bounded sample; it does not predict rankings or business gains.']
-    return '\n'.join(lines)
+    text = '\n'.join(lines)
+    if repair_prompt:
+        from repair_handoff import terminal_suggestion
+        text += terminal_suggestion(report, repair_prompt)
+    return text
 
 
 def prepare(report_path,packet_path,out,search=False):
@@ -191,6 +195,7 @@ def main(argv=None):
     init.add_argument('--out',required=True);init.add_argument('--search',action='store_true')
     summary=sub.add_parser('summary');summary.add_argument('--report',required=True)
     terminal=sub.add_parser('terminal');terminal.add_argument('--report',required=True)
+    terminal.add_argument('--repair-prompt')
     for mode in ('status','preflight'):
         command=sub.add_parser(mode)
         command.add_argument('--report',required=True);command.add_argument('--evidence',required=True)
@@ -198,7 +203,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     try:
         if args.mode=='terminal':
-            print(terminal_summary(read_report(args.report)));return
+            print(terminal_summary(read_report(args.report), args.repair_prompt));return
         if args.mode in ('status','preflight'):
             value=checkpoint(read_report(args.report),read_json(args.evidence,MAX_PACKET_BYTES),read_json(args.outcomes,MAX_PACKET_BYTES))
             if args.mode=='preflight' and value['preflight_issues']:

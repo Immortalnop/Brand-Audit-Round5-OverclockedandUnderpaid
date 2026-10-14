@@ -1,0 +1,3 @@
+Validating marketplace manifest: /home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/.claude-plugin/marketplace.json
+
+✔ Validation passed

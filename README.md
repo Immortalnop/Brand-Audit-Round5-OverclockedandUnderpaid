@@ -106,6 +106,44 @@ Suggested `owner_roles` identify semantic roles (developer, infrastructure, cont
 
 ## Quick start
 
+For the complete Claude Code workflow, load the extracted package from a writable
+workspace outside that package. This is a native Claude plugin; the root
+marketplace.json continues to describe the audit engine's skill contracts.
+
+```bash
+claude --plugin-dir /absolute/path/to/Brand-AI-Readiness-Audit-round5-final_version
+```
+
+In Claude Code, run:
+
+```text
+/brand-audit:audit https://tartinebakery.com/
+```
+
+Change only the URL for another site. Each invocation creates a fresh
+out/<UTC-run-id>/ folder and uses the maintained full audit procedure. It keeps
+the normal 50-page cap, shared clock, supported AG checks and local merge. The
+final summary includes a short next prompt and links repair-prompt.md, which
+contains the full report and available evidence/outcomes for verification and
+repairs in the website's source repository. It does not apply repairs itself.
+
+For persistent use, install the extracted release once from its local catalog:
+
+```bash
+claude plugin marketplace add /absolute/path/to/Brand-AI-Readiness-Audit-round5-final_version
+claude plugin install brand-audit@brand-audit-marketplace
+```
+
+Then start Claude in a writable audit workspace and use the same URL command.
+The release includes .claude-plugin/plugin.json and a distinct Claude marketplace
+catalog. See [Claude's skill invocation](https://code.claude.com/docs/en/skills)
+and [local plugin installation](https://code.claude.com/docs/en/plugin-marketplaces).
+[The replay manifest](replay/REPLAY_Overclocked_and_Underpaid_round5_final.txt)
+has the full demo launch, optional capabilities and recording instructions.
+
+The Python entrypoint remains available for a native audit without the Claude
+host stage or repair export:
+
 ```bash
 python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com > report.json
 python3 skills/audit-orchestrator/scripts/run_audit.py --max-pages 100 https://example.com > report.json ##allows you to crawl for 100 pages instead of default 50 pages. Can't go any higher, needs a code change then.
@@ -128,11 +166,18 @@ python3 skills/audit-orchestrator/scripts/run_audit.py <site> --out out/base-rep
 # the host agent reads out/evidence.json and writes out/agent-outcomes.json (see the entity-corroboration-agent SKILL.md)
 python3 skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
 python3 common/report_markdown.py out/final-report.json out/final-report.md
+python3 common/repair_handoff.py --report out/final-report.json --out out/repair-prompt.md
 ```
 
 Release 8.4.1 uses packet/outcome schema 1.1. It corrects body/template/date context and adds the shared host clock, compact handoff setup and one bounded full-image fetch. Independent Claude reads can overlap; outcome writes remain sequential. Final packet digests bind every exported passage, claim, focus and image to the report; edits require a new export and assessment. Known failed About targets remain not assessed, and exact fragments identify the selected body passage. Git/release provenance records dirty or unknown state explicitly.
 
 Release 8.4.3 retains introductory headers inside main, section and article content when selecting body openings, exporting body text and counting main headings. Document headers, navigation, footers, explicit chrome roles and hidden content remain excluded. Existing reports and packets keep their original observations; run a new acquisition and agent assessment to use the corrected evidence.
+
+Release 8.5.0 adds the Claude audit command and local verification/repair handoff.
+The handoff retains every finding, recommendation and available bound evidence
+without reclassifying them. Its file checks establish consistency, not truth;
+the next agent must verify the findings and obtain the website's editable source.
+The audit engine, AG rules, native stdout and timing/crawl defaults are unchanged.
 
 The base report is never overwritten (the merge refuses to write over its input) and stays the merge base. AG-01 needs only the packet; checks that need search or vision are recorded as not assessed when the host did not run them. `examples/` holds one complete run of this workflow: `sample-report.json` (the base report), `evidence.json`, `agent-outcomes.json`, `final-report.json` and `final-report.md`. `tests/test_round5_release.py` replays the same workflow offline on a fixture site.
 
@@ -172,6 +217,7 @@ Optional environment variables:
 ```
 Brand-AI-Readiness-Audit/          <- marketplace root 
 ├── marketplace.json               <- manifest: lists all skills, marks the entrypoint
+├── .claude-plugin/                <- Claude plugin metadata and local install catalog
 ├── README.md                      <- this file
 ├── .gitignore
 ├── common/                        <- shared library imported by every skill

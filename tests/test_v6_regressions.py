@@ -151,7 +151,7 @@ def test_numeric_match_cannot_join_unrelated_numbers():
 def test_marketplace_frontmatter():
     import yaml
     manifest=json.loads((ROOT/'marketplace.json').read_text())
-    assert len(manifest['skills'])==5
+    assert len(manifest['skills'])==6 and manifest['skills'][0]['id']=='audit'
     assert sum(bool(s.get('entrypoint')) for s in manifest['skills'])==1
     for skill in manifest['skills']:
         path=ROOT/skill['path'];front=yaml.safe_load((path/'SKILL.md').read_text().split('---',2)[1])

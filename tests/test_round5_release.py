@@ -163,10 +163,12 @@ def _frontmatter(path):
     return name, description
 
 
-def test_package_has_five_skills_one_entrypoint_and_valid_frontmatter():
+def test_package_has_command_skill_five_contracts_and_one_native_entrypoint():
     manifest = json.load(open(os.path.join(_ROOT, "marketplace.json"), encoding="utf-8"))
     skills = manifest["skills"]
-    assert len(skills) == 5 and sum(1 for s in skills if s.get("entrypoint")) == 1
+    assert {s['id'] for s in skills} == {'audit', 'audit-orchestrator', 'crawl-render-audit',
+                                       'freshness-corroboration', 'engagement-audit', 'entity-corroboration-agent'}
+    assert [s['id'] for s in skills if s.get('entrypoint')] == ['audit-orchestrator']
     for skill in skills:
         name, description = _frontmatter(os.path.join(_ROOT, skill["path"], "SKILL.md"))
         assert name == skill["id"] == os.path.basename(skill["path"])

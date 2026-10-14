@@ -5,8 +5,12 @@ Use `Brand-AI-Readiness-Audit-round5-final_version.zip` and the setup in
 `Brand-AI-Readiness-Audit-round5-final_version/` inside `audit-workspace/`;
 `out/` is a sibling folder. There is no additional `package/` directory.
 
-Paste `FINAL_AUDIT_PROMPT.txt` once into a fresh Claude Code session. The manifest
-embeds that same prompt exactly. It runs the complete default workflow with
+Load the extracted package with `claude --plugin-dir ./Brand-AI-Readiness-Audit-round5-final_version`
+from the audit workspace, then run `/brand-audit:audit <url>` in Claude Code.
+Each invocation creates a fresh `out/<UTC-run-id>/` directory; no prompt editing
+or emptying old outputs is needed. The master skill binds `FINAL_AUDIT_PROMPT.txt`
+to the current URL, package, interpreter and first-tool clock. The manifest embeds
+that same prompt exactly as a manual fallback. It runs the complete default workflow with
 a normal 50-page cap. The standalone worker ceiling stays 270 seconds; the demo
 passes a shared host clock to bound the remaining allowance. There are no reduced
 page settings or manual archive/file checksum steps. Required packet
@@ -23,8 +27,8 @@ If the archive includes historical prompts, use the revised prompt supplied here
 
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
-steps. The example URL is Bare Necessities; change it for the actual public URL.
-Runtime and skills are updated for 8.4.3. The earlier evidence in
+steps. The example URL is Tartine; change it for the actual public URL.
+Runtime and skills are updated for 8.5.0. The earlier evidence in
 `verification/replay-manifest/record.json` describes its historical candidate; exact
 Claude/laptop execution of this revision,
 independent finding review and presentation recording remain pending.
@@ -51,4 +55,13 @@ actual run, not an inference from native tests.
 The 8.4.3 parser correction retains genuine introductory headers inside content
 for AG-01 body evidence and native main headings. It changes the acquisition
 observations, so older bound reports/outcomes need a fresh run. The canonical
-prompt, default 50-page cap, deadlines and evidence requirements are unchanged.
+default 50-page cap, deadlines and evidence requirements are unchanged.
+
+The 8.5.0 workflow adds `repair-prompt.md` after merge/render, using a local helper.
+It embeds the complete final report, available bound packet/outcomes and stage
+notes without truncating the findings or treating them as proven. The terminal
+ends with a short prompt that directs the next agent to that file. Attach the full
+file and listed images when the next agent cannot read the workspace. The repair
+task first verifies every finding, preserves audit artifacts and fixes supported
+issues in the supplied website source. Missing source access produces a review
+and repair plan, not invented repairs. This step adds no crawl or live mutation.

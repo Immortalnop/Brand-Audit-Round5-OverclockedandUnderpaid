@@ -48,6 +48,18 @@ def test_replay_prompt_is_packaged_without_loading_unrelated_source_assets(tmp_p
     assert not any(name.startswith('data/') for name in files)
 
 
+def test_only_the_two_claude_manifests_are_added_to_the_release_allowlist(tmp_path):
+    root=tree(tmp_path)
+    meta=root/'.claude-plugin';meta.mkdir()
+    (meta/'plugin.json').write_text('{"name":"brand-audit"}')
+    (meta/'marketplace.json').write_text('{"name":"brand-audit-marketplace"}')
+    (meta/'private-config.json').write_text('{"unrelated":"preserve"}')
+    files=package.release_files(root)
+    assert '.claude-plugin/plugin.json' in files and '.claude-plugin/marketplace.json' in files
+    assert '.claude-plugin/private-config.json' not in files
+    assert (meta/'private-config.json').exists()
+
+
 def test_symlinks_cannot_pull_unlisted_external_content_into_release(tmp_path):
     root=tree(tmp_path)
     (root/'common'/'alias.py').symlink_to('/etc/hostname')

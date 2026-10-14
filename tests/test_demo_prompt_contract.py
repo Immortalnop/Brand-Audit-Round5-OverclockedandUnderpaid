@@ -16,7 +16,9 @@ def test_manifest_embeds_exact_canonical_prompt_and_keeps_metadata_blank():
     for field in ('AGENT_HARNESS_VERSION','LLM_MODEL','LLM_MODEL_VERSION'):
         assert field+':\n' in manifest
     assert '--model claude-opus-5-5' in manifest
-    assert '--tools "Read,Edit,Write,Bash,WebSearch,WebFetch"' in manifest
+    assert '--tools "Read,Edit,Write,Bash,WebSearch,WebFetch,Skill"' in manifest
+    assert '--plugin-dir ./Brand-AI-Readiness-Audit-round5-final_version' in manifest
+    assert '/brand-audit:audit https://tartinebakery.com/' in manifest
     assert '"Edit(out/**)" "Write(out/**)"' in manifest
     assert 'MAX_PAGES: 6' not in PROMPT and '--max-pages 6' not in PROMPT
 

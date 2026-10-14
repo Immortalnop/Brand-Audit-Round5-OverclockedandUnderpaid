@@ -1,18 +1,18 @@
 REPLAY_Overclocked_and_Underpaid_round5_final
 TEAM: Overclocked & Underpaid
-PURPOSE: Complete default audit and Claude Code demonstration workflow.
+PURPOSE: Complete URL-command audit and Claude Code demonstration workflow.
 UPDATED: 2026-10-14 (Asia/Kolkata)
 
 ARCHIVE: Brand-AI-Readiness-Audit-round5-final_version.zip
-TEST_SITE_URLS: https://barenecessities.in/
+TEST_SITE_URLS: https://tartinebakery.com/
 AGENT_HARNESS: Claude Code
 AGENT_HARNESS_VERSION:
 LLM_MODEL:
 LLM_MODEL_VERSION:
 PYTHON_VERSION:
 OPERATING_SYSTEM:
-ENTRYPOINT: Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/SKILL.md
-EXPECTED_OUTPUT: out/final-report.json and out/final-report.md
+ENTRYPOINT: /brand-audit:audit <url> via skills/audit/SKILL.md
+EXPECTED_OUTPUT: out/<UTC-run-id>/final-report.json, final-report.md and repair-prompt.md
 PROMPT_FILE: FINAL_AUDIT_PROMPT.txt
 AUDIT_SETTINGS: Engine defaults: maximum 50 crawled pages, 270-second core ceiling.
 
@@ -80,10 +80,12 @@ TEST_STEPS:
 
 3. From audit-workspace/, start a fresh interactive Claude Code session:
 
-      claude --model claude-opus-5-5 --tools "Read,Edit,Write,Bash,WebSearch,WebFetch" --disallowedTools "mcp__*" --allowedTools "Read" "Edit(out/**)" "Write(out/**)" "Bash(python3 *)" "Bash(python *)" "WebSearch" "WebFetch"
+      claude --plugin-dir ./Brand-AI-Readiness-Audit-round5-final_version --model claude-opus-5-5 --tools "Read,Edit,Write,Bash,WebSearch,WebFetch,Skill" --disallowedTools "mcp__*" --allowedTools "Skill(brand-audit:audit)" "Read" "Edit(out/**)" "Write(out/**)" "Bash(python3 *)" "Bash(python *)" "WebSearch" "WebFetch"
 
-   Read the skills through their explicit paths; no skill installation or package
-   modification is needed. --tools selects built-in tools; --allowedTools
+   --plugin-dir loads the submitted plugin and its URL command without installing
+   it into user settings or modifying the package. Skill enables Claude's skill
+   tool; the master routes to the canonical full workflow and the existing five
+   contracts. --tools selects built-in tools; --allowedTools
    preapproves matching uses. Current path-scoped Write permissions use Edit
    rules, hence Edit(out/**). The MCP deny keeps this a Claude built-in-tool run.
    These flags do not make indirect Python file operations an OS sandbox.
@@ -92,16 +94,32 @@ TEST_STEPS:
    Do not bypass permissions or enable another agent/browser/plugin silently.
    Do not use --continue or --resume.
 
-4. Set SITE_URL in the following prompt to the public URL being demonstrated.
-   Update TEST_SITE_URLS above to match it. Keep the default audit command without
-   --max-pages or --timeout overrides. Change directory/interpreter values only
-   if your actual setup differs, substituting them consistently in all commands.
-   Paste the complete prompt once. Approve ordinary authorized requests as needed.
+4. Invoke the full audit command in Claude Code:
+
+      /brand-audit:audit https://tartinebakery.com/
+
+   Change only the URL for another site and update TEST_SITE_URLS above to match.
+   The command creates a fresh out/<UTC-run-id>/ directory, captures the shared
+   clock and binds the canonical workflow to the URL and actual package path.
+   No --max-pages or --timeout override is introduced. On native Windows with
+   python instead of python3, use that executable consistently; the bootstrap
+   supports --python-command python. Approve ordinary authorized requests as needed.
    Keep the actual tool transcript and wall-clock start/end; waiting for a tool
    does not restart the packet's host-stage allowance.
 
+   The final summary ends with a suggested verification/repair prompt and links
+   repair-prompt.md. Its complete report/evidence snapshot must be supplied to
+   the next agent, along with the site's editable source and listed images when
+   needed. The audit does not repair a live site or invent missing source access.
+
+MANUAL_PROMPT_FALLBACK:
+The following exact canonical prompt is retained for a host that cannot load the
+plugin. Use a fresh empty out/ directory, update SITE_URL/directories/interpreter
+consistently and paste it once. Do not combine the manual clock procedure with
+an already started command run or use an earlier run's evidence.
+
 ----- BEGIN AUDIT PROMPT -----
-SITE_URL: https://barenecessities.in/
+SITE_URL: https://tartinebakery.com/
 PACKAGE_DIR: ./Brand-AI-Readiness-Audit-round5-final_version
 OUTPUT_DIR: ./out
 PYTHON_COMMAND: python3
@@ -142,7 +160,9 @@ skills; do not run those scripts separately or create other agents.
 Use only the current run. No previous reports, sample outcomes or remembered
 brand facts may supply audit evidence. Preserve all package files and base
 outputs; write only within OUTPUT_DIR. Set PYTHONDONTWRITEBYTECODE=1 for Python
-commands. Only the workflow-start.json just created for this run may already exist.
+commands. Before acquisition, only this invocation's workflow-start.json and
+optional bootstrap context/instruction files may already exist. Report, packet
+and outcomes paths must be fresh.
 Read independent contract files in small parallel batches of two or three where
 Claude Code supports it; preserve their full contents and the single workflow.
 
@@ -381,9 +401,25 @@ For the successful merged report or explicit unchanged-base fallback, run:
 python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/final-report.json out/final-report.md
 Merge and rendering are local; make no new website requests during those steps.
 
+Export the verification and repair handoff from these current saved artifacts:
+python3 Brand-AI-Readiness-Audit-round5-final_version/common/repair_handoff.py --report out/final-report.json --out out/repair-prompt.md
+This helper makes no requests or website/source changes. It includes the complete
+final JSON, all findings/recommendations, available bound packet/outcomes, notes
+and image attachment paths without inventing verification or repairs. It writes
+a new file exclusively and prints a short suggested next prompt. If export fails,
+keep the final report and disclose the actual error; do not alter evidence, use a
+stale prompt or overwrite an earlier handoff to make it pass.
+
 5. Deliver a concise explanation of the actual final report.
 After rendering, use the deterministic terminal-summary scaffold:
-python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py terminal --report out/final-report.json
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py terminal --report out/final-report.json --repair-prompt out/repair-prompt.md
+Include --repair-prompt only after the handoff export succeeded. End the final
+reply with its suggested next prompt and link to repair-prompt.md. The next agent
+must verify every finding before repairing the supplied website source; a finding
+is not automatically true, an improvement is not automatically a defect and an
+unassessed AG check is not a website issue. The full file carries the evidence;
+attach it (and image files when needed) if the next agent cannot access this folder.
+Do not perform verification/repairs of the live site as part of this audit stage.
 Use its content in the final reply, adding real file links and the last measured
 time. Include all six AG outcomes with actual reasons, and explain BOTH first
 findings (or all available if fewer than two), each with ID, severity/status/type,
@@ -417,10 +453,13 @@ video, search, image view or rendered browser run that did not actually occur.
 ----- END AUDIT PROMPT -----
 
 5. Inspect and retain the actual outputs.
-   Primary: out/final-report.json and out/final-report.md.
-   Supporting: out/base-report.json, out/evidence.json when available,
-   out/agent-outcomes.json when supplied, out/workflow-start.json and
-   out/agent-stage-notes.md. Preserve any actual image and its helper receipt.
+   RUN_DIR is output_dir returned by the command's bootstrap, under out/<UTC-run-id>/.
+   The manual prompt fallback uses out/ as RUN_DIR instead.
+   Primary: RUN_DIR/final-report.json, final-report.md and repair-prompt.md.
+   Supporting: RUN_DIR/base-report.json, evidence.json when available,
+   agent-outcomes.json when supplied, workflow-start.json and agent-stage-notes.md.
+   Command runs also retain workflow-context.json and workflow-instructions.md.
+   Preserve any actual image and its helper receipt.
    Preserve the base report, packet and package files. Retain the real transcript,
    settings, run dates and actual model/harness information when available.
 
@@ -444,7 +483,7 @@ video, search, image view or rendered browser run that did not actually occur.
    operations honestly. Report full-request timing separately from core timing.
 
 FALLBACK RUN PATH (native engine only, separate fresh output directory):
-      python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py https://barenecessities.in/ --progress --out out/engine-only-report.json
+      python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py https://tartinebakery.com/ --progress --out out/engine-only-report.json
       python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py out/engine-only-report.json out/engine-only-report.md
 
 Use the same chosen URL and default settings. This is a separate live acquisition,
@@ -455,8 +494,8 @@ as a prior execution; it is not a new live acquisition.
 
 FINAL DEMONSTRATION CHECKS:
 1. Confirm the extracted marketplace/skill paths and Python/Claude setup. Run
-   the complete prompt on the intended laptop with the default audit settings.
-2. Keep the original JSON, evidence, envelope, Markdown, notes and transcript.
+   the complete URL command on the intended laptop with the default audit settings.
+2. Keep the original JSON, evidence, envelope, Markdown, repair prompt, notes and transcript.
    Confirm one acquisition and no second crawl during host assessment/merge.
    Review actual capability coverage rather than assuming every feature ran.
 3. Independently inspect the selected About opening and each headline finding's
