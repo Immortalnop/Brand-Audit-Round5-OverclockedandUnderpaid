@@ -43,5 +43,13 @@ a fresh intended-laptop Claude run is required to assess the corrected opening.
 
 The separately identified inert-template control issue remains pending. This
 release fixes the selected content-header problem; it does not certify every
-existing Fastmail finding. Release archive metadata and extracted-suite validation
-will be recorded alongside this review after the committed build.
+existing Fastmail finding.
+
+The canonical 815,852-byte ZIP was built from committed runtime dfaf532 with clean
+release metadata, its expected root folder and identical canonical / embedded
+prompts. Its extracted suite passed 1,398 tests with one expected module skip for
+release-builder tooling omitted by the runtime allowlist. The extracted runtime
+reports 8.4.3+dfaf53257932 and retains the correct Fastmail opening and H1 when
+reparsing the same saved HTML. package.json and extracted-suite.txt record these
+checks. The earlier canonical ZIP was preserved separately; the original
+Downloads uploads were not modified.

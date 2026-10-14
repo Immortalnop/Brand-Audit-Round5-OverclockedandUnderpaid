@@ -1,0 +1,32 @@
+{
+  "archive": "/home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/dist/Brand-AI-Readiness-Audit-round5-final_version.zip",
+  "bytes": 815852,
+  "entries": 176,
+  "root_folder": "Brand-AI-Readiness-Audit-round5-final_version",
+  "release": {
+    "name": "brand-ai-readiness-audit",
+    "version": "8.4.3",
+    "commit": "dfaf5325793286e852e53ecf629d47dfadc4e554",
+    "uncommitted_changes": false,
+    "source": "committed_git_snapshot",
+    "files": 175
+  },
+  "canonical_prompt_matches_embedded": true,
+  "extracted_runtime": "/tmp/brand-8.4.3-release-4xbexs_k/Brand-AI-Readiness-Audit-round5-final_version",
+  "prior_canonical_preserved_at": "/tmp/brand-prior-canonical-bswxgpnr/Brand-AI-Readiness-Audit-round5-final_version.zip",
+  "checkout_tests": {
+    "passed": 1403,
+    "seconds": 117.9
+  },
+  "extracted_tests": {
+    "passed": 1398,
+    "skipped_modules": 1,
+    "seconds": 123.94,
+    "skip_reason": "release-builder tooling is intentionally excluded from runtime allowlist"
+  },
+  "extracted_fastmail_reparse": {
+    "code_version": "8.4.3+dfaf53257932",
+    "h1_count": 1,
+    "correct_opening": true
+  }
+}
