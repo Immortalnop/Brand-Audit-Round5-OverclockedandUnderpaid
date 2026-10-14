@@ -1,0 +1,25 @@
+brand-audit 8.5.1
+  Description: Full URL-based Brand AI-Readiness Audit with reports and a verification/repair handoff.
+  Source: brand-audit@brand-audit-marketplace
+
+Component inventory
+  Skills (6)  audit, audit-orchestrator, crawl-render-audit, engagement-audit, entity-corroboration-agent, freshness-corroboration
+  Agents (0)
+  Hooks (0)
+  MCP servers (0)
+  LSP servers (0)
+
+Projected token cost
+  Always-on:   ~896 tok   added to every session
+
+Per-component (rounded)
+  component                   always-on  on-invoke
+  freshness-corroboration          ~100      ~1.6k
+  entity-corroboration-agent       ~210      ~3.1k
+  engagement-audit                 ~130       ~350
+  crawl-render-audit               ~260      ~2.3k
+  audit                             ~50       ~730
+  audit-orchestrator               ~140      ~3.4k
+
+  On-invoke cost is paid each time a skill or agent fires.
+  Token counts are estimates and may differ from actual usage.

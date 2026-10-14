@@ -1,0 +1,3 @@
+Validating marketplace manifest: /tmp/brand-8.5.1-release-0_whgenp/Brand-AI-Readiness-Audit-round5-final_version/.claude-plugin/marketplace.json
+
+✔ Validation passed

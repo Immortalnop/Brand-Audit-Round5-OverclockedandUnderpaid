@@ -57,8 +57,19 @@ A full offline pipeline with a 100-page cap acquires once, preserves the base an
 packet bytes and every native finding, merges a supported local AG-01 result,
 renders and exports the repair file without another request. Existing crawl
 scaling tests still assert 140 site requests / 80 MiB at 100 pages and unchanged
-time limits. Actual Claude 2.1.299 plugin validation passed. Extracted archive,
-installed-cache checks and source provenance will be recorded after the build.
+time limits. Actual Claude 2.1.299 plugin validation passed.
+
+The 837,973-byte canonical ZIP was built from committed source 92895e3 with clean
+release metadata and 183 entries. The canonical and embedded prompts match.
+Its extracted suite passed 1,437 tests in 146.83 seconds with one expected module
+skip for the six release-builder tests excluded by the runtime allowlist. Actual
+Claude local validation/installation in a separate temporary config succeeded,
+with all six skills discovered. Installed-cache bootstraps verified the default
+50-page run and explicit 100-page run, the single original clock and every stage's
+main/nested paths. The cache reports 8.5.1+92895e3098f0. Package/test/CLI records
+are alongside this review. No user Claude settings were changed, and the prior
+canonical ZIP was preserved separately. These installed bootstraps do not claim
+new native acquisition or authenticated Claude host execution.
 
 An authenticated demo-laptop run of the new flag/layout remains necessary to
 verify actual host behavior and prompt-to-reply timing. This change does not

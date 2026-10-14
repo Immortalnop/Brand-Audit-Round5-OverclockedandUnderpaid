@@ -1,0 +1,33 @@
+{
+  "archive": "/home/dionysus/Projects/Brand-AI-Readiness-Audit-round5/dist/Brand-AI-Readiness-Audit-round5-final_version.zip",
+  "bytes": 837973,
+  "entries": 183,
+  "release": {
+    "name": "brand-ai-readiness-audit",
+    "version": "8.5.1",
+    "commit": "92895e3098f0051eaa9679c0db41b231228de78a",
+    "uncommitted_changes": false,
+    "source": "committed_git_snapshot",
+    "files": 182
+  },
+  "canonical_prompt_matches_embedded": true,
+  "extracted_runtime": "/tmp/brand-8.5.1-release-0_whgenp/Brand-AI-Readiness-Audit-round5-final_version",
+  "prior_canonical_preserved_at": "/tmp/brand-8.5.0-prior-canonical-9umg3xrw/Brand-AI-Readiness-Audit-round5-final_version.zip",
+  "checkout_tests": {
+    "passed": 1443,
+    "seconds": 118.79
+  },
+  "extracted_tests": {
+    "passed": 1437,
+    "skipped_modules": 1,
+    "seconds": 146.83,
+    "skip_reason": "six release-builder tests omitted by runtime allowlist"
+  },
+  "installed_cli_checks": {
+    "cli_version": "2.1.299",
+    "isolated_config": "/tmp/brand-8.5.1-claude-config",
+    "local_install_and_discovery_passed": true,
+    "default_50_and_optional_100_bootstraps_passed": true,
+    "core_or_authenticated_host_executed_in_installed_cache": false
+  }
+}
