@@ -4,9 +4,20 @@ import re
 
 
 def in_chrome(frames):
-    return any(f['tag'] in ('header', 'nav', 'footer', 'announcement-bar', 'page-header')
-               or f['a'].get('role', '').lower() in ('banner', 'navigation', 'contentinfo')
-               for f in frames)
+    # A document header is site chrome; a header inside main/section/article can
+    # introduce that content. Explicit chrome roles and ancestors still win.
+    content_ancestor = False
+    for frame in frames:
+        tag = frame['tag']
+        role = frame['a'].get('role', '').lower()
+        if (tag in ('nav', 'footer', 'announcement-bar', 'page-header')
+                or role in ('banner', 'navigation', 'contentinfo')):
+            return True
+        if tag == 'header' and not content_ancestor:
+            return True
+        if tag in ('main', 'section', 'article') or role == 'main':
+            content_ancestor = True
+    return False
 
 
 class InlineDisplay(HTMLParser):

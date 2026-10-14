@@ -1,0 +1,42 @@
+{
+  "exit_code": 0,
+  "wall_seconds": 24.899,
+  "host_ag_stage_executed": false,
+  "page_cap": 50,
+  "code_version": "8.4.3+b7953905cc54.dirty",
+  "status": "completed",
+  "findings": 17,
+  "ag01_focus": {
+    "source_kind": "about_page",
+    "assessable": true,
+    "page_ref": "E002",
+    "requested_about_url": "https://www.fastmail.com/company/about/",
+    "section_id": null,
+    "opening_passage": "Fastmail has been the leading independent email service since 1999. We’re headquartered in Melbourne, Australia, with customers worldwide. You’re treated like a person with us, not a data point. We’re not serving the interests of big corporations: we are proudly independent.",
+    "opening_complete": true,
+    "selection_reason": "Eligible acquired About body opening.",
+    "limitations": [],
+    "evidence_source_kind": "raw_html_text",
+    "opening_paragraph_count": 2
+  },
+  "missing_h1_affected_pages": [],
+  "coverage": {
+    "pages_discovered": 222,
+    "pages_analyzed": 50,
+    "sections_discovered": 15,
+    "sections_analyzed": 13,
+    "pages_challenged": 0,
+    "runtime_seconds": 24.608
+  },
+  "comparison_to_supplied_8_4_2_base": {
+    "removed_native_checks": [
+      "h1"
+    ],
+    "added_native_checks": [],
+    "common_native_check_differences": {
+      "heading-hierarchy": [
+        "affected_pages"
+      ]
+    }
+  }
+}

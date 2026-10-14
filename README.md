@@ -132,6 +132,8 @@ python3 common/report_markdown.py out/final-report.json out/final-report.md
 
 Release 8.4.1 uses packet/outcome schema 1.1. It corrects body/template/date context and adds the shared host clock, compact handoff setup and one bounded full-image fetch. Independent Claude reads can overlap; outcome writes remain sequential. Final packet digests bind every exported passage, claim, focus and image to the report; edits require a new export and assessment. Known failed About targets remain not assessed, and exact fragments identify the selected body passage. Git/release provenance records dirty or unknown state explicitly.
 
+Release 8.4.3 retains introductory headers inside main, section and article content when selecting body openings, exporting body text and counting main headings. Document headers, navigation, footers, explicit chrome roles and hidden content remain excluded. Existing reports and packets keep their original observations; run a new acquisition and agent assessment to use the corrected evidence.
+
 The base report is never overwritten (the merge refuses to write over its input) and stays the merge base. AG-01 needs only the packet; checks that need search or vision are recorded as not assessed when the host did not run them. `examples/` holds one complete run of this workflow: `sample-report.json` (the base report), `evidence.json`, `agent-outcomes.json`, `final-report.json` and `final-report.md`. `tests/test_round5_release.py` replays the same workflow offline on a fixture site.
 
 `--out` checks the path before the audit starts, writes the file in one step (a failed run never leaves half a report), and prints the report to stdout instead if the file cannot be written.

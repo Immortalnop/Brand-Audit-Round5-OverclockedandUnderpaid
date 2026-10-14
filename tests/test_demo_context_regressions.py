@@ -1,5 +1,6 @@
 """Production-path regressions for misleading template and date context."""
 from datetime import datetime, timezone
+import pytest
 
 from test_precision_traps import page, snapshot, SITE, LIMITS
 from models import make_deadline
@@ -59,6 +60,95 @@ def test_main_opening_survives_custom_header_and_split_slogan():
     assert 'Acme Bakery' in focus['opening_passage']
     assert 'Certified' not in focus['opening_passage']
     assert focus['opening_passage'].startswith('RISE EACH DAY')
+
+
+@pytest.mark.parametrize('main', ('main', 'div role="main"'))
+@pytest.mark.parametrize('section', ('section', 'article'))
+def test_content_header_supplies_opening_and_main_heading(main, section):
+    text = (f'<{main}><{section}><header><h1>Hello from Acme</h1>'
+            '<p>Acme provides private email hosting for people and businesses.</p>'
+            f'</header><p>We are a small team making a big impact together.</p>'
+            f'</{section}></{main.split()[0]}>')
+    p = page(text, url=SITE + '/about')
+    focus = opening(text)
+    assert focus['assessable'] and focus['opening_complete']
+    assert focus['opening_passage'].startswith('Acme provides private email hosting')
+    assert 'Acme provides private email hosting' in p.features['body_text']
+    assert p.features['main_headings'] == ('Hello from Acme',)
+    assert p.features['h1_count'] == 1
+    assert 'h1' not in ids(run(analyze_experience, p))
+
+
+@pytest.mark.parametrize('section', ('section', 'article'))
+def test_section_header_opening_survives_without_main_landmark(section):
+    text = (f'<{section}><header><h1>About Acme</h1>'
+            '<p>Acme provides private email hosting for people and businesses.</p>'
+            f'</header><p>Meet our team and learn about our work.</p></{section}>')
+    focus = opening(text)
+    assert focus['assessable'] and focus['opening_complete']
+    assert focus['opening_passage'].startswith('Acme provides private email hosting')
+
+
+def test_document_header_and_navigation_remain_excluded():
+    text = ('<header><section><p>Special delivery available today.</p></section>'
+            '<nav><p>Explore our shop and company.</p></nav></header>'
+            '<main><nav><header><p>Account and shopping links.</p></header></nav>'
+            '<header><h1>About Acme</h1>'
+            '<p>Acme provides private email hosting for people and businesses.</p>'
+            '</header><footer><p>Contact the site administrator.</p></footer></main>')
+    p = page(text, url=SITE + '/about')
+    assert opening(text)['opening_passage'] == (
+        'Acme provides private email hosting for people and businesses.')
+    assert p.features['body_text'] == (
+        'About Acme Acme provides private email hosting for people and businesses.')
+
+
+@pytest.mark.parametrize('role', ('banner', 'navigation', 'contentinfo'))
+def test_explicit_chrome_role_inside_main_still_excludes_header(role):
+    text = (f'<main><section><header role="{role}"><h1>Site controls</h1>'
+            '<p>Special delivery available today.</p></header>'
+            '<p>Acme provides private email hosting for people and businesses.</p>'
+            '</section></main>')
+    p = page(text, url=SITE + '/about')
+    assert opening(text)['opening_passage'].startswith('Acme provides private email hosting')
+    assert 'Special delivery' not in p.features['body_text']
+    assert p.features['h1_count'] == 0
+    assert 'h1' in ids(run(analyze_experience, p))
+
+
+@pytest.mark.parametrize('attributes', ('hidden', 'aria-hidden="true"', 'style="display:none"'))
+def test_hidden_content_header_does_not_supply_opening_or_heading(attributes):
+    text = (f'<main><section><header {attributes}><h1>Hidden introduction</h1>'
+            '<p>Special delivery available today.</p></header>'
+            '<p>Acme provides private email hosting for people and businesses.</p>'
+            '</section></main>')
+    p = page(text, url=SITE + '/about')
+    assert opening(text)['opening_passage'].startswith('Acme provides private email hosting')
+    assert 'Special delivery' not in p.features['body_text']
+    assert p.features['h1_count'] == 0
+
+
+def test_content_header_heading_does_not_hide_real_outline_skip():
+    p = page('<main><header><h1>About Acme</h1>'
+             '<p>Acme provides private email hosting for people and businesses.</p>'
+             '</header><h3>Our team</h3><h4>Engineering</h4></main>')
+    assert p.features['main_heading_levels'] == (1, 3, 4)
+    assert 'heading-hierarchy' in ids(run(analyze_metadata, p))
+
+
+def test_exact_about_fragment_can_select_a_content_header():
+    home = page('<main><a href="/about#introduction">About Acme</a></main>')
+    about = page('<main><section><header id="introduction"><h1>About Acme</h1>'
+                 '<p>Acme provides private email hosting for people and businesses.</p>'
+                 '</header><p>Meet our team and learn about our work.</p></section></main>',
+                 url=SITE + '/about')
+    a = snapshot(home, about)
+    packet = build_evidence_packet(a, {}, {}, {}, 'run', snapshot_digest(a), 'now')
+    focus = packet['focus']['ag01']
+    assert focus['section_id'] == 'introduction'
+    assert focus['assessable'] and focus['opening_complete']
+    assert focus['opening_passage'] == (
+        'Acme provides private email hosting for people and businesses.')
 
 
 def test_genuinely_vague_short_body_is_preserved_for_agent_assessment():

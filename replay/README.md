@@ -24,7 +24,7 @@ If the archive includes historical prompts, use the revised prompt supplied here
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
 steps. The example URL is Bare Necessities; change it for the actual public URL.
-Runtime and skills are updated for 8.4.2. The earlier evidence in
+Runtime and skills are updated for 8.4.3. The earlier evidence in
 `verification/replay-manifest/record.json` describes its historical candidate; exact
 Claude/laptop execution of this revision,
 independent finding review and presentation recording remain pending.
@@ -47,3 +47,8 @@ are in the agent skill's checks reference. The final reply uses the local
 evidence and fixes. The finalization reserve is already excluded from the agent
 deadline; do not subtract it twice. Full Claude verification remains a separate
 actual run, not an inference from native tests.
+
+The 8.4.3 parser correction retains genuine introductory headers inside content
+for AG-01 body evidence and native main headings. It changes the acquisition
+observations, so older bound reports/outcomes need a fresh run. The canonical
+prompt, default 50-page cap, deadlines and evidence requirements are unchanged.
