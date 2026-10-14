@@ -1,0 +1,1 @@
+Installing plugin "brand-audit@brand-audit-marketplace"...✔ Successfully installed plugin: brand-audit@brand-audit-marketplace (scope: user)

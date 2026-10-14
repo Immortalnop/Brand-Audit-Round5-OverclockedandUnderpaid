@@ -55,8 +55,19 @@ without warnings. The command/argument, namespacing, plugin-root and layout
 choices follow [Claude's skills documentation](https://code.claude.com/docs/en/skills),
 [manifest reference](https://code.claude.com/docs/en/plugins-reference) and
 [marketplace workflow](https://code.claude.com/docs/en/plugin-marketplaces).
-Package extraction, local installation and component discovery will be recorded
-after the committed release build. No user Claude settings were changed.
+The committed archive from 68e830e is 831,332 bytes with 182 entries, including
+both Claude manifests and clean release metadata. Its extracted suite passed
+1,420 tests with one expected module skip for the six release-builder tests
+excluded from the runtime allowlist. The canonical/embedded prompts match.
+Validation, local marketplace registration and plugin installation from that
+extracted archive passed in the isolated temporary config. Claude's component
+inventory recognizes brand-audit 8.5.0 and all six skills, with no agents, hooks,
+MCP or LSP servers. A bootstrap launched from the installed plugin cache retained
+the real URL, clock, package and current run paths in every command, including
+the image fetch and repair export. The cached runtime reports
+8.5.0+68e830e670bc. Logs and package/installed-bootstrap records are alongside
+this review. No user Claude settings or original Downloads ZIPs were changed;
+the earlier canonical release was preserved separately.
 
 Actual authenticated Opus execution of the new command, full operator stopwatch
 timing and presentation recording still require the intended demo laptop. The

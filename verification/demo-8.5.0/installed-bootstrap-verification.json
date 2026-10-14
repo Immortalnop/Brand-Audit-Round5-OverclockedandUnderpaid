@@ -1,0 +1,19 @@
+{
+  "claude_config_dir": "/tmp/brand-audit-claude-config",
+  "claude_cli_version": "2.1.299",
+  "installed_package": "/tmp/brand-audit-claude-config/plugins/cache/brand-audit-marketplace/brand-audit/8.5.0",
+  "installed_version": "8.5.0+68e830e670bc",
+  "bootstrap_exit_code": 0,
+  "all_bound_command_paths_use_installed_package_and_current_output": true,
+  "literal_query_url_preserved": true,
+  "original_first_tool_clock_preserved": true,
+  "core_or_host_stage_executed": false,
+  "workflow_context": {
+    "site_url": "https://www.fastmail.com/?verify=1&literal=2",
+    "package_dir": "/tmp/brand-audit-claude-config/plugins/cache/brand-audit-marketplace/brand-audit/8.5.0",
+    "output_dir": "/tmp/brand-8.5.0-installed-bootstrap-2tnnw0vi/out/20261014T105816125876Z-ir33k3tk",
+    "python_command": "python3",
+    "workflow_started_at": "2026-10-14T10:58:16.125876+00:00",
+    "workflow_instructions": "/tmp/brand-8.5.0-installed-bootstrap-2tnnw0vi/out/20261014T105816125876Z-ir33k3tk/workflow-instructions.md"
+  }
+}
