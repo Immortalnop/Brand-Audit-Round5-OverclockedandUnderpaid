@@ -2,7 +2,7 @@
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 import re
-from markup_context import InlineDisplay, in_chrome
+from markup_context import InlineDisplay, TemplateScope, in_chrome
 
 _VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
 _TEXT_TAGS = {'a','button','p','h1','h2','h3','h4','h5','h6','span','time'}
@@ -393,6 +393,7 @@ class Document(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.node_count=0
+        self._templates=TemplateScope()
         self.stack=[];self.text=[];self.title_parts=[];self.meta={};self.canonical=None
         self.links=[];self.headings=[];self.heading_levels=[];self.paragraphs=[];self.jsonld=[]
         self.breadcrumb=[];self.scripts=0;self.spa=False;self.has_nav=False;self.lang=None
@@ -460,7 +461,7 @@ class Document(HTMLParser):
     def feed(self,data):
         # Acquisition supplies a bounded complete response. Pre-read inline styles
         # because a hiding rule often follows the widget it hides.
-        self._inline_display=InlineDisplay().scan(data)
+        self._inline_display.scan(data)
         super().feed(data)
     def _focus_start(self,tag,a,frame):
         if frame['hidden'] or in_chrome(self.stack) or any(f['tag'] in ('head','script','style','template','noscript') for f in self.stack):return
@@ -700,8 +701,11 @@ class Document(HTMLParser):
                 if tag=='th':table['table']['header_cells']+=1
     def handle_starttag(self,tag,attrs):
         self.node_count+=1
-        if len(self.stack)>=256 or self.node_count>100000:
+        if len(self.stack)+self._templates.depth>=256 or self.node_count>100000:
             raise ValueError("HTML structural parsing budget reached")
+        # Template content belongs to a separate inactive fragment, not to this
+        # document. Skip every observer, including metadata, CSS and auth hints.
+        if self._templates.start(tag,self):return
         a={k:(v or '') for k,v in attrs};hidden=('hidden' in a or a.get('aria-hidden','').lower()=='true' or (tag=='dialog' and 'open' not in a) or self._inline_display.matches(a) or bool(re.search(r'display\s*:\s*none|visibility\s*:\s*hidden',a.get('style',''),re.I)))
         frame={'tag':tag,'a':a,'text':[],'hidden':hidden or any(x['hidden'] for x in self.stack)}
         in_head=any(f['tag']=='head' for f in self.stack)
@@ -839,8 +843,9 @@ class Document(HTMLParser):
         if not frame['hidden'] and re.search(r'newsletter-popup|modal-backdrop|interstitial|overlay-active',a.get('class',''),re.I):self.overlay=True
     def handle_startendtag(self,tag,attrs):
         self.handle_starttag(tag,attrs)
-        if tag not in _VOID:self.handle_endtag(tag)
+        if tag not in _VOID and tag!='template':self.handle_endtag(tag)
     def handle_data(self,data):
+        if self._templates.depth:return
         tags={f['tag'] for f in self.stack}
         if 'script' in tags:
             if self._script:self._script['parts'].append(data)
@@ -882,6 +887,7 @@ class Document(HTMLParser):
         for f in self.stack:
             if f['tag'] in _TEXT_TAGS or f.get('capture') or f.get('collect'):f['text'].append(data)
     def handle_endtag(self,tag):
+        if self._templates.end(tag):return
         if tag=='script' and self._script:
             if self._script['type']=='application/ld+json':self.jsonld.append(''.join(self._script['parts']))
             elif not self._script['src'] and self._script['type'] in _JS_TYPES:

@@ -1,0 +1,310 @@
+{
+  "previous_commit": "7d1ab6218b2b6e10ac443d4a4afa49ba878dc66b",
+  "unchanged_fixture_pages": 44,
+  "fixture_results": [
+    {
+      "site": "spa",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "spa",
+      "path": "/pricing",
+      "unchanged": true
+    },
+    {
+      "site": "spa",
+      "path": "/about",
+      "unchanged": true
+    },
+    {
+      "site": "shop",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "shop",
+      "path": "/products/trail-kettle",
+      "unchanged": true
+    },
+    {
+      "site": "shop",
+      "path": "/products/camp-stove",
+      "unchanged": true
+    },
+    {
+      "site": "shop",
+      "path": "/login",
+      "unchanged": true
+    },
+    {
+      "site": "local",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "local",
+      "path": "/services",
+      "unchanged": true
+    },
+    {
+      "site": "local",
+      "path": "/contact",
+      "unchanged": true
+    },
+    {
+      "site": "docs",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "docs",
+      "path": "/docs/",
+      "unchanged": true
+    },
+    {
+      "site": "docs",
+      "path": "/docs/getting-started",
+      "unchanged": true
+    },
+    {
+      "site": "docs",
+      "path": "/docs/api",
+      "unchanged": true
+    },
+    {
+      "site": "blog",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "blog",
+      "path": "/blog/",
+      "unchanged": true
+    },
+    {
+      "site": "blog",
+      "path": "/news/",
+      "unchanged": true
+    },
+    {
+      "site": "blog",
+      "path": "/blog/cold-proofing",
+      "unchanged": true
+    },
+    {
+      "site": "blog",
+      "path": "/blog/feeding-a-starter",
+      "unchanged": true
+    },
+    {
+      "site": "intl",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "intl",
+      "path": "/en/",
+      "unchanged": true
+    },
+    {
+      "site": "intl",
+      "path": "/de/",
+      "unchanged": true
+    },
+    {
+      "site": "intl",
+      "path": "/fr/",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/world/coffee-study",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/culture/gallery-review",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/culture",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/category/audio",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/category/podcasts",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/archive/1998-essay",
+      "unchanged": true
+    },
+    {
+      "site": "news",
+      "path": "/faq",
+      "unchanged": true
+    },
+    {
+      "site": "splash",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "splash",
+      "path": "/home/",
+      "unchanged": true
+    },
+    {
+      "site": "splash",
+      "path": "/contact",
+      "unchanged": true
+    },
+    {
+      "site": "splash",
+      "path": "/donate",
+      "unchanged": true
+    },
+    {
+      "site": "splash",
+      "path": "/visit/alternatives",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/products/ridge-runner",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/products/valley-walker",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/collections/men",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/collections/women",
+      "unchanged": true
+    },
+    {
+      "site": "store",
+      "path": "/collections/kids",
+      "unchanged": true
+    },
+    {
+      "site": "mixed_guard",
+      "path": "/",
+      "unchanged": true
+    },
+    {
+      "site": "mixed_guard",
+      "path": "/guides",
+      "unchanged": true
+    }
+  ],
+  "saved_html_comparisons": [
+    {
+      "source": "about.html",
+      "changed_observations": [],
+      "unnamed_controls_before": 0,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 0,
+      "h1_count_after": 0,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "book.html",
+      "changed_observations": [
+        "buttons",
+        "controls"
+      ],
+      "unnamed_controls_before": 0,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 1,
+      "h1_count_after": 1,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "home.html",
+      "changed_observations": [],
+      "unnamed_controls_before": 3,
+      "unnamed_controls_after": 3,
+      "h1_count_before": 0,
+      "h1_count_after": 0,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "press.html",
+      "changed_observations": [],
+      "unnamed_controls_before": 0,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 0,
+      "h1_count_after": 0,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "brand-fastmail-about-verification.html",
+      "changed_observations": [],
+      "unnamed_controls_before": 0,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 1,
+      "h1_count_after": 1,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "brand-fastmail-beta-verification.html",
+      "changed_observations": [
+        "buttons",
+        "controls",
+        "image_records",
+        "images",
+        "images_lazy",
+        "paragraph_lengths",
+        "unnamed_control_count",
+        "unnamed_controls"
+      ],
+      "unnamed_controls_before": 1,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 1,
+      "h1_count_after": 1,
+      "ag01_opening_unchanged": true
+    },
+    {
+      "source": "brand-fastmail-blog-verification.html",
+      "changed_observations": [
+        "buttons",
+        "controls",
+        "unnamed_control_count",
+        "unnamed_controls"
+      ],
+      "unnamed_controls_before": 1,
+      "unnamed_controls_after": 0,
+      "h1_count_before": 1,
+      "h1_count_after": 1,
+      "ag01_opening_unchanged": true
+    }
+  ],
+  "new_network_requests": 0,
+  "historical_reports_or_sources_modified": false
+}

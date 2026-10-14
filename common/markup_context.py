@@ -3,6 +3,34 @@ from html.parser import HTMLParser
 import re
 
 
+class TemplateScope:
+    """Isolate an HTML template fragment from the surrounding document.
+
+    Inner end tags cannot close live ancestors. Raw-text strings cannot open or
+    close nested templates. The caller still charges ignored tags to its parsing
+    budget; this stores only nesting depth, not a second DOM.
+    """
+    def __init__(self):
+        self.depth = 0
+
+    def start(self, tag, parser):
+        if tag == 'template':
+            self.depth += 1
+        elif self.depth and tag in ('script', 'style', 'textarea', 'title', 'xmp',
+                                    'iframe', 'noembed', 'noframes'):
+            # HTMLParser handles script/style automatically, but not the other
+            # HTML raw-text/RCDATA elements. All this text is inactive here.
+            parser.set_cdata_mode(tag)
+        return bool(self.depth)
+
+    def end(self, tag):
+        if not self.depth:
+            return False
+        if tag == 'template':
+            self.depth -= 1
+        return True
+
+
 def in_chrome(frames):
     # A document header is site chrome; a header inside main/section/article can
     # introduce that content. Explicit chrome roles and ancestors still win.
@@ -32,22 +60,35 @@ class InlineDisplay(HTMLParser):
         self.conditional = False
         self.chars = 0
         self.hidden = set()
+        self.templates = TemplateScope()
 
     def handle_starttag(self, tag, attrs):
+        if self.templates.start(tag, self):
+            return
         if tag == 'style':
             a = dict(attrs)
             self.current = []
             self.conditional = bool(a.get('media') and a.get('media') != 'all')
 
     def handle_data(self, data):
+        if self.templates.depth:
+            return
         if self.current is not None and self.chars < 200000:
             self.current.append(data[:200000-self.chars])
             self.chars += len(data)
 
     def handle_endtag(self, tag):
+        if self.templates.end(tag):
+            return
         if tag == 'style' and self.current is not None:
             self.styles.append((''.join(self.current),self.conditional))
             self.current = None
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        # A template is non-void in HTML; <template/> still opens its fragment.
+        if tag != 'template':
+            self.handle_endtag(tag)
 
     def scan(self, html):
         self.feed(html)

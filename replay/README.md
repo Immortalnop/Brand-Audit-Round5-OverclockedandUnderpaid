@@ -37,7 +37,7 @@ If the archive includes historical prompts, use the revised prompt supplied here
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
 steps. The example URL is Tartine; change it for the actual public URL.
-Runtime and skills are updated for 8.5.1. The earlier evidence in
+Runtime and skills are updated for 8.5.2. The earlier evidence in
 `verification/replay-manifest/record.json` describes its historical candidate; exact
 Claude/laptop execution of this revision,
 independent finding review and presentation recording remain pending.

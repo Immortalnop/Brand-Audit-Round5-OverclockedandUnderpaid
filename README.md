@@ -195,6 +195,13 @@ both this layout and older flat outputs, validating their same-run binding and
 preserving all input bytes. The image helper enforces its own timeout and needs
 no platform-specific timeout command.
 
+Release 8.5.2 isolates inactive HTML template fragments in both extraction and
+the inline-CSS prepass. Their controls, headings, images, metadata, scripts and
+styles cannot create or suppress live-page observations. Real controls outside
+templates remain assessable. Templates inserted later by JavaScript and
+declarative shadow DOM still need browser validation; this static extractor
+does not measure their rendered or accessibility state.
+
 The base report is never overwritten (the merge refuses to write over its input) and stays the merge base. AG-01 needs only the packet; checks that need search or vision are recorded as not assessed when the host did not run them. `examples/` holds one complete run of this workflow: `sample-report.json` (the base report), `evidence.json`, `agent-outcomes.json`, `final-report.json` and `final-report.md`. `tests/test_round5_release.py` replays the same workflow offline on a fixture site.
 
 `--out` checks the path before the audit starts, writes the file in one step (a failed run never leaves half a report), and prints the report to stdout instead if the file cannot be written.

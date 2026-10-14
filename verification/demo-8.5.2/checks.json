@@ -1,0 +1,21 @@
+{
+  "version": "8.5.2",
+  "checkout_tests": {
+    "passed": 1511,
+    "seconds": 123.18
+  },
+  "parser_regressions": {
+    "previous_release_failed": 38,
+    "previous_release_passed": 30,
+    "fixed_release_passed": 68,
+    "seconds": 1.48
+  },
+  "unchanged_fixture_pages": 44,
+  "saved_html_comparisons": 7,
+  "python_3_10_syntax_files": 149,
+  "canonical_prompt_matches_embedded_replay": true,
+  "engine_plugin_catalog_versions_match": true,
+  "claude_plugin_validation_passed": true,
+  "new_live_website_requests_in_saved_html_comparisons": 0,
+  "authenticated_claude_run_performed": false
+}
