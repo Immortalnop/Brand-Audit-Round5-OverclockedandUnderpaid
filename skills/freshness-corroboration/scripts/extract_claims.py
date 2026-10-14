@@ -34,7 +34,32 @@ _DATE_RE = re.compile(
     r"|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+(19|20)\d{2}\b"
 )
 _PRICE_RE = re.compile(r"[$\u20ac\u00a3\u20b9]\s?\d[\d,]*(\.\d{2})?")
-_PHONE_RE = re.compile(r"\+?\d[\d\-\s\(\)]{7,}\d")
+_PHONE_RE = re.compile(r"(?<!\w)(?:\+\d|\(\d|\d)[\d\- \t().]{5,}\d(?!\w)")
+_PHONE_LABEL = re.compile(r'\b(?:phone|telephone|tel|call|fax|mobile|whatsapp|contact)\s*:?\s*$',re.I)
+_NON_PHONE_LABEL = re.compile(r'\b(?:ABN|VAT|ISBN|SKU|tax(?:\s+ID)?|registration(?:\s+number)?)\s*:?\s*$',re.I)
+
+
+def phone_mentions(text):
+    """Conservative visible-text numbers; explicit JSON-LD telephone is separate.
+
+    Dates must never become high-ranked contact claims. Mask them before the
+    greedy number scan so adjacent date strings cannot become one number.
+    Plain digit/space identifiers require an explicit phone/contact label.
+    """
+    masked=list(text)
+    for match in _DATE_RE.finditer(text):
+        masked[match.start():match.end()]='X'*(match.end()-match.start())
+    for match in _PHONE_RE.finditer(''.join(masked)):
+        value=text[match.start():match.end()].strip()
+        # A postal code preceding a parenthesized area code is not part of it.
+        value=re.sub(r'^\d{5}(?:-\d{4})?\s+(?=\()', '',value)
+        digits=re.sub(r'\D','',value)
+        before=text[max(0,match.start()-40):match.start()]
+        if not 7<=len(digits)<=15 or _NON_PHONE_LABEL.search(before):continue
+        # Legal section ranges such as 1798.83-1798.84 are not phone numbers.
+        if '.' in value and not re.fullmatch(r'(?:\+\d{1,3}[ .-])?\(?\d{1,4}\)?[ .-]\d{2,4}[ .-]\d{3,4}',value):continue
+        if not any(c in value for c in '+()-') and not _PHONE_LABEL.search(before):continue
+        yield value
 
 # page_type (acquisition-owned) -> the category a bare date mention on that page
 # most plausibly belongs to. A page type not listed here says nothing about its
@@ -197,9 +222,9 @@ def extract_claims(artifacts, deadline):
             claims.append({"source": page.url, "subject": "price_mention", "predicate": "mentions_price",
                            "value": m.group(0), "type": "price", "category": "commercial",
                            "importance": 0.6, "confidence": 0.6})
-        for m in _PHONE_RE.finditer(text):
+        for phone in phone_mentions(text):
             claims.append({"source": page.url, "subject": "contact", "predicate": "phone_number",
-                           "value": m.group(0), "type": "contact", "category": "contact",
+                           "value": phone, "type": "contact", "category": "contact",
                            "importance": 0.7, "confidence": 0.5})
         for block in iter_nodes(page.jsonld_blocks):
             # jsonld_blocks on a real (acquired) PageArtifact are frozen via

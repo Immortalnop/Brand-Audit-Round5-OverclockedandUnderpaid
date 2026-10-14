@@ -535,14 +535,14 @@ def timing_plan(limits, started_wall, core_finished_wall=None, workflow_started_
     its deadline is advisory and the merge records how long the whole workflow
     actually took."""
     target = float(getattr(limits, "WORKFLOW_TARGET_S", 270.))
-    finalization = float(getattr(limits, "MERGE_FINALIZATION_S", 60.))
+    finalization = float(getattr(limits, "MERGE_FINALIZATION_S", 45.))
     core_limit = float(limits.TOTAL_AUDIT_TIMEOUT_S)
     session_start=started_wall if workflow_started_wall is None else workflow_started_wall
     agent_deadline = session_start + target - finalization
     plan = {
         "workflow_target_s": target,
         "core_limit_s": core_limit,
-        "agent_stage_budget_s": float(getattr(limits, "AGENT_STAGE_BUDGET_S", 180.)),
+        "agent_stage_budget_s": float(getattr(limits, "AGENT_STAGE_BUDGET_S", 210.)),
         "finalization_budget_s": finalization,
         "session_started_at": _iso(session_start),
         "clock_scope":"host_first_tool" if workflow_started_wall is not None else "engine_start",
@@ -815,7 +815,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=float, default=None,
                         help="Override the audit worker's wall-clock cap in seconds (default 270, handout "
                              "limit 300). The optional agent stage gets what the audit leaves before the "
-                             "270-second workflow target, at most 180 seconds (see the report's timing). Lower "
+                             "270-second workflow target, at most 210 seconds (see the report's timing). Lower "
                              "it for a quick interactive run on a large site, or to reserve agent time.")
     parser.add_argument("--max-pages", type=int, default=None,
                         help=f"Pages to crawl (default {DEFAULT_LIMITS.MAX_PAGES_CRAWLED}, at most "
@@ -843,7 +843,7 @@ def main(argv=None):
                         help="With --from-report: the evidence packet the audit wrote with --evidence-out. "
                              "Required when --agent-findings holds an outcome envelope.")
     parser.add_argument('--workflow-started-at',metavar='ISO8601',default=None,
-                        help='Host UTC clock captured before reading skills. Counts preparation against the 270-second workflow target and reserves 60 seconds for finalization. The default 50-page cap is unchanged; the worker receives only remaining time. Omit for ordinary direct CLI audits.')
+                        help='Host UTC clock captured before reading skills. Counts preparation against the 270-second workflow target and reserves 45 seconds for finalization. The default 50-page cap is unchanged; the worker receives only remaining time. Omit for ordinary direct CLI audits.')
     parsed = parser.parse_args(argv)
     if parsed.from_report is not None:
         return _merge_main(parser, parsed)

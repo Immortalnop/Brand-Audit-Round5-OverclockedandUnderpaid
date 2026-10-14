@@ -185,8 +185,8 @@ packet, agent input and final report must be four different files.
 Time plan: ordinary CLI audits retain a 270-second worker ceiling and the
 50-page default. For a host workflow, capture an ISO 8601 UTC clock before reading
 skills and pass `--workflow-started-at`. The worker is then stopped at the lesser
-of its normal ceiling and the remaining 270-second target after a 60-second reserve
-for saving, merge, rendering and reply. The agent receives at most 180 seconds
+of its normal ceiling and the remaining 270-second target after a 45-second reserve
+for saving, merge, rendering and reply. The agent receives at most 210 seconds
 from the remaining allowance; a slow site can still leave no agent time. No new
 allowance starts after core completion. Small batches of independent host reads
 may overlap, but outcome writes and the single merge stay sequential. The report's `timing` and the

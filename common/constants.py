@@ -13,8 +13,8 @@ class Limits:
     # the agent stage is timed and reported, not stopped (run_audit.timing_plan).
     TOTAL_AUDIT_TIMEOUT_S: float = 270
     WORKFLOW_TARGET_S: float = 270
-    AGENT_STAGE_BUDGET_S: float = 180
-    MERGE_FINALIZATION_S: float = 60
+    AGENT_STAGE_BUDGET_S: float = 210
+    MERGE_FINALIZATION_S: float = 45
     # Inside the worker: acquisition, then the analysis batches, then the report.
     ACQUISITION_BUDGET_S: float = 110
     RENDERING_BUDGET_S: float = 55

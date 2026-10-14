@@ -27,8 +27,8 @@ forms, access authenticated areas, bypass challenges or automatically edit a sit
 
 The ordinary core ceiling is 270 seconds with 50 pages by default. Pass the
 host clock captured before contract reading via `--workflow-started-at`; the
-worker then receives only remaining workflow time after the 60-second finalization
-reserve. The host stage receives only remaining time, at most 180 seconds. Read `timing.agent_deadline_at`; stop
+worker then receives only remaining workflow time after the 45-second finalization
+reserve. The host stage receives only remaining time, at most 210 seconds. Read `timing.agent_deadline_at`; stop
 or skip when time expires or `agent_stage_recommended` is false. Host time is
 measured at merge; this code cannot enforce cancellation of arbitrary host tools.
 Use `scripts/agent_handoff.py prepare --report base.json --evidence packet.json
@@ -36,7 +36,22 @@ Use `scripts/agent_handoff.py prepare --report base.json --evidence packet.json
 native summary. Add `--search` only when the host search tool is available; vision
 starts false. This validates the ordinary envelope boundary, creates the output
 exclusively, and does not acquire a site. Replace pending reasons before merge.
-Use its `summary --report final.json` mode after rendering to prepare the reply.
+The helper also prints exact AG-01 focus, AG-03 E/C quote options and eligible
+`image_candidates[].page_evidence_ids`. A poor C list does not preclude an exact
+substantive E quote. It never supplies a qualitative assessment.
+Use `status --report base.json --evidence packet.json --outcomes outcomes.json`
+before and after research batches. Its real UTC remaining time controls admission;
+30 seconds is a remaining-time guard, not a stage duration. Continue eligible
+unfinished checks while time permits. Do not turn early host stopping into an
+expired deadline, or one blocked source into a limit on every other check.
+The 45-second finalization reserve is already excluded from agent_deadline_at;
+do not subtract it a second time when deciding to continue research.
+Use `preflight` with the same arguments before the single merge. It validates
+the ordinary envelope and rejects initialized placeholders, premature deadline
+reasons and objectively false missing-parent claims. Correct the outcome shape
+and actual reasons without changing inputs, evidence or already completed checks.
+Use `terminal --report final.json` after rendering to prepare a reply showing all
+six AG outcomes and the first two findings with acquired evidence and fixes.
 
 Independent read-only native tool calls may run in batches of two, at most three.
 Dependent inspections wait for search results. Keep one writer, save each completed
@@ -44,6 +59,12 @@ check sequentially, and merge once. Do not overlap fetches to the same source ho
 launch subagents, relax evidence requirements or reset clocks. A research batch
 needs at least 30 seconds remaining; source inspection needs at least 15 seconds
 and enough time to save. Those guards do not guarantee host cancellation.
+Plan identity/claim, namesake and applicable platform searches together; inspect
+returned sources in small independent batches. If a source is blocked or contains
+only navigation, a different returned independent source may be inspected within
+the remaining time. Do not retry a blocked URL/host or bypass it. Retain actual
+query/source counts and failures. Fetch/View one eligible image early enough to
+save its scoped outcome; decorative images and partial text may remain unassessed.
 
 An optional full raster fetch uses `scripts/fetch_agent_image.py --report base.json
 --evidence packet.json --image-id I001 --out-dir out`. Select an actual exported I
@@ -162,6 +183,10 @@ Search advice uses query scope rather than invented affected-page counts.
 Legacy finding arrays remain `legacy_partial`: no check counts as assessed, no
 capability limit is cleared, no severity exceeds medium, and unsupported factual
 claims remain suspected. Preserve native contributions and unrelated limits.
+
+Keep `queries`, `sources` and `source_refs` at each check's top level, alongside
+`observation`; use `authorship` for sources. The reference below gives exact field
+examples. Edit the prepared check without discarding the other five outcomes.
 
 See [references/checks.md](references/checks.md) and the orchestrator's
 [boundary policy](../audit-orchestrator/references/input-boundaries.md).

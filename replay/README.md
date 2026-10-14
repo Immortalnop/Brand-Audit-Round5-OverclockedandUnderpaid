@@ -24,16 +24,26 @@ If the archive includes historical prompts, use the revised prompt supplied here
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
 steps. The example URL is Bare Necessities; change it for the actual public URL.
-Runtime and skills are updated for 8.4.1. The earlier evidence in
+Runtime and skills are updated for 8.4.2. The earlier evidence in
 `verification/replay-manifest/record.json` describes its historical candidate; exact
 Claude/laptop execution of this revision,
 independent finding review and presentation recording remain pending.
 
 The full demo now passes a UTC host clock captured before reading the contracts.
 The 50-page default stays; shared-clock mode narrows the worker to remaining time
-inside the 270-second target, reserves 60 seconds for finalization, and gives AG
-work up to 180 seconds from the balance. Independent Claude reads run in small
+inside the 270-second target, reserves 45 seconds for finalization, and gives AG
+work up to 210 seconds from the balance. Independent Claude reads run in small
 batches with one writer and one merge. The clock is never reset. The compact local
 handoff helper and optional single full-image fetch avoid unnecessary context
 loading and provide an honest image-view path. Actual prompt-to-reply timing and
 parallel overlap still require an intended-laptop Claude trace and stopwatch.
+
+The 8.4.2 follow-up adds clock/evidence checkpoints and preflight before the single
+merge. The host must retain all six outcomes, continue eligible work while time
+permits, use the actual exported image parents and keep query/source records at
+the check level. A blocked source does not end other checks. Exact field examples
+are in the agent skill's checks reference. The final reply uses the local
+`terminal` scaffold with all six AG results and the first two findings, including
+evidence and fixes. The finalization reserve is already excluded from the agent
+deadline; do not subtract it twice. Full Claude verification remains a separate
+actual run, not an inference from native tests.

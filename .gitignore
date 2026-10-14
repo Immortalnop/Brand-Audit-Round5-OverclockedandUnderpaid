@@ -49,5 +49,8 @@ ROUND5_PLAN.md
 
 json_results
 
+# Local native verification outputs; compact review records are committed.
+/verification/demo-8.4.2/native-*/
+
 reference-archive/
 ROUND5_PLAN.md/

@@ -209,13 +209,13 @@ def test_default_core_limit_is_270_and_a_fast_audit_leaves_agent_time():
     assert LIMITS.TOTAL_AUDIT_TIMEOUT_S == 270
     plan = timing_plan(LIMITS, 1_000_000.0, 1_000_000.0 + 60)
     assert plan["core_limit_s"] == 270 and plan["workflow_target_s"] == 270
-    assert plan["agent_stage_budget_s"] == 180 and plan["agent_time_left_s"] == 150
+    assert plan["agent_stage_budget_s"] == 210 and plan["agent_time_left_s"] == 165
     assert plan["agent_stage_recommended"]
-    assert datetime.fromisoformat(plan['agent_deadline_at']).timestamp() == 1_000_000 + 210
+    assert datetime.fromisoformat(plan['agent_deadline_at']).timestamp() == 1_000_000 + 225
     assert "not enforced" in plan["enforcement"]["agent_stage"]
-    assert timing_plan(LIMITS, 0.0, 180.0)["agent_time_left_s"] == 30
+    assert timing_plan(LIMITS, 0.0, 180.0)["agent_time_left_s"] == 45
     assert timing_plan(LIMITS, 0.0, 230.0)["agent_time_left_s"] == 0
-    assert timing_plan(LIMITS, 0.0, 5.0)["agent_time_left_s"] == 180
+    assert timing_plan(LIMITS, 0.0, 5.0)["agent_time_left_s"] == 210
 
 
 def test_full_length_core_leaves_no_agent_time():
@@ -238,10 +238,10 @@ def test_host_preparation_is_charged_without_changing_default_core_or_page_cap()
     start=1_000_000.
     assert LIMITS.MAX_PAGES_CRAWLED==50
     assert workflow_worker_budget(LIMITS,start+25,None)==270
-    assert workflow_worker_budget(LIMITS,start+25,start)==185
-    plan=timing_plan(replace(LIMITS,TOTAL_AUDIT_TIMEOUT_S=185),start+25,start+55,start)
+    assert workflow_worker_budget(LIMITS,start+25,start)==200
+    plan=timing_plan(replace(LIMITS,TOTAL_AUDIT_TIMEOUT_S=200),start+25,start+55,start)
     assert plan['preparation_elapsed_s']==25 and plan['core_elapsed_s']==30
-    assert plan['agent_time_left_s']==155
+    assert plan['agent_time_left_s']==170
     assert datetime.fromisoformat(plan['session_deadline_at']).timestamp()==start+270
     measured=workflow_elapsed(plan,datetime.fromtimestamp(start+100,timezone.utc))
     assert measured['workflow_elapsed_s']==100 and measured['agent_elapsed_s']==45

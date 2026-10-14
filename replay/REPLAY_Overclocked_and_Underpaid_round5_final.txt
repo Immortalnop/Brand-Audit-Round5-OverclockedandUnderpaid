@@ -161,7 +161,7 @@ Use the configured directories/interpreter consistently. Omit --max-pages and
 --timeout. The normal 50-page cap and maximum 270-second worker ceiling remain.
 Substitute the captured timestamp as one quoted literal. This shared-clock mode
 narrows the worker to the remaining 270-second target after preparation, reserving
-60 seconds for saving, merge, rendering and the reply. Slow sites can still leave
+45 seconds for saving, merge, rendering and the reply. Slow sites can still leave
 no AG time; do not claim all checks ran if the evidence or allowance prevented it.
 This is a maximum, not a promise of exactly 50 analyzed pages. Run all native
 checks scheduled by the entrypoint and all supported agent checks. Preserve
@@ -185,12 +185,13 @@ call prepare or manufacture an envelope. Read the compact summary and the whole
 current packet, rather than loading the complete native findings before AG work.
 The full native report remains the authoritative merge base. Check provenance,
 focus.ag01, and timing.agent_stage_recommended/agent_deadline_at. The deadline is
-an absolute UTC time and allows at most 180 seconds after core completion, within
-the shared allowance after the 60-second finalization reserve. This is a cap,
+an absolute UTC time and allows at most 210 seconds after core completion, within
+the shared allowance after the 45-second finalization reserve. This is a cap,
 not extra time or a guarantee that all checks can finish.
 Skip assessments when agent_stage_recommended is
-false or that deadline has passed. Use Bash with Python's UTC clock before each host
-operation; never start a fresh allowance. Preserve the base report and packet
+false or that deadline has passed. Use the checkpoint below before each research
+batch; its checked_at and remaining_agent_s use Python's real UTC clock. Never
+start a fresh allowance. Preserve the base report and packet
 without editing them. The helper initializes the bound envelope described below.
 Do AG-01 first when its opening is assessable and complete, saving its
 supported outcome immediately. Save after each completed check; retain earlier
@@ -201,6 +202,41 @@ assessment. An already expired allowance permits no new external work.
 Stop external work before the deadline, retain unfinished checks honestly, and
 leave time to save the envelope and merge. A slow or blocked tool never justifies
 a bypass, repeated blocked-domain retries, fabricated counts or a passed check.
+
+Use this read-only checkpoint after prepare, after each research batch and before
+deciding to finish:
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py status --report out/base-report.json --evidence out/evidence.json --outcomes out/agent-outcomes.json
+The helper exposes remaining time, unfinished checks and exact eligible image
+IDs/parent references. Pending reasons in status are reminders, not a tool failure.
+The 45-second finalization reserve is ALREADY excluded from agent_deadline_at;
+do not subtract it again or start finalization an extra minute early.
+Do not finish after AG-01/AG-02 while other eligible work can still run. A 30-second
+admission guard means 30 seconds REMAINING, not a 30-second stage or an early stop.
+Do not claim a reached/expired deadline while the clock still allows work.
+If evidence/capability prevents a check, save that actual limitation and continue
+the other checks. A failed source does not consume their entire stage.
+
+Plan the search work before the first batch. Select one substantive, exact E
+passage or C claim for AG-03; a small/poor C list does not prevent using an E quote.
+Then batch up to three independent searches: acquired identity plus the selected
+claim (reusable for AG-02/AG-03), namesakes for AG-05, and one applicable review or
+directory platform for AG-06. If tools execute them sequentially, record that.
+Inspect the returned sources in small independent batches, saving supported
+outcomes between batches. One genuinely independent agreement can support a
+scoped AG-03 pass; two authored sources are required for high/confirmed conflict.
+Reuse an actual inspected passage across checks only when it supports each one.
+If a source is blocked or contains only navigation, do not retry its URL/host or
+bypass it. A different, already returned accessible independent source may be
+inspected within the same remaining budget. Do not count the failed source as
+inspected, or treat an inaccessible platform as absent.
+
+Schedule AG-04 early enough to fetch and Read its image, before lengthy research
+can use the allowance. The packet field is image_candidates; exported parents
+are page_evidence_ids. Read those exact fields or agent_work_plan.ag04_eligible_images
+from prepare/status. Prefer a candidate plausibly containing written facts or
+specifications over a decorative photograph; alt/filename are selection hints,
+never visual evidence. No readable fact or incomplete comparison may still mean
+not_assessed after viewing. Do not create an image-only defect just to assess it.
 
 For a ready packet, write out/agent-outcomes.json as a schema 1.1 outcome envelope:
 copy audit_id, snapshot_sha256 and packet_sha256 exactly from this packet; report
@@ -218,6 +254,11 @@ use url, kind (inspected_page), quote and actual authorship/accessed_at where
 required. Search snippets or listed links are not inspected pages. Record only
 fields supported by tool execution; unavailable counts/evidence leave the check
 unassessed rather than invented. Reuse real sources without duplicating authors.
+queries, sources and source_refs are TOP-LEVEL fields of each check, alongside
+observation. They are never inside observation. Use authorship, not author, in
+sources. Follow the field examples in references/checks.md and fill only actual
+observations. Edit the relevant existing check, retaining the other five entries;
+do not recreate the envelope with a custom generator that can erase outcomes.
 
 - AG-01: assess exactly focus.ag01.opening_passage and its selected E page_ref.
   Copy the entire opening to observation.passage for either pass or finding.
@@ -226,6 +267,9 @@ unassessed rather than invented. Reuse real sources without duplicating authors.
   not be isolated is not_assessed. Use home only when the packet explicitly
   selects the no-observed-About fallback. Style or missing metadata alone does
   not prove that the body fails to describe the organization.
+  A concrete product/service category can state the offering without listing
+  individual products. Do not require a product catalog or penalize stylistic
+  wording when the selected passage actually answers who/offering/category.
   If the selected opening still consists of navigation, a broken fragment or an
   isolated decorative slogan, record not_assessed with the actual ambiguity.
   Never substitute unrelated text or guess missing words under the old binding.
@@ -314,7 +358,17 @@ manufacture a ready packet or use stale evidence. If the packet is ready but
 time or capability prevents assessment, an all-not_assessed bound envelope is
 valid; it reports no checks as passed.
 
-4. Merge locally once, then render.
+4. Preflight, merge locally once, then render.
+Before attempting the single merge, run:
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py preflight --report out/base-report.json --evidence out/evidence.json --outcomes out/agent-outcomes.json
+This uses the normal envelope validator and detects pending placeholders,
+premature deadline reasons and false missing-image-parent claims. It writes no
+report and makes no network request. On failure, correct field placement or actual
+reasons in the envelope, retaining evidence and completed checks. If eligible work
+was skipped while time still permits it, continue that work before preflight.
+Never alter the packet, fabricate evidence or weaken a check to make preflight pass.
+If the envelope cannot be made valid, retain the base report and disclose the
+rejection. A successful preflight does not prove semantic truth or tool execution.
 For a ready packet and saved envelope, run:
 python3 Brand-AI-Readiness-Audit-round5-final_version/skills/audit-orchestrator/scripts/run_audit.py --from-report out/base-report.json --agent-findings out/agent-outcomes.json --evidence out/evidence.json --out out/final-report.json
 This is merge-only: do not supply a site argument or run acquisition again.
@@ -328,14 +382,21 @@ python3 Brand-AI-Readiness-Audit-round5-final_version/common/report_markdown.py 
 Merge and rendering are local; make no new website requests during those steps.
 
 5. Deliver a concise explanation of the actual final report.
-After rendering, use a compact local summary:
-python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py summary --report out/final-report.json
+After rendering, use the deterministic terminal-summary scaffold:
+python3 Brand-AI-Readiness-Audit-round5-final_version/skills/entity-corroboration-agent/scripts/agent_handoff.py terminal --report out/final-report.json
+Use its content in the final reply, adding real file links and the last measured
+time. Include all six AG outcomes with actual reasons, and explain BOTH first
+findings (or all available if fewer than two), each with ID, severity/status/type,
+affected-page count, acquired evidence/example URL and suggested fix. Do not omit
+these sections just to shorten the reply. Keep native priority order. State any
+AG findings in the AG outcomes even when they are outside those first two.
 Link final-report.json, final-report.md and available evidence/outcomes/notes.
 Show execution status, actual severity counts, pages analyzed/discovered,
 challenge/out-of-scope coverage and the per-check AG outcomes. Summarize the
-report's start_here/top_actions and quick_wins, including supplied owner_roles
-and priority_basis where present. Explain up to two actionable findings using
-their acquired evidence, affected scope, status and suggested fixes. Keep the
+report's marked start_here row in top_actions and quick_wins, including supplied
+owner_roles and priority_basis where present. top_actions contains defects only;
+the first two findings can include improvements. Do not invent a starting defect
+when none is marked. Keep the
 complete findings and recommendations in the generated report's engine order;
 do not edit, reclassify or reorder them. Recommendations that reference findings
 are not extra findings; owner_roles suggest roles rather than assign teammates.
@@ -375,8 +436,8 @@ video, search, image view or rendered browser run that did not actually occur.
    usable; it does not establish a successful merged final report.
 
    The core ceiling and workflow target are 270 seconds. The host stage gets
-   remaining time, at most 180 seconds; saving, merge, rendering and reply reserve
-   60 seconds. The prompt captures the host start before reading contracts and
+   remaining time, at most 210 seconds; saving, merge, rendering and reply reserve
+   45 seconds. The prompt captures the host start before reading contracts and
    passes it to the engine; the worker receives only remaining shared time.
    A slow default audit can leave no host-stage time. The engine cannot cancel
    arbitrary Claude tools, so obey the actual packet deadline and retain late

@@ -8,9 +8,32 @@ from analyze_authorship import is_article, assess_page
 from analyze_metadata import analyze_metadata
 from analyze_experience import analyze_experience
 from analyze_overlays import analyze_overlays
-from extract_claims import extract_claims
+from extract_claims import extract_claims,phone_mentions
 from assess_freshness import assess_freshness
 from analyze_context_signals import analyze_context_signals
+
+
+def test_calendar_dates_and_tax_ids_are_not_phone_claims():
+    p=page('<main><p>News 2001-06-08 and 2001-06-19.</p>'
+           '<p>ABN: 31 142 646 580</p><p>SKU: 123-456-7890</p>'
+           '<p>Published October 14, 2026.</p></main>')
+    result=run(extract_claims,p)['data']['claims']
+    assert not [c for c in result if c['predicate']=='phone_number']
+    assert len([c for c in result if c['type']=='date'])==3
+
+
+def test_real_local_international_and_explicit_telephone_claims_survive():
+    assert list(phone_mentions('94110 (415) 487-2600'))==['(415) 487-2600']
+    assert list(phone_mentions('+61 2 9475 0859'))==['+61 2 9475 0859']
+    assert list(phone_mentions('213-952-1588'))==['213-952-1588']
+    assert list(phone_mentions('Phone: 020 7946 0958'))==['020 7946 0958']
+    p=page('<script type="application/ld+json">{"@type":"Organization","telephone":"02079460958"}</script>')
+    assert any(c['predicate']=='telephone' and c['value']=='02079460958' for c in run(extract_claims,p)['data']['claims'])
+
+
+def test_legal_section_ranges_do_not_displace_contact_claims():
+    assert list(phone_mentions('California Civil Code sections 1798.83-1798.84'))==[]
+    assert list(phone_mentions('Phone: 415.487.2600'))==['415.487.2600']
 
 
 def run(check, *pages):
