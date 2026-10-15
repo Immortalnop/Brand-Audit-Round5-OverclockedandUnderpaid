@@ -47,10 +47,13 @@ final_version_plan.md
 IMPLEMENTATION_STATUS.md
 ROUND5_PLAN.md
 
-json_results
+/json_results/
 
-# Local native verification outputs; compact review records are committed.
-/verification/demo-8.4.2/native-*/
+# Local audit outputs, verification records and unused repository-analysis state.
+/out/
+/verification/
+/docs/verification/
+/data/
 
 reference-archive/
 ROUND5_PLAN.md/

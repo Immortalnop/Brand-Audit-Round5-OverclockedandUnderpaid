@@ -342,11 +342,22 @@ Brand-AI-Readiness-Audit/          <- marketplace root
 │       ├── SKILL.md
 │       ├── references/checks.md
 │       └── scripts/ingest_agent_findings.py
-└── tests/                        <- pytest suite + local fixtures (not required to run an audit)
-    ├── fixtures_server.py
-    ├── tls-fixtures/             <- self-signed certs for TLS-recovery tests
-    └── test_*.py
+├── tests/                        <- pytest suite + local fixtures (not required to run an audit)
+│   ├── fixtures_server.py
+│   ├── tls-fixtures/             <- self-signed certs for TLS-recovery tests
+│   └── test_*.py
+└── tools/                        <- release builder and opt-in verification utilities
+    ├── package_release.py
+    └── verification/
 ```
+
+The source repository keeps runtime code, tests, examples, replay instructions
+and developer tooling. Generated audit runs (`out/`), historical evidence
+(`verification/`), verification records (`docs/verification/`), local reference
+archives, build ZIPs and the unused repository-analysis database (`data/`) are
+ignored. An audit's own
+`out/<run-id>/verification/` contains its supporting evidence and should travel
+with that report. It is separate from the repository's historical evidence.
 
 ## Testing
 
@@ -389,7 +400,7 @@ The scorer reports precision, high-severity precision, per-check precision and e
 
 ## Packaging
 
-`python3 tools/package_release.py --committed` builds the exact committed HEAD snapshot, preserving local source assets and edits. Without that flag the tool reports the working tree state. The builder writes `dist/brand-ai-readiness-audit-<version>.zip` from an allowlist (`marketplace.json`, `README.md`, `skills/`, `common/`, `examples/`, `tests/`, `replay/`) with a `RELEASE.json` naming the version, the commit and whether the tree was clean. Planning PDFs and notes, `data/store.sqlite` (no code reads it), `benchmark_runs/` and `.env` files are left out of the archive but never deleted.
+`python3 tools/package_release.py --committed` builds the exact committed HEAD snapshot, preserving local source assets and edits. Without that flag the tool reports the working tree state. The builder writes `dist/brand-ai-readiness-audit-<version>.zip` from an allowlist (`marketplace.json`, `README.md`, the two `.claude-plugin/` manifests, `skills/`, `common/`, `examples/`, `tests/`, `replay/`) with a `RELEASE.json` naming the version, the commit and whether the tree was clean. Developer documentation and tools, historical verification outputs, planning notes, local databases, benchmark runs and environment files stay outside the runtime archive. Existing local files are preserved. No runtime code uses `data/store.sqlite`.
 
 Google Search ignores llms.txt for visibility and ranking, including generative
 Search. FAQ rich results ended on 7 May 2026. Useful Q&A and generic FAQPage

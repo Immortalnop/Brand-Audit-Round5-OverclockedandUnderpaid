@@ -37,10 +37,11 @@ If the archive includes historical prompts, use the revised prompt supplied here
 Keep the complete JSON/Markdown, evidence, outcomes, notes and actual transcript.
 The manifest includes full setup, native-only fallback and final verification
 steps. The example URL is Tartine; change it for the actual public URL.
-Runtime and skills are updated for 8.5.2. The earlier evidence in
-`verification/replay-manifest/record.json` describes its historical candidate; exact
-Claude/laptop execution of this revision,
-independent finding review and presentation recording remain pending.
+Runtime and skills are updated for 8.5.2. Historical release evidence and raw
+rehearsals remain in Git history and the ignored local verification archive.
+Historical records describe
+their own candidate and capabilities. Record the exact Claude/laptop execution,
+independent finding review and presentation for the version actually demonstrated.
 
 The full demo now passes a UTC host clock captured before reading the contracts.
 The 50-page default stays; shared-clock mode narrows the worker to remaining time
