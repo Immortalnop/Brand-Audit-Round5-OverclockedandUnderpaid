@@ -96,7 +96,7 @@ def quadrant_of(impact: str, effort: str) -> str:
 
 def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
     """Add impact, effort, quadrant and quick_win to each item's suggested_action."""
-    for item in items:
+    for rank, item in enumerate(items, 1):
         action = dict(item.get("suggested_action") or {})
         effort = action.get("effort") if action.get("effort") in ("low", "medium", "high") else "medium"
         impact = impact_of(item, pages_analyzed)
@@ -104,11 +104,28 @@ def annotate_action_plan(items: list, pages_analyzed: int = 0) -> None:
         action.update(effort=effort, impact=impact, quadrant=quadrant, quadrant_label=_QUADRANT_LABELS[quadrant],
                       quick_win=quadrant == "quick_win")
         item["suggested_action"] = action
+        assessed = (item.get('coverage') or {}).get('pages_assessed')
+        assessed = assessed if type(assessed) is int and assessed >= 0 else None
+        item['priority_basis'] = {
+            'rank': rank if str(item.get('id', '')).startswith('F-') else None,
+            'order': ['severity descending', 'status descending', 'confidence descending',
+                      'supported page count descending', 'lower effort first',
+                      'title, affected URLs, root cause, then stable ID ascending'],
+            'severity': item.get('severity'), 'status': item.get('status'),
+            'confidence': item.get('confidence'), 'confidence_basis': item.get('confidence_basis'),
+            'supported_page_count': len(set(item.get('affected_pages') or ())),
+            'assessed_page_denominator': assessed,
+            'sample_pages_analyzed': pages_analyzed,
+            'effort': effort, 'stable_id': item.get('id'),
+            'provenance': item.get('provenance'),
+            'note': 'Provenance explains confidence; it is not an additional score. The sample is not the whole site.'}
 
 
 def top_actions(findings: list, limit: int = 5) -> list:
     """The defects to act on first, in priority order, each with its impact x
-    effort placement. A quick win among them is marked start_here."""
+    effort placement. One confirmed defect among them is marked start_here,
+    a quick win when there is one; a suspected or unconfirmed defect never is,
+    so the report may have no start_here at all."""
     defects = [f for f in findings if f.get("finding_type") == "defect"][:limit]
     rows = []
     for f in defects:
@@ -116,8 +133,11 @@ def top_actions(findings: list, limit: int = 5) -> list:
         rows.append({"finding_id": f["id"], "title": f.get("title"), "summary": action.get("summary"),
                      "priority": action.get("priority"), "impact": action.get("impact"),
                      "effort": action.get("effort"), "quadrant": action.get("quadrant"),
-                     "quick_win": bool(action.get("quick_win")), "start_here": False})
-    first = next((r for r in rows if r["quick_win"]), rows[0] if rows else None)
+                     "quick_win": bool(action.get("quick_win")), "start_here": False,
+                     "owner_roles": list(action.get('owner_roles') or ()), "priority_basis": f.get('priority_basis'),
+                     "status": f.get("status")})
+    confirmed = [r for r in rows if r["status"] == "confirmed"]
+    first = next((r for r in confirmed if r["quick_win"]), confirmed[0] if confirmed else None)
     if first is not None:
         first["start_here"] = True
     return rows
@@ -131,7 +151,8 @@ def quick_wins(findings: list, recommendations: list, limit: int = 5) -> list:
         action = item.get("suggested_action") or {}
         if action.get("quick_win") and not any(o["summary"] == action.get("summary") for o in out):
             out.append({"id": item["id"], "title": item.get("title"), "summary": action.get("summary"),
-                        "impact": action.get("impact"), "effort": action.get("effort")})
+                        "impact": action.get("impact"), "effort": action.get("effort"),
+                        "owner_roles": list(action.get('owner_roles') or ()), "priority_basis": item.get('priority_basis')})
         if len(out) >= limit:
             break
     return out
@@ -143,11 +164,19 @@ def prioritize_findings(findings: list) -> list:
     for f in findings:
         if f["status"] == "insufficient_evidence" and f["finding_type"] != "proactive_improvement":
             raise ValueError(f"Invariant I-1 violated by finding {f['id']}")
+    # Severity gate, one rule for every skill: a high or critical finding must be
+    # confirmed or carry two independent kinds of evidence (models.severity_gate_ok).
+    # The status floor runs first: a finding it moves to suspected may then need
+    # the gate.
+    from models import apply_severity_gate, apply_status_floor
+    for f in findings:
+        apply_status_floor(f)
+        apply_severity_gate(f)
     # Two-pass stable sort: first establish a deterministic baseline order by id
     # (ascending), then sort by score (descending). Python's sort is stable, so
     # findings that tie on every element of _score retain their id-ascending order
     # from the first pass -- the full ordering is therefore always exactly
     # reproducible for the same set of findings, regardless of dict/set iteration
     # order upstream (e.g. in merge_findings' bucket dict).
-    by_id = sorted(findings, key=lambda f: (f.get("title", ""), tuple(sorted(f.get("affected_pages", []))), f.get("root_cause", "")))
+    by_id = sorted(findings, key=lambda f: (f.get("title", ""), tuple(sorted(f.get("affected_pages", []))), f.get("root_cause", ""), _id_sort_key(f.get('id'))))
     return sorted(by_id, key=_score, reverse=True)

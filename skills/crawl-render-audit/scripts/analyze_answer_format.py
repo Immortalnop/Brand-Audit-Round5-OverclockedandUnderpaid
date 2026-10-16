@@ -10,8 +10,9 @@ requests):
     the next heading, a first sentence longer than 40 words, or a filler opener
     such as "Great question". English pages only, because the opener list and
     the question words are English. Call-to-action headings ("Need more
-    information?", "Want to join us?") and questions answered by their own
-    subheadings (an H2 followed by H3 sections) are not judged.
+    information?", "Want to join us?"), questions answered by their own
+    subheadings (an H2 followed by H3 sections) and teasers (a heading whose
+    text a link to another page repeats, as on a news front) are not judged.
   - table-headers-missing (defect, confirmed): a data table (at least two rows
     and two columns, not role="presentation") with no <th> cells. Without
     header cells a parser cannot tell which column a value belongs to.
@@ -43,7 +44,11 @@ _FILLER_OPENER = re.compile(
 _CTA_QUESTION = re.compile(
     r"^(?:need|want|ready|looking for|interested|have (?:a |any )?questions?|got (?:a |any )?questions?|still have"
     r"|questions\b|can'?t find|would you like|wish to|keen to|curious)\b", re.I)
-_COMPARISON =re.compile(r"\b(?:vs\.?|versus|comparison|compared?|alternatives?)\b", re.I)
+# "Alternative" signals a comparison only as a noun naming the options compared
+# ("Slack alternatives", "alternatives to Slack"); as an adjective ("Alternative
+# Python implementations", "alternative routes") it does not.
+_COMPARISON = re.compile(r"\b(?:vs\.?|versus|comparison|compared?)(?=\W|$)|\balternatives?\s+(?:to|for)\b"
+                         r"|\balternatives\b(?!\s+[A-Za-z])|\balternatives\s+in\b", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
@@ -56,8 +61,10 @@ def _data_tables(features):
             and t.get("max_cols", 0) >= 2]
 
 
-def answer_problem(answer):
-    """Why the text after a question heading is not a direct answer, or None."""
+def answer_problem(answer, starts_in=None):
+    """Why the text after a question heading is not a direct answer, or None.
+    starts_in is where that text begins ("text", "table" or "list"): cells and
+    items run together without sentence ends, so their length is not judged."""
     text = " ".join((answer or "").split())
     if not text:
         return "no text before the next heading"
@@ -66,7 +73,7 @@ def answer_problem(answer):
         return "opens with filler (\"" + first[:40] + "\")"
     words = len(first.split())
     # A first "sentence" cut off at the 600-character capture limit is long either way.
-    if words > _MAX_ANSWER_WORDS:
+    if words > _MAX_ANSWER_WORDS and starts_in not in ("table", "list"):
         return f"first sentence has {words} words"
     return None
 
@@ -108,11 +115,13 @@ def analyze_answer_format(artifacts, deadline):
         if _english(p):
             problems = []
             for qa in f.get("question_answers") or ():
-                if _CTA_QUESTION.search((qa.get("question") or "").strip()) or (
+                # A teaser repeats the label of a link to another page: the answer
+                # is on that page, not under the heading here.
+                if qa.get("teaser") or _CTA_QUESTION.search((qa.get("question") or "").strip()) or (
                         not (qa.get("answer") or "").strip() and qa.get("answered_by_subheadings")):
                     continue
                 questions_checked += 1
-                problem = answer_problem(qa.get("answer"))
+                problem = answer_problem(qa.get("answer"), qa.get("starts_in"))
                 if problem:
                     problems.append((qa.get("question", ""), problem))
             if problems:

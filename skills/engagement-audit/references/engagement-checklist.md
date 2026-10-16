@@ -1,19 +1,31 @@
 # Engagement checklist
 
-- Orphan pages (no inbound internal links)
-- Dead-end pages (no outbound internal links)
+- Orphan pages (no inbound internal links) and isolated page clusters. Graph
+  nodes are pages at their final URL: a crawled URL that redirected is the page
+  it lands on, URLs redirecting to one page are one node, and a trailing slash
+  does not hide a link. Both are reported only when the crawl reached every
+  discovered URL. On a sampled crawl a page the sample does not link to may be
+  linked from a page that was not fetched (a section index often lists only its
+  newest items), so they are counted in metrics and the report says they were
+  not assessed. A start page that reaches no other sampled page (a splash or
+  language chooser) never makes the rest of the site an isolated cluster.
+- Dead-end pages (no outbound internal links; a link to the page itself does
+  not count)
 - Navigation/breadcrumb consistency: visible breadcrumbs vs BreadcrumbList
   JSON-LD
 - Rendering-gap pages (from crawl-render-audit's rendering_result) as context
   for engagement, not duplicated as a separate finding
 - Generic internal anchor text (for example "read more", "click here") when a
   meaningful sample of internal anchors is available
-- Weak page orientation on substantial non-home pages that lack a descriptive
-  primary heading above the fold
+- Weak page orientation on substantial non-home pages with no H1, or whose
+  first headings are all empty or longer than 14 words (a short H1 such as
+  "About us" orients a visitor)
 - Internal discoverability gaps: substantial pages that expose almost no
   internal links onward
 - Email-summary-friendly formatting (Appendix Concept F): email-capture pages
-  whose substance is carried in images rather than readable text
+  whose substance is carried in images rather than readable text. A newsletter
+  signup on its own is named in the report warnings, not reported as a finding:
+  the emails it sends cannot be checked from the site
 
 - Accessibility beyond alt text (`analyze_accessibility.py`): unlabeled form
   fields (`form-label-missing`), links and buttons with no accessible name
@@ -21,10 +33,15 @@
   (`low-contrast-text`) and inline-sized targets under 24 by 24 px
   (`tap-target-small`, suspected). Stylesheet colours and sizes need a browser
   and are stated as a limitation.
-- Overlays (`analyze_overlays.py`): aria-modal dialogs, full-screen fixed
+- Overlays (`analyze_overlays.py`): declared-open aria-modal dialogs or modal
+  markup with a page scroll lock, full-screen fixed
   layers, scroll locks, consent-platform markup and scripts, and overlay class
   names (`overlay`, suspected; medium only with a scroll lock). A non-blocking
-  consent banner is never reported. Cookie wording in the meta description,
+  consent banner is never reported. Dialog semantics without an open-state or
+  page scroll-lock signal are recorded with unknown visibility, without an arrival
+  finding. Closed dialogs and conservatively resolved inline display:none rules
+  are excluded from static control observations; this is not computed CSS.
+  Cookie wording in the meta description,
   og:description or title is `consent-text-leak` (confirmed); at the start of
   the page text it is suspected. Cookie and privacy policy pages are skipped.
 - Context retention (`analyze_context_retention.py`, handout appendix E):

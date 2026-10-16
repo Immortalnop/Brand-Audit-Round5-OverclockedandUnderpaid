@@ -196,7 +196,7 @@ def analyze_international(artifacts, deadline):
             title="Pages in several languages carry no hreflang annotations",
             root_cause="Without hreflang, search engines and assistants must guess which language version to "
                        "show, and may cite a version the reader cannot read",
-            affected_pages=[u for urls in langs.values() for u in urls[:3]],
+            affected_pages=[u for urls in langs.values() for u in urls],
             evidence=[{"type": "hreflang",
                        "description": f"html lang '{lang}' on {len(urls)} crawled page(s); no hreflang in HTML, "
                                       "Link headers or the sitemap",

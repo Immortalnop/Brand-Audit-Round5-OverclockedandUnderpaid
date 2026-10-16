@@ -208,6 +208,57 @@ def weakest_link_confidence(**components: float) -> dict:
     }
 
 
+CONFIRMED_MIN_CONFIDENCE = 0.7
+
+
+def apply_status_floor(finding: dict) -> dict:
+    """`confidence` is the probability that the stated problem is real, so a
+    finding below CONFIRMED_MIN_CONFIDENCE cannot be `confirmed`: it becomes
+    `suspected` and records why in finding['status_note']. How much of the site
+    a finding covers is stated in its own `coverage` field, not folded into
+    confidence. Idempotent."""
+    if finding.get("status") == "confirmed" and isinstance(finding.get("confidence"), (int, float)) \
+            and finding["confidence"] < CONFIRMED_MIN_CONFIDENCE:
+        finding["status"] = "suspected"
+        finding["status_note"] = (f"Reported as suspected: its confidence ({finding['confidence']:.2f}) is below "
+                                  f"the {CONFIRMED_MIN_CONFIDENCE} a confirmed finding needs.")
+    return finding
+
+
+_GATED_SEVERITIES = ("critical", "high")
+SEVERITY_GATE_REASON = ("A high or critical severity needs a confirmed observation or two independent kinds of "
+                        "evidence; this finding has neither, so its severity was lowered one step at a time "
+                        "until it did not need them.")
+
+
+def evidence_kinds(finding: dict) -> set:
+    """Distinct evidence types a finding carries (render_gap, noscript, robots...)."""
+    return {e.get("type") for e in finding.get("evidence") or () if isinstance(e, dict) and e.get("type")}
+
+
+def severity_gate_ok(finding: dict) -> bool:
+    """A high or critical finding must be confirmed, or carry two or more
+    independent kinds of evidence. One heuristic signal never earns a top severity."""
+    return (finding.get("severity") not in _GATED_SEVERITIES or finding.get("status") == "confirmed"
+            or len(evidence_kinds(finding)) >= 2)
+
+
+def apply_severity_gate(finding: dict) -> dict:
+    """Lower an unearned high or critical severity until severity_gate_ok holds,
+    keep the action priority no higher than the new severity, and record the
+    change in finding['severity_gate']. Idempotent."""
+    original = finding.get("severity")
+    while not severity_gate_ok(finding):
+        finding["severity"] = _SEVERITY_ORDER[_SEVERITY_ORDER.index(finding["severity"]) - 1]
+    if finding.get("severity") != original:
+        action = finding.get("suggested_action")
+        if isinstance(action, dict) and action.get("priority") in _SEVERITY_ORDER \
+                and _SEVERITY_ORDER.index(action["priority"]) > _SEVERITY_ORDER.index(finding["severity"]):
+            finding["suggested_action"] = dict(action, priority=finding["severity"])
+        finding["severity_gate"] = {"from": original, "to": finding["severity"], "reason": SEVERITY_GATE_REASON}
+    return finding
+
+
 def apply_invariant_i1(finding: dict) -> dict:
     """Invariant I-1 (section 9): insufficient_evidence implies proactive_improvement + low."""
     if finding.get("status") == "insufficient_evidence":

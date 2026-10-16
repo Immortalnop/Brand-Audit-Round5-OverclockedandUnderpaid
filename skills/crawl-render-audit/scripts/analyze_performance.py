@@ -18,13 +18,15 @@ def analyze_performance(artifacts, deadline):
                                    {p.url:detail(p) for p in selected},script='analyze_performance.py'))
     # Retain positive size evidence from byte-capped pages, but never infer absence.
     sized=[p for p in artifacts.pages if p.status_code==200 and p.features
-           and p.features.get('observation_version')==2 and 'non_html_content' not in p.warnings]
+           and p.features.get('observation_version') in (2,3) and 'non_html_content' not in p.warnings]
     emit('heavy-html',lambda s:'HTML response larger than 400 KB on '+page_share(s,sized),
          [p for p in sized if p.features.get('html_bytes',0)>400000 or 'response_truncated_at_byte_budget' in p.warnings],
          lambda p:f"Retained {p.features.get('html_bytes',0)} HTML body bytes; truncated: {'response_truncated_at_byte_budget' in p.warnings}. Asset transfer sizes were not measured.")
-    emit('markup-ratio',lambda s:'Visible text is under 8% of the HTML on '+page_share(s,pages),
+    # Most framework-built pages carry 3-8% visible text; below 3% the document is
+    # mostly markup, scripts and inline data around the words a reader gets.
+    emit('markup-ratio',lambda s:'Visible text is under 3% of the HTML on '+page_share(s,pages),
          [p for p in pages if p.features.get('html_bytes',0)>30000 and p.features.get('full_visible_chars',0)>=400
-          and p.features.get('full_visible_bytes',0)/p.features['html_bytes']<.08],
+          and p.features.get('full_visible_bytes',0)/p.features['html_bytes']<.03],
          lambda p:f"Visible text represents {p.features.get('full_visible_bytes',0)/p.features['html_bytes']:.1%} of decoded HTML body bytes. This is not a ranking metric.")
     emit('blocking-scripts',lambda s:'Six or more render-blocking head scripts on '+page_share(s,pages),
          [p for p in pages if p.features.get('head_blocking_scripts',0)>=6],
@@ -39,9 +41,11 @@ def analyze_performance(artifacts, deadline):
              lambda p:f"Measured connection and response duration: {p.features['network_duration_ms']} ms, excluding pacing and earlier retries. This is not TTFB or a browser performance score.")
     # Never report a missing sitemap when permission or connectivity was unknown.
     if pages and artifacts.sitemap_data.get('status') in ('absent','malformed'):
+        checked=[c for c in artifacts.sitemap_data.get('checked') or () if c.get('url')]
+        tried=('; checked: '+', '.join(f"{c['url']} ({c.get('status')})" for c in checked[:4])) if checked else ''
         emit('sitemap-unavailable','No XML sitemap found' if artifacts.sitemap_data['status']=='absent'
              else 'XML sitemap could not be parsed',[pages[0]],
-             lambda p:'Sitemap probe status: '+artifacts.sitemap_data['status']+'. No additional sitemap discovery was attempted by this check.')
+             lambda p:'Sitemap probe status: '+artifacts.sitemap_data['status']+tried+'. No additional sitemap discovery was attempted by this check.')
     return skill_result('crawl-render-audit',findings=out,metrics={'performance_pages_analyzed':len(pages),
         'network_timing_pages':len(timed),'browser_performance_measured':False},
         coverage={'pages_analyzed':len(pages),'pages_skipped':len(artifacts.pages)-len(pages)})

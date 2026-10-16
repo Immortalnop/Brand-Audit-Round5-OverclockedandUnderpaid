@@ -209,8 +209,11 @@ def test_real_noscript_fallback_is_not_a_gap():
 
 
 def test_page_without_noscript_keeps_the_old_behaviour():
-    assert _gap(page("<p>tiny</p>", url=SITE + "/t"))["metrics"]["raw_rendered_gap_pages"] == [SITE + "/t"]
-    assert _gap(page(LONG, url=SITE + "/ok"))["findings"] == []
+    script = '<script src="/static/app.js"></script>'
+    assert _gap(page("<p>tiny</p>" + script, url=SITE + "/t"))["metrics"]["raw_rendered_gap_pages"] == [SITE + "/t"]
+    assert _gap(page(LONG + script, url=SITE + "/ok"))["findings"] == []
+    # A short page that runs no script cannot gain content after load.
+    assert _gap(page("<p>tiny</p>", url=SITE + "/static"))["findings"] == []
 
 
 # ------------------------------------------- 17: canvas, inline SVG, icon fonts
@@ -435,7 +438,9 @@ def test_blocking_consent_dialog_with_scroll_lock_is_medium():
     assert finding["severity"] == "medium" and finding["status"] == "suspected"
     assert "cookie consent prompt" in text_of(finding) and "onetrust" in text_of(finding)
     assert inner_locked.features["scroll_lock"] is False
-    assert by_id(run(analyze_overlays, inner_locked), "overlay")[0]["severity"] == "low"
+    result = run(analyze_overlays, inner_locked)
+    assert not by_id(result, "overlay")
+    assert result['metrics']['overlay_visibility_unknown_pages'] == 1
 
 
 def test_non_blocking_consent_banner_is_not_an_overlay():

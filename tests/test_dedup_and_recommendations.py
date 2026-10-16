@@ -65,7 +65,7 @@ def test_recommendations_present_when_all_evidence_insufficient():
     recs = generate_recommendations(results, [insufficient])
     assert len(recs) > 0
     # The insufficient-evidence finding itself should surface as a recommendation, not be lost.
-    assert any(r["provenance"].get("finding_id") == insufficient["id"] for r in recs)
+    assert any(r.get("finding_id") == insufficient["id"] for r in recs)
 
 
 def test_recommendations_present_for_small_well_structured_site():
@@ -84,7 +84,7 @@ def test_recommendations_do_not_duplicate_confirmed_defects():
     merged = [defect, proactive]
     recs = generate_recommendations(results, merged)
     # The proactive near-duplicate of the confirmed defect must be suppressed as a recommendation.
-    assert not any(r["provenance"].get("finding_id") == proactive["id"] for r in recs)
+    assert not any(r.get("finding_id") == proactive["id"] for r in recs)
 
 
 def test_robots_inaccessible_cascade_merges_into_single_finding():
@@ -123,15 +123,43 @@ def test_robots_inaccessible_cascade_merges_into_single_finding():
     assert "https://x/" in merged[0]["affected_pages"]
 
 
-def test_derived_recommendations_omit_heavy_duplicate_arrays():
+def test_recommendation_links_to_its_finding_instead_of_copying_it():
     f = _finding("ai_discoverability", "pages lack description", ["https://x/page1", "https://x/page2"],
                  finding_type="proactive_improvement", status="suspected", severity="low")
     recs = generate_recommendations([skill_result("s", findings=[f])], [f])
-    derived = [r for r in recs if r["provenance"].get("source") == "derived_from_finding"]
-    assert len(derived) == 1
-    assert derived[0]["affected_pages"] == []
-    assert derived[0]["evidence"] == []
-    assert derived[0]["provenance"]["finding_id"] == f["id"]
+    linked = [r for r in recs if r.get("finding_id") == f["id"]]
+    assert len(linked) == 1
+    ref = linked[0]
+    assert ref["provenance"] == {"source": "finding_reference"}
+    assert ref["title"] == f["title"] and ref["category"] == f["category"]
+    assert ref["finding_type"] == "proactive_improvement"
+    # Nothing of the finding's body is copied: no evidence, pages, action or wording.
+    for key in ("evidence", "evidence_text", "affected_pages", "suggested_action", "root_cause",
+                "mechanism", "implementation_detail", "expected_outcome"):
+        assert key not in ref, key
+
+
+def test_validation_keeps_links_to_reported_findings_and_drops_dangling_ones():
+    from validate_report import validate_report
+    f = _finding("ai_discoverability", "pages lack description", ["https://x/p"],
+                 finding_type="proactive_improvement", status="suspected", severity="low")
+    recs = generate_recommendations([skill_result("s", findings=[f])], [f])
+    base = {"site": "https://x/", "audited_at": "t", "summary": {}, "coverage": {}, "execution_status": "completed",
+            "limitations": [], "confidence": {"score": 1, "explanation": "e"}}
+    kept = validate_report(dict(base, findings=[f], recommendations=list(recs)))
+    assert [r["id"] for r in kept["recommendations"]] == [r["id"] for r in recs]
+    assert kept["summary"]["total_recommendations"] == len(recs)
+    # The finding is gone, so the link to it is dropped, with a warning.
+    gone = validate_report(dict(base, findings=[], recommendations=list(recs)))
+    assert not any(r.get("finding_id") for r in gone["recommendations"])
+    assert any(f["id"] + " is not in the report" in w for w in gone["warnings"])
+    # Malformed links and a link listed twice are dropped without raising.
+    bad = [{"id": "R-101", "finding_id": ["F-001"], "title": "t", "finding_type": "proactive_improvement"},
+           {"id": "R-102", "finding_id": f["id"], "title": "t", "finding_type": "defect"},
+           {"id": 7, "finding_id": f["id"], "title": "t", "finding_type": "proactive_improvement"}]
+    twice = [r for r in recs if r.get("finding_id")] * 2
+    out = validate_report(dict(base, findings=[f], recommendations=bad + twice))
+    assert [r["id"] for r in out["recommendations"]] == [twice[0]["id"]]
 
 
 if __name__ == "__main__":

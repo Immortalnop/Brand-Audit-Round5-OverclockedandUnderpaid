@@ -325,6 +325,7 @@ _RICH_PAGES = {
 _RICH_LLMS = ("# Rich Brand\n\n> Workshop tools, tested on real benches.\n\n## Pages\n\n"
               "- [Gallery](/gallery): photos of the tools\n"
               "- [Old catalogue](/old-catalogue): the previous catalogue\n"
+              "- [Full context](/llms-full.txt): declared companion (deliberately served as HTML)\n"
               "- [Partner](https://partner.example.test/tools): a partner site\n")
 
 

@@ -1,14 +1,56 @@
 """Shared, network-free helpers for snapshot check modules."""
 import re
-from urllib.parse import unquote
-from check_catalog import get_entry
+from urllib.parse import unquote, urlsplit
+from check_catalog import calibrated_confidence, get_entry
 from models import make_finding
+from structured_data import iter_nodes, types_of
 
 
 def eligible_pages(artifacts):
     return [p for p in artifacts.pages if p.status_code == 200 and p.features
-            and p.features.get('observation_version') == 2
+            and p.features.get('observation_version') in (2, 3)
             and not {'non_html_content', 'response_truncated_at_byte_budget', 'html_parse_incomplete'} & set(p.warnings)]
+
+
+# Page warnings meaning the delivered HTML was not read in full: a prefix can
+# prove that an observed tag exists, never that the page lacks one.
+PARTIAL_OBSERVATION_WARNINGS = frozenset({'response_truncated_at_byte_budget', 'html_parse_incomplete'})
+
+
+def page_observation(page):
+    """What one fetched page's observation can support. Keys:
+      status: 'complete', 'partial', 'non_html', 'http_error' or 'fetch_failed'
+      positive_facts: an observed tag, text or link is evidence (any 2xx HTML)
+      local_absence: the page's own HTML was read in full, so "this page lacks X
+        in its delivered HTML" holds
+      link_graph: local_absence, the link list was not cut at its cap, and the
+        page is not built by JavaScript, so its outgoing links are all known
+      script_dependent: the raw HTML is too thin to stand for the page
+      reasons: why an observation is limited (warning names, 'script_dependent')
+    Unanalyzed pages (login, challenge, waiting room) never reach artifacts.pages."""
+    warnings = set(page.warnings or ())
+    if page.status_code is None:
+        reasons = [w for w in page.warnings if w.startswith('fetch_')] or ['fetch_failed']
+        return {'status': 'fetch_failed', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': reasons}
+    if not 200 <= page.status_code < 300:
+        return {'status': 'http_error', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': [f'http_{page.status_code}']}
+    if 'non_html_content' in warnings:
+        return {'status': 'non_html', 'positive_facts': False, 'local_absence': False, 'link_graph': False,
+                'script_dependent': False, 'reasons': ['non_html_content']}
+    reasons = sorted(PARTIAL_OBSERVATION_WARNINGS & warnings)
+    complete = not reasons
+    # A snapshot built without HTML features (no parse observation at all) has
+    # no script evidence either way; an acquired page always has features.
+    built = bool(page.features) and script_dependent(page)
+    links_cut = 'link_list_truncated' in warnings
+    if links_cut:
+        reasons.append('link_list_truncated')
+    if built:
+        reasons.append('script_dependent')
+    return {'status': 'complete' if complete else 'partial', 'positive_facts': True, 'local_absence': complete,
+            'link_graph': complete and not links_cut and not built, 'script_dependent': built, 'reasons': reasons}
 
 
 # Visible raw-HTML text below which a page probably builds its content with
@@ -20,6 +62,7 @@ MIN_SUBSTANTIAL_CHARS = 200  # fallback for page types without a specific thresh
 MIN_SUBSTANTIAL_CHARS_BY_TYPE = {
     "home": 300,
     "category": 250,
+    "listing": 250,
     "product": 150,
     "article": 400,
     "contact": 80,
@@ -48,11 +91,27 @@ def noscript_state(page):
     return total - noscript, fallback, js_required
 
 
+def runs_scripts(page):
+    """True when the page loads or embeds JavaScript, or its <noscript> says
+    JavaScript is required (the page's own statement that it depends on scripts).
+    A page with no script (JSON-LD and other data blocks do not count) cannot
+    build content after load, so its raw HTML is the whole page. Unknown (older
+    observations) counts as True."""
+    features = page.features or {}
+    if "external_scripts" not in features and "inline_script_bytes" not in features:
+        return True
+    return (bool(features.get("external_scripts")) or bool(features.get("inline_script_bytes"))
+            or bool(features.get("noscript_js_required")))
+
+
 def script_dependent(page):
-    """True when the raw HTML carries too little visible text for the page type
-    and no substantial <noscript> fallback: the content is probably built by
-    JavaScript, so a check cannot conclude from the raw HTML that something is
-    missing from the page."""
+    """True when the page runs scripts and its raw HTML carries too little visible
+    text for the page type, with no substantial <noscript> fallback: the content
+    is probably built by JavaScript, so a check cannot conclude from the raw HTML
+    that something is missing from the page. A short page with no script is just
+    a short page."""
+    if not runs_scripts(page):
+        return False
     script_on, fallback, _ = noscript_state(page)
     threshold = substantial_threshold(page.page_type)
     return script_on < threshold and fallback < threshold
@@ -121,6 +180,80 @@ def organization_contact(pages, host):
     return pick(email_score), phone_text[phone] if phone else None
 
 
+_COMMERCE_TYPES = frozenset({'Product', 'ProductGroup', 'IndividualProduct', 'ProductModel', 'Offer',
+                             'AggregateOffer'})
+_PRICE_TEXT = re.compile(r'(?:[$€£¥₹]|\b(?:USD|EUR|GBP|INR|AUD|CAD|Rs\.?))\s?\d[\d,]*(?:\.\d{2})?')
+_BUY_TEXT = re.compile(r'\b(?:add\s+to\s+(?:cart|bag|basket|trolley|order)|buy\s+(?:it\s+)?now|shop\s+now)\b', re.I)
+# A cart is a top-level path, optionally after a locale segment ("/cart",
+# "/en-gb/basket"); "/payments/checkout" is a product page about checkout.
+_CART_PATH = re.compile(r'^(?:/[a-z]{2}(?:[-_][a-z]{2})?)?/(?:cart|basket|bag|checkout)/?$', re.I)
+
+
+def _path_of(href):
+    try:
+        return urlsplit((href or '').strip()).path or ''
+    except ValueError:
+        return ''
+
+
+def commerce_evidence(page):
+    """What on one page shows that it sells something: Product or Offer markup,
+    a price, a buy or add-to-cart control, or a link to a cart. '' when nothing."""
+    f = page.features or {}
+    if any(types_of(n) & _COMMERCE_TYPES for n in iter_nodes(page.jsonld_blocks)) \
+            or set(f.get('microdata_types') or ()) & _COMMERCE_TYPES:
+        return 'product_markup'
+    if _PRICE_TEXT.search(page.visible_text or ''):
+        return 'price'
+    controls = list(f.get('buttons') or ()) + [t for _, t in (f.get('anchors') or ())]
+    if any(_BUY_TEXT.search(t or '') for t in controls):
+        return 'buy_control'
+    if any(_CART_PATH.search(_path_of(h)) for h, _ in (f.get('anchors') or ())):
+        return 'cart_link'
+    return ''
+
+
+# Organization types and wording that show a site does not sell to consumers:
+# news publishers and nonprofits (public bodies are recognized separately by
+# their types and host names in check_off_site_profiles.py).
+_PUBLISHER_TYPES = frozenset({'NewsMediaOrganization', 'NewsArticle', 'ReportageNewsArticle', 'AnalysisNewsArticle',
+                              'OpinionNewsArticle', 'BackgroundNewsArticle', 'ReviewNewsArticle', 'LiveBlogPosting'})
+_NONPROFIT_TYPES = frozenset({'NGO', 'NonprofitType', 'FundingScheme'})
+_DONATE = re.compile(r'^(?:donate|donations?|give|make\s+a\s+(?:gift|donation)|support\s+us)\b', re.I)
+_DONATE_PATH = re.compile(r'/(?:donate|donations?|give|support-us)(?:[/?#]|$)', re.I)
+
+
+def site_kind(pages):
+    """'publisher', 'nonprofit' or 'unknown' from positive evidence on the sampled
+    pages: news markup marks a publisher; nonprofit markup, or a donation link on
+    a site with no commerce evidence, marks a nonprofit. 'unknown' never
+    excludes a check."""
+    types = set()
+    nonprofit_status = False
+    for p in pages:
+        for node in iter_nodes(p.jsonld_blocks):
+            types |= types_of(node)
+            nonprofit_status = nonprofit_status or bool(hasattr(node, 'get') and node.get('nonprofitStatus'))
+    if types & _PUBLISHER_TYPES:
+        return 'publisher'
+    if types & _NONPROFIT_TYPES or nonprofit_status:
+        return 'nonprofit'
+    # A price alone counts only on a shop page: a salary on a jobs page or a fee
+    # in an article does not make a site a shop.
+    for p in pages:
+        found = commerce_evidence(p)
+        if found and (found != 'price' or p.page_type in ('product', 'category')):
+            return 'unknown'
+    # A donation link on the home page, or in navigation repeated on two or more
+    # pages (the home page may be a splash page with no navigation).
+    asks = [p for p in pages
+            if any(_DONATE.match((t or '').strip()) or _DONATE_PATH.search(h or '')
+                   for h, t in (p.features or {}).get('anchors') or ())]
+    if any(p.page_type == 'home' for p in asks) or len(asks) >= 2:
+        return 'nonprofit'
+    return 'unknown'
+
+
 def page_share(selected, population, noun='sampled page'):
     """'3/5 sampled pages': how many of the checked pages a gap affects, so a title
     states the concrete gap rather than asking the reader to review something.
@@ -137,7 +270,7 @@ def observation(check_id, title, pages, details, *, skill='crawl-render-audit',
     return make_finding(
         category='ai_discoverability', finding_type='defect' if confirmed else 'proactive_improvement',
         severity=severity, status='confirmed' if confirmed else 'suspected',
-        confidence=.95 if confirmed else .6, title=title,
+        confidence=.95 if confirmed else calibrated_confidence(check_id, .6), title=title,
         root_cause=entry['mechanism'],
         affected_pages=[p.url for p in pages],
         evidence=[{'type':'snapshot_observation', 'description':details[p.url], 'urls':[p.url]}

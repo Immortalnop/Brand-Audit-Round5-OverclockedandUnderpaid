@@ -75,7 +75,11 @@ def test_verified_retry_recovers(server,monkeypatch):
 def test_persistent_failure_is_not_site_defect_or_robot_block(server,monkeypatch):
     monkeypatch.delenv('AUDIT_CA_BUNDLE',raising=False);url,seen=server
     r=run_audit(url+'/',allow_private_targets=True)
-    assert not seen and r['execution_status']=='degraded'
+    # No page analyzed: the run says so and names the TLS failure as the reason.
+    assert not seen and r['execution_status']=='insufficient_evidence'
+    assert r['coverage']['acquisition_failure']['reason']=='tls_error'
+    assert r['coverage']['acquisition_failure']['stage']=='robots_txt'
+    assert r['summary']['status_reason']==r['coverage']['acquisition_failure']['detail']
     assert r['coverage']['pages_blocked']==0 and r['coverage']['robots_permission']=='unknown'
     assert r['coverage']['skip_reason_counts']['robots_permission_unknown']==1
     tls=[f for f in r['findings'] if f['check_id']=='tls-health']

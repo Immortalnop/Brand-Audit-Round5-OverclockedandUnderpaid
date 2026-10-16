@@ -1,7 +1,8 @@
-"""One-pass stdlib HTML extraction. Markup observations are not rendered UX facts."""
+"""Stdlib HTML extraction with a bounded inline-style prepass, without rendering."""
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 import re
+from markup_context import InlineDisplay, TemplateScope, in_chrome
 
 _VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
 _TEXT_TAGS = {'a','button','p','h1','h2','h3','h4','h5','h6','span','time'}
@@ -22,8 +23,105 @@ _ICON_CLASS = re.compile(r'(?:^|\s)(?:fa[srlbdk]?|fa-[\w-]+|glyphicon[\w-]*|icon
 CONSENT_TOKEN = re.compile(r'onetrust|cookiebot|cybotcookiebot|cookie[-_]?(?:consent|banner|notice|law|bar|popup|wall)'
                            r'|gdpr|cc-window|cc-banner|didomi|qc-cmp|truste|usercentrics|osano|termly|cookieyes'
                            r'|cky-consent|iubenda|cmplz|klaro|borlabs|consent[-_]?(?:banner|manager|modal|popup|wall)', re.I)
-# Question-shaped heading text: ends with "?" or opens with a question word.
-QUESTION_HEADING = re.compile(r'\?$|^(how|what|why|when|where|who|can|does|is|are|should)\b', re.I)
+# Question-shaped heading text: it ends with a question mark, or it opens with a
+# question word followed by a verb that makes it a question ("What is", "How do",
+# "Can I"). A question word alone is not enough: "How it works", "How to style",
+# "What we offer" and "Who we are" are section labels, not questions.
+_QUESTION_MARK = re.compile('[?？]["\'’”)\\]]*$')
+_QUESTION_AUX = (r'(?:is|are|was|were|do|does|did|can|could|should|would|will|shall|may|might|must'
+                 r"|has|have|had|isn'?t|aren'?t|don'?t|doesn'?t|can'?t|won'?t)")
+_QUESTION_LEAD = re.compile(
+    r'^(?:(?:how|what|why|when|where|who|whom|whose|which)\s+' + _QUESTION_AUX + r'\b'
+    r'|how\s+(?:much|many|long|often|old|far|big|soon|fast)\b'
+    r'|' + _QUESTION_AUX + r'\s+(?:i|you|we|they|it|he|she|there|this|that|these|those|my|your|our|their|the|a|an)\b)',
+    re.I)
+
+
+# Client-side framework signs, for telling a page a script builds from a page
+# that is merely short: framework bundle paths and names, framework attributes,
+# and page state serialized for a script to render. A content hash in a file
+# name ("site-bundle.17bbc1da.js") is only cache busting and is not counted.
+_FRAMEWORK_SCRIPT = re.compile(r'/_next/|/_nuxt/|/static/js/|/_app/immutable/|/build/_assets/'
+                               r'|(?:^|[/._-])(?:react|react-dom|vue|angular|svelte|preact|ember|gatsby)'
+                               r'(?:[.\-_][\w.-]*)?\.m?js(?:[?#]|$)', re.I)
+_FRAMEWORK_ATTRS = ('ng-app', 'ng-version', 'data-reactroot', 'data-v-app', 'data-server-rendered',
+                    'data-sveltekit-hydrate')
+_STATE_SCRIPT_IDS = frozenset({'__NEXT_DATA__', '__NUXT_DATA__', '__APOLLO_STATE__', 'ng-state', 'serverApp-state'})
+_STATE_GLOBAL = re.compile(r'window\.__(?:INITIAL_STATE|PRELOADED_STATE|NUXT|APOLLO_STATE|REDUX_STATE|INITIAL_DATA)__\s*=')
+# A JSON string literal of at least 20 characters with no markup or URL in it.
+_STATE_PROSE = re.compile(r'"((?:[^"\\<>]|\\.){20,2000})"')
+# Page data serialized into an element attribute (Inertia's data-page, React
+# on Rails' data-react-props and similar). Named attributes always count as page
+# state; another data-* attribute counts only when it holds JSON with readable
+# prose, so a large settings or tracking blob is never taken for hidden content.
+_STATE_ATTRS = frozenset({'data-page', 'data-props', 'data-react-props', 'data-state', 'data-initial-state',
+                          'data-server-state', 'data-hydrate', 'data-hypernova-props'})
+_STATE_ATTR_NAMED_MIN = 200
+_STATE_ATTR_GENERIC_MIN = 2000
+_STATE_ATTR_PROSE_MIN = 200
+_STATE_ATTR_MAX_INSPECTED = 5
+_STATE_ATTR_MAX_CHARS = 200_000
+_STATE_JSON_MAX_ITEMS = 5000
+_STATE_JSON_MAX_DEPTH = 12
+_STATE_TEXT_CAP = 20000
+
+
+def state_prose_chars(text, cap=_STATE_TEXT_CAP):
+    """(characters of readable prose, limited) in serialized page data: string
+    values of four or more words. JSON is parsed when it can be and walked with a
+    depth and item limit; otherwise quoted strings are matched. Nothing is
+    executed. limited is True when a limit cut the walk short."""
+    import json
+    chars = 0
+    try:
+        data = json.loads(text)
+    except (ValueError, RecursionError):
+        for m in _STATE_PROSE.finditer(text):
+            if chars >= cap:
+                return cap, True
+            if len(m.group(1).split()) >= 4:
+                chars += len(m.group(1))
+        return min(chars, cap), False
+    stack = [(data, 0)]
+    items = 0
+    while stack:
+        value, depth = stack.pop()
+        items += 1
+        if items > _STATE_JSON_MAX_ITEMS or chars >= cap:
+            return min(chars, cap), True
+        if isinstance(value, str):
+            if len(value.split()) >= 4:
+                chars += len(value)
+        elif depth >= _STATE_JSON_MAX_DEPTH:
+            if isinstance(value, (dict, list)) and value:
+                return min(chars, cap), True
+        elif isinstance(value, dict):
+            stack.extend((v, depth + 1) for v in value.values())
+        elif isinstance(value, list):
+            stack.extend((v, depth + 1) for v in value)
+    return min(chars, cap), False
+
+
+# Wording that marks a form as an email subscription: on its submit control, in
+# its action URL, or in the id, class or name of the form or its email field.
+_SIGNUP_WORDS = re.compile(r'subscri|newsletter|sign[\s_-]?up|join\s+(?:our|the)\s+(?:list|mailing|newsletter|community)'
+                           r'|mailing[\s_-]?list|e-?mail[\s_-]?(?:updates|list|alerts)|stay\s+(?:in\s+touch|updated|informed)'
+                           r'|get\s+(?:updates|the\s+latest)|keep\s+me\s+(?:posted|updated)|notify\s+me|opt[\s_-]?in', re.I)
+
+
+def is_signup_form(form):
+    """True for an email subscription form: it has an email field, signup wording
+    of its own and no password field (a password makes it an account form)."""
+    if not form.get('email') or form.get('password'):
+        return False
+    words=' '.join([form.get('action',''),form.get('attrs',''),form.get('email_attrs','')]+list(form.get('labels') or ()))
+    return bool(_SIGNUP_WORDS.search(words))
+
+
+def is_question_heading(text):
+    """True when heading text is phrased as a question (see _QUESTION_LEAD)."""
+    text = ' '.join((text or '').split())
+    return bool(text) and bool(_QUESTION_MARK.search(text) or _QUESTION_LEAD.match(text))
 _HEADING_TAGS = frozenset({'h1','h2','h3','h4','h5','h6'})
 # Field names that site-search forms conventionally use.
 _SEARCH_FIELD_NAMES = {'q','s','query','search','keyword','keywords','term','searchterm','search_query','search-term'}
@@ -295,6 +393,7 @@ class Document(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.node_count=0
+        self._templates=TemplateScope()
         self.stack=[];self.text=[];self.title_parts=[];self.meta={};self.canonical=None
         self.links=[];self.headings=[];self.heading_levels=[];self.paragraphs=[];self.jsonld=[]
         self.breadcrumb=[];self.scripts=0;self.spa=False;self.has_nav=False;self.lang=None
@@ -321,6 +420,13 @@ class Document(HTMLParser):
         # them), location and site-search observations, and icon links for the logo.
         self.tables=[];self.definition_lists=0;self.unordered_lists=0
         self.question_answers=[];self._qa=None
+        # Text or aria-label of links to other pages, lowercased, so a heading that
+        # repeats one (a news card whose link is an empty overlay labelled with the
+        # headline) can be told apart from a question the page answers.
+        self.link_labels=[]
+        # Question-shaped H2/H3 headings this page answers, and headings that are
+        # links to other pages (not counted as questions).
+        self.question_heading_count=0;self.linked_question_headings=0;self.linked_headings=0
         self.address_text=[];self.icon_links=[];self.search_form=False
         # Hints of features that JavaScript builds after load: a search box, and
         # saved-state widgets such as a wishlist or recently viewed items.
@@ -329,8 +435,129 @@ class Document(HTMLParser):
         self.flow=[]
         # Microdata or RDFa that states a telephone, email or contactPoint.
         self.contact_markup=False
+        # Visible password inputs and the forms that hold them, for telling login
+        # pages apart from public content (common/auth_pages.py).
+        self.password_inputs=0;self.password_forms=[]
+        # Every visible form (bounded), for telling a newsletter signup apart from
+        # contact, search and login forms that also hold an email field.
+        self.form_records=[]
+        # Signs that a client-side framework builds the page: framework attributes
+        # or bundle names, and page data serialized for a script to render.
+        self.framework_hint=False;self.state_blob=False;self.state_text_chars=0
+        # Where page state was found ('script#__NEXT_DATA__', 'attr:data-page'),
+        # how many state attributes were inspected, and whether a bound cut it short.
+        self.state_sources=[];self.state_attrs_inspected=0;self.state_extraction_limited=False
+        # Scripts that run: external or inline JavaScript. JSON-LD and other data
+        # blocks are not counted.
+        self.executable_scripts=0
+        # Focused body evidence is independent of navigation and metadata, but
+        # bounded before it enters an immutable snapshot. IDs stay case-sensitive.
+        self.body_opening={'passage':'','paragraph_count':0,'complete':True,'truncated':False}
+        self.has_main=False;self.main_text=[];self.main_text_chars=0
+        self.body_text=[];self.body_text_chars=0;self.main_headings=[];self.main_heading_levels=[]
+        self.content_paragraphs=[]
+        self._inline_display=InlineDisplay()
+        self.focus_sections=[];self._focus_active=[];self.focus_sections_limited=False
+    def feed(self,data):
+        # Acquisition supplies a bounded complete response. Pre-read inline styles
+        # because a hiding rule often follows the widget it hides.
+        self._inline_display.scan(data)
+        super().feed(data)
+    def _focus_start(self,tag,a,frame):
+        if frame['hidden'] or in_chrome(self.stack) or any(f['tag'] in ('head','script','style','template','noscript') for f in self.stack):return
+        level=int(tag[1]) if re.fullmatch('h[1-6]',tag) else None
+        if level is not None:
+            for entry in list(self._focus_active):
+                if entry['level'] is not None and level<=entry['level']:
+                    entry['complete']=True;self._focus_active.remove(entry)
+        element_id=a.get('id')
+        if not element_id or tag in _VOID:return
+        if len(element_id)>200 or len(self.focus_sections)>=32:
+            self.focus_sections_limited=True;return
+        entry={'section_id':element_id,'heading':'','level':level,'passage':'','paragraph_count':0,
+               'complete':False,'truncated':False,'source':'raw_html_text'}
+        frame['focus_entry']=entry
+        entry['_heading_element']=level is not None
+        self.focus_sections.append(entry);self._focus_active.append(entry)
+    def _focus_paragraph(self,text):
+        if not text or in_chrome(self.stack) or any(f['tag'] in ('head','script','style','template','noscript') or f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):return
+        in_main=any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack)
+        if (not self.has_main or in_main) and len(self.content_paragraphs)<12:self.content_paragraphs.append(text[:600])
+        def append(entry):
+            # Keep split slogan fragments together with the first prose, without
+            # replacing genuinely vague openings with later copy.
+            if entry['paragraph_count']>=8 or (entry['paragraph_count']>=2 and len(entry['passage'].split())>=12):return
+            combined=(entry['passage']+' '+text).strip()
+            entry['passage']=combined[:1500];entry['paragraph_count']+=1
+            if len(combined)>1500:entry['truncated']=True
+        if not self.has_main or any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack):append(self.body_opening)
+        for entry in self._focus_active:append(entry)
+    def close(self):
+        super().close()
+        # A heading-defined section can end at EOF. An unclosed structural
+        # element/paragraph is retained but cannot prove a complete opening.
+        for entry in self._focus_active:
+            entry['complete']=entry.get('_heading_element',False) and not any(f['tag']=='p' for f in self.stack)
+        self.body_opening['complete']=not self.body_opening['truncated'] and not any(f['tag']=='p' for f in self.stack)
+    def _add_state_source(self,label):
+        if label not in self.state_sources and len(self.state_sources)<5:self.state_sources.append(label)
+    def _observe_state_attrs(self,a):
+        """Page data serialized into data-* attributes. Bounded: at most
+        _STATE_ATTR_MAX_INSPECTED attributes per page, each read up to
+        _STATE_ATTR_MAX_CHARS characters."""
+        for name,value in a.items():
+            if not name.startswith('data-') or self.state_text_chars>=_STATE_TEXT_CAP:continue
+            named=name in _STATE_ATTRS
+            if named:
+                if len(value)<_STATE_ATTR_NAMED_MIN:continue
+            elif len(value)<_STATE_ATTR_GENERIC_MIN or not value.lstrip().startswith(('{','[')):continue
+            if self.state_attrs_inspected>=_STATE_ATTR_MAX_INSPECTED:
+                self.state_extraction_limited=True;return
+            self.state_attrs_inspected+=1
+            if len(value)>_STATE_ATTR_MAX_CHARS:self.state_extraction_limited=True
+            prose,limited=state_prose_chars(value[:_STATE_ATTR_MAX_CHARS],_STATE_TEXT_CAP-self.state_text_chars)
+            if limited:self.state_extraction_limited=True
+            if named or prose>=_STATE_ATTR_PROSE_MIN:
+                self.state_blob=True;self._add_state_source('attr:'+name[:40])
+                self.state_text_chars=min(_STATE_TEXT_CAP,self.state_text_chars+prose)
+    def _observe_auth(self,tag,a,frame):
+        """Visible password inputs, and for each form that holds one: its action,
+        its id, class and name, its submit labels and whether it sits in the page
+        chrome (header, nav or footer). Runs after the frame is pushed."""
+        if tag=='form':
+            frame['form']={'action':a.get('action','').strip()[:300],
+                           'attrs':' '.join(a.get(k,'') for k in ('id','class','name')).strip()[:200],
+                           'labels':[],'in_chrome':any(f['tag'] in _CHROME_TAGS for f in self.stack[:-1])}
+            if not frame['hidden'] and len(self.form_records)<20:self.form_records.append(frame['form'])
+            return
+        if tag!='input' or frame['hidden']:return
+        kind=(a.get('type') or 'text').strip().lower()
+        owner=self._open('form')
+        form=owner.get('form') if owner is not None else None
+        if kind=='email' and form is not None:
+            form['email']=True
+            # The email field's own name, id, placeholder and label say what it is for.
+            words=' '.join(a.get(k,'') for k in ('name','id','placeholder','aria-label')).strip()
+            if words:form['email_attrs']=(form.get('email_attrs','')+' '+words)[:300]
+        if kind=='password':
+            self.password_inputs+=1
+            # Recorded when the password input is seen, so a form whose end tag
+            # never arrives is still kept.
+            if form is not None and not form.get('password'):
+                form['password']=True
+                if len(self.password_forms)<5:self.password_forms.append(form)
+        elif kind in ('submit','image') and form is not None and len(form['labels'])<10:
+            label=(a.get('value') or a.get('alt') or a.get('aria-label') or '').strip()
+            if label:form['labels'].append(label[:80])
     def _block_break(self):
         if self.flow and self.flow[-1]!='\n':self.flow.append('\n')
+    def _links_elsewhere(self,heading):
+        """True when a link to another page carries this heading's text as its own
+        text or aria-label: the heading is a teaser for that page. A label of at
+        least 15 characters inside the heading counts, so a kicker joined to the
+        headline ("FashionThe industry...") still matches."""
+        text=' '.join((heading or '').lower().split())
+        return bool(text) and any(label in text for label in self.link_labels)
     def _add_saved_state_hint(self,text):
         if len(self.saved_state_hints)>=5:return
         m=_SAVED_STATE_HINT.search(text or '')
@@ -422,7 +649,8 @@ class Document(HTMLParser):
             self.consent_markup.append(consent.group(0).lower())
         if (a.get('role','').lower() in ('dialog','alertdialog') or (tag=='dialog' and 'open' in a)) and len(self.modal_dialogs)<5:
             frame['collect']=True
-            frame['dialog']={'tag':tag,'modal':a.get('aria-modal','').strip().lower()=='true','consent':bool(consent),'text':''}
+            frame['dialog']={'tag':tag,'modal':a.get('aria-modal','').strip().lower()=='true','consent':bool(consent),'text':'',
+                             'visibility_state':'declared_open' if tag=='dialog' and 'open' in a else 'unknown'}
             self.modal_dialogs.append(frame['dialog'])
         if tag in ('html','body'):
             overflow=(_style_value(style,'overflow') or '')+' '+(_style_value(style,'overflow-y') or '')
@@ -473,9 +701,12 @@ class Document(HTMLParser):
                 if tag=='th':table['table']['header_cells']+=1
     def handle_starttag(self,tag,attrs):
         self.node_count+=1
-        if len(self.stack)>=256 or self.node_count>100000:
+        if len(self.stack)+self._templates.depth>=256 or self.node_count>100000:
             raise ValueError("HTML structural parsing budget reached")
-        a={k:(v or '') for k,v in attrs};hidden=('hidden' in a or a.get('aria-hidden','').lower()=='true' or bool(re.search(r'display\s*:\s*none|visibility\s*:\s*hidden',a.get('style',''),re.I)))
+        # Template content belongs to a separate inactive fragment, not to this
+        # document. Skip every observer, including metadata, CSS and auth hints.
+        if self._templates.start(tag,self):return
+        a={k:(v or '') for k,v in attrs};hidden=('hidden' in a or a.get('aria-hidden','').lower()=='true' or (tag=='dialog' and 'open' not in a) or self._inline_display.matches(a) or bool(re.search(r'display\s*:\s*none|visibility\s*:\s*hidden',a.get('style',''),re.I)))
         frame={'tag':tag,'a':a,'text':[],'hidden':hidden or any(x['hidden'] for x in self.stack)}
         in_head=any(f['tag']=='head' for f in self.stack)
         rel=a.get('rel','').lower().split()
@@ -488,6 +719,10 @@ class Document(HTMLParser):
                 self.bylines.append(' '.join(a['content'].split())[:160])
             frame['capture']=True
         if tag not in _VOID:self.stack.append(frame)
+        if (tag=='main' or a.get('role')=='main') and not frame['hidden'] and not self.has_main:
+            self.has_main=True
+            self.body_opening={'passage':'','paragraph_count':0,'complete':True,'truncated':False}
+            self.content_paragraphs=[]
         # A line break separates words ("12 High Street<br>Springfield"); without
         # this the element's collected text would join them.
         if tag=='br':
@@ -495,6 +730,7 @@ class Document(HTMLParser):
         self._observe_start(tag,a,frame,rel)
         self._observe_structure(tag,a,frame,rel)
         self._observe_hints(tag,a,rel)
+        self._observe_auth(tag,a,frame)
         if tag in _BLOCK_TAGS:self._block_break()
         if not self.contact_markup and re.search(r'(?:^|[\s:/#])(?:telephone|email|contactpoint)(?:$|\s)',
                                                  (a.get('itemprop','')+' '+a.get('property','')).lower()):
@@ -512,16 +748,22 @@ class Document(HTMLParser):
         if tag=='meta':self.meta.setdefault((a.get('name') or a.get('property') or '').lower(),[]).append(a.get('content',''))
         if tag=='link' and 'canonical' in rel:self.canonical=a.get('href')
         if tag=='script':
-            self.scripts+=1;self._script={'type':a.get('type','').lower(),'parts':[],'src':bool(a.get('src'))}
-            if a.get('src'):
-                self.external_scripts+=1
+            self.scripts+=1;self._script={'type':a.get('type','').lower(),'parts':[],'src':bool(a.get('src')),
+                                          'id':a.get('id','').strip()}
+            if a.get('src') and self._script['type'] in _JS_TYPES:
+                self.external_scripts+=1;self.executable_scripts+=1
                 src=a['src'].strip()
+                if not self.framework_hint and _FRAMEWORK_SCRIPT.search(src):self.framework_hint=True
                 if src.startswith(('http://','https://','//')) and len(self.script_hosts)<60:
                     try:host=(urlsplit(src if not src.startswith('//') else 'https:'+src).hostname or '').lower()
                     except ValueError:host=''
                     if host:self.script_hosts.add(host)
         if tag=='nav' or a.get('role')=='navigation':self.has_nav=True
         if a.get('id','').lower() in {'root','app','__next','___gatsby','app-root'}:self.spa=True
+        if not self.framework_hint and (tag in ('app-root',) or any(k in a for k in _FRAMEWORK_ATTRS)):
+            self.framework_hint=True
+        self._observe_state_attrs(a)
+        self._focus_start(tag,a,frame)
         if 'itemscope' in a or 'typeof' in a:self.microdata=True
         if a.get('itemtype') and len(self.microdata_types)<30:
             for value in a['itemtype'].split()[:5]:
@@ -531,12 +773,15 @@ class Document(HTMLParser):
             self.images+=1
             if not (re.fullmatch(r'[0-9]{1,9}',a.get('width','')) and int(a['width'])>0 and re.fullmatch(r'[0-9]{1,9}',a.get('height','')) and int(a['height'])>0):self.images_missing_dims+=1
             if a.get('loading','').lower()=='lazy':self.images_lazy+=1
+            # An image inside <noscript> is a fallback for visitors without script
+            # (usually a tracking pixel or a copy of a lazy-loaded image), not content.
+            in_noscript=any(f['tag']=='noscript' for f in self.stack)
             # alt="" is valid for decorative images; only missing attributes count.
-            if 'alt' not in a and a.get('role') not in ('presentation','none'):self.missing_alt+=1
+            if 'alt' not in a and a.get('role') not in ('presentation','none') and not in_noscript:self.missing_alt+=1
             # Bounded per-page record of visible images for the non-text media checks.
             src=(a.get('src') or a.get('data-src') or a.get('data-lazy-src') or a.get('srcset','').split(',')[0].strip().split(' ')[0]).strip()
             record=None
-            if src and not src.lower().startswith('data:') and not frame['hidden'] and len(self.image_records)<60:
+            if src and not src.lower().startswith('data:') and not frame['hidden'] and not in_noscript and len(self.image_records)<60:
                 record={'src':src,'alt':a['alt'] if 'alt' in a else None,'title':a.get('title') or None,
                         'width':a.get('width') or None,'height':a.get('height') or None,
                         'role':a.get('role','').lower() or None}
@@ -575,7 +820,10 @@ class Document(HTMLParser):
         if tag in ('video','audio','iframe','embed','object') and len(self.media_records)<30:
             record={'tag':tag,'src':(a.get('src') or a.get('data-src') or a.get('data') or '').strip()[:500] or None,
                     'title':(a.get('title') or a.get('aria-label') or '').strip()[:200] or None,
-                    'hidden':frame['hidden'],'sized':_sized(a),'tracks':[]}
+                    'hidden':frame['hidden'],'sized':_sized(a),'tracks':[],
+                    # A video that plays muted by itself with no controls is a moving
+                    # background, not something a visitor watches or listens to.
+                    'decorative':tag=='video' and 'autoplay' in a and 'muted' in a and 'controls' not in a}
             self.media_records.append(record)
             if tag in ('video','audio'):frame['media']=record
             if tag in ('video','iframe','embed','object') and not record['sized'] and not frame['hidden']:
@@ -595,8 +843,9 @@ class Document(HTMLParser):
         if not frame['hidden'] and re.search(r'newsletter-popup|modal-backdrop|interstitial|overlay-active',a.get('class',''),re.I):self.overlay=True
     def handle_startendtag(self,tag,attrs):
         self.handle_starttag(tag,attrs)
-        if tag not in _VOID:self.handle_endtag(tag)
+        if tag not in _VOID and tag!='template':self.handle_endtag(tag)
     def handle_data(self,data):
+        if self._templates.depth:return
         tags={f['tag'] for f in self.stack}
         if 'script' in tags:
             if self._script:self._script['parts'].append(data)
@@ -614,8 +863,16 @@ class Document(HTMLParser):
         stripped=data.strip()
         if stripped:
             self.text.append(stripped);self.flow.append(stripped)
+            if not in_chrome(self.stack) and not tags & {'head','noscript'} and not any(f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):
+                if self.body_text_chars<20000:
+                    value=stripped[:20000-self.body_text_chars];self.body_text.append(value);self.body_text_chars+=len(value)+1
+                if any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack) and self.main_text_chars<20000:
+                    value=stripped[:20000-self.main_text_chars];self.main_text.append(value);self.main_text_chars+=len(value)+1
             qa=self._qa
             if qa is not None and qa['chars']<600 and not tags & _HEADING_TAGS:
+                # Where the text after the heading starts: a table or list holds
+                # items, not a sentence, so its length says nothing about an answer.
+                if not qa['parts']:qa['starts_in']='table' if tags & {'td','th'} else 'list' if tags & {'li','dt','dd'} else 'text'
                 qa['parts'].append(stripped);qa['chars']+=len(stripped)+1
             if 'noscript' in tags and self._noscript_len<8000:
                 self.noscript_parts.append(stripped);self._noscript_len+=len(stripped)+1
@@ -630,17 +887,44 @@ class Document(HTMLParser):
         for f in self.stack:
             if f['tag'] in _TEXT_TAGS or f.get('capture') or f.get('collect'):f['text'].append(data)
     def handle_endtag(self,tag):
+        if self._templates.end(tag):return
         if tag=='script' and self._script:
             if self._script['type']=='application/ld+json':self.jsonld.append(''.join(self._script['parts']))
             elif not self._script['src'] and self._script['type'] in _JS_TYPES:
-                self.inline_script_bytes+=sum(len(part) for part in self._script['parts'])
+                inline=sum(len(part) for part in self._script['parts'])
+                self.inline_script_bytes+=inline
+                if inline:self.executable_scripts+=1
             if not self._script['src'] and self._script['type'] in _JS_TYPES+('application/json',):
                 self._add_saved_state_hint(''.join(self._script['parts'])[:100000])
+            if not self._script['src'] and self._script['type']!='application/ld+json' and self.state_text_chars<20000:
+                body=''.join(self._script['parts'])
+                # Page data serialized for a script to render: a framework state
+                # object, or a large JSON data block.
+                if (self._script['id'] in _STATE_SCRIPT_IDS or _STATE_GLOBAL.search(body[:200000])
+                        or (self._script['type']=='application/json' and len(body)>=2000)):
+                    self.state_blob=True
+                    self._add_state_source('script#'+self._script['id'][:40] if self._script['id']
+                                           else 'script:'+(self._script['type'] or 'inline'))
+                    if len(body)>200000:self.state_extraction_limited=True
+                    # Prose inside it: string values of four or more words, the text a
+                    # script will put on the page.
+                    for m in _STATE_PROSE.finditer(body[:200000]):
+                        if self.state_text_chars>=20000:self.state_extraction_limited=True;break
+                        if len(m.group(1).split())>=4:self.state_text_chars+=len(m.group(1))
             self._script=None
         if tag in _BLOCK_TAGS:self._block_break()
         idx=next((i for i in range(len(self.stack)-1,-1,-1) if self.stack[i]['tag']==tag),None)
         if idx is None:return
         frame=self.stack[idx];text=' '.join(''.join(frame['text']).split());a=frame['a']
+        if not frame['hidden'] and re.fullmatch('h[1-6]',tag):
+            for entry in self._focus_active:
+                if not entry['heading']:
+                    entry['heading']=text[:300];entry['level']=int(tag[1])
+        if not frame['hidden'] and tag=='p':self._focus_paragraph(text)
+        for closing in self.stack[idx:]:
+            entry=closing.get('focus_entry')
+            if entry and not entry.get('_heading_element') and entry in self._focus_active:
+                entry['complete']=closing is frame;self._focus_active.remove(entry)
         if tag=='ol' and frame.get('items',0)>=3:
             self.ordered_lists+=1;self.max_ordered_list_items=max(self.max_ordered_list_items,frame['items'])
         if tag=='ul' and frame.get('items',0)>=3 and not frame['hidden']:self.unordered_lists+=1
@@ -649,17 +933,41 @@ class Document(HTMLParser):
         if tag=='address' and text and not frame['hidden'] and len(self.address_text)<5:
             self.address_text.append(text[:200])
         if not frame['hidden']:
-            if tag=='a' and a.get('href'):self.links.append((a['href'],text))
+            if tag=='a' and a.get('href'):
+                self.links.append((a['href'],text))
+                label=' '.join((a.get('aria-label') or text).lower().split())
+                if not a['href'].strip().startswith('#') and len(label)>=15 and len(self.link_labels)<400:
+                    self.link_labels.append(label)
+                # Link text inside a heading, so a heading that is a link to another
+                # page (a headline teaser on a news or listing page) can be told apart.
+                heading=next((f for f in reversed(self.stack[:idx]) if f['tag'] in _HEADING_TAGS),None)
+                if heading is not None:heading['link_chars']=heading.get('link_chars',0)+len(text)
             if re.fullmatch('h[1-6]',tag):
                 self.headings.append(text);self.heading_levels.append(int(tag[1]))
+                if any(f['tag']=='main' or f['a'].get('role')=='main' for f in self.stack) and not in_chrome(self.stack) and not any(f['a'].get('role') in ('dialog','alertdialog') for f in self.stack):
+                    self.main_headings.append(text);self.main_heading_levels.append(int(tag[1]))
+                # A heading inside a link, or one whose text is mostly a link, names
+                # another page; it is not a question this page answers.
+                linked=(any(f['tag']=='a' and f['a'].get('href') for f in self.stack[:idx])
+                        or (bool(text) and frame.get('link_chars',0)>=0.6*len(text)))
+                if linked:self.linked_headings+=1
                 # Collect the text after a question-shaped H2 or H3 until the next heading.
-                if tag in ('h2','h3') and QUESTION_HEADING.search(text.strip()) and len(self.question_answers)<20:
-                    self._qa={'question':text[:200],'parts':[],'chars':0,'level':int(tag[1]),'next_level':None}
-                    self.question_answers.append(self._qa)
+                if tag in ('h2','h3') and is_question_heading(text):
+                    if linked:self.linked_question_headings+=1
+                    else:
+                        self.question_heading_count+=1
+                        if len(self.question_answers)<20:
+                            self._qa={'question':text[:200],'parts':[],'chars':0,'level':int(tag[1]),'next_level':None}
+                            self.question_answers.append(self._qa)
             if tag=='p':
                 self.paragraphs.append(len(text))
                 if len(self.paragraph_text)<12:self.paragraph_text.append(text[:600])
-            if tag=='button':self.buttons.append(text)
+            if tag=='button':
+                self.buttons.append(text)
+                owner=self._open('form')
+                if owner is not None and 'form' in owner and len(owner['form']['labels'])<10:
+                    label=text or (a.get('aria-label') or a.get('value') or '').strip()
+                    if label:owner['form']['labels'].append(label[:80])
             if tag in ('a','span') and any('breadcrumb' in str(f['a']).lower() for f in self.stack):self.breadcrumb.append(text)
             if frame.get('capture') and text and len(self.bylines)<10:self.bylines.append(text[:160])
             control=frame.get('control')
@@ -685,15 +993,24 @@ class Document(HTMLParser):
             for record in frame.get('images',()):record['link_text']=text[:120]
         del self.stack[idx:]
     def features(self):
-        return {'observation_version':2, 'landmarks':sorted(self.landmarks),
+        return {'observation_version':3, 'landmarks':sorted(self.landmarks),
                 'head_blocking_scripts':self.head_blocking_scripts,'images_missing_dims':self.images_missing_dims,
                 'images_lazy':self.images_lazy,'canonical_values':self.canonicals[:20],
                 'opening_paragraphs':self.paragraph_text,
+                'body_opening':dict(self.body_opening),
+                'body_text':' '.join(self.main_text if self.has_main else self.body_text),
+                'content_paragraphs':self.content_paragraphs,
+                'main_region_observed':self.has_main,'main_headings':self.main_headings[:200],
+                'main_heading_levels':self.main_heading_levels[:200],
+                'focus_sections':[{k:v for k,v in e.items() if not k.startswith('_')} for e in self.focus_sections],
+                'focus_sections_limited':self.focus_sections_limited,
                 'full_visible_chars':len(' '.join(self.text)),
                 'full_visible_bytes':len(' '.join(self.text).encode('utf-8')),
-                'question_headings':sum(bool(QUESTION_HEADING.search(h.strip())) for h,l in zip(self.headings,self.heading_levels) if l in (2,3)),
+                'question_headings':self.question_heading_count,
+                'linked_question_headings':self.linked_question_headings,
+                'linked_headings':self.linked_headings,
                 'viewport':self.meta.get('viewport',[]),'lang':self.lang,'has_nav':self.has_nav,
-                'h1_count':self.heading_levels.count(1),'subheadings':sum(x>1 for x in self.heading_levels),
+                'h1_count':(self.main_heading_levels if self.has_main else self.heading_levels).count(1),'subheadings':sum(x>1 for x in (self.main_heading_levels if self.has_main else self.heading_levels)),
                 'heading_levels':self.heading_levels[:200],'paragraph_lengths':self.paragraphs[:400],
                 'buttons':self.buttons[:50],'anchors':self.links[:200],'scripts':self.scripts,'spa_mount':self.spa,
                 'images':self.images,'missing_alt':self.missing_alt,'forms':self.forms,'email_capture':self.email_capture,
@@ -706,6 +1023,14 @@ class Document(HTMLParser):
                 'blocking_stylesheets':self.blocking_stylesheets,'preload_images':self.preload_images,
                 'script_hosts':sorted(self.script_hosts),'external_scripts':self.external_scripts,
                 'inline_script_bytes':self.inline_script_bytes,'embeds_missing_dims':self.embeds_missing_dims,
+                'password_inputs':self.password_inputs,
+                'signup_forms':sum(1 for f in self.form_records if is_signup_form(f)),
+                'framework_hint':self.framework_hint,'state_blob':self.state_blob,
+                'state_text_chars':self.state_text_chars,'state_sources':self.state_sources,
+                'state_extraction_limited':self.state_extraction_limited,
+                'executable_scripts':self.executable_scripts,
+                'password_forms':[{k:(list(v) if k=='labels' else v) for k,v in f.items() if k!='password'}
+                                  for f in self.password_forms],
                 **self._extended_features()}
     def _extended_features(self):
         noscript=' '.join(self.noscript_parts)
@@ -725,10 +1050,12 @@ class Document(HTMLParser):
                 'modal_dialogs':self.modal_dialogs,'scroll_lock':self.scroll_lock,'fullscreen_fixed':self.fullscreen_fixed,
                 'tables':self.tables,'definition_lists':self.definition_lists,'unordered_lists':self.unordered_lists,
                 'question_answers':[{'question':q['question'],'answer':' '.join(q['parts'])[:600],
-                                     'answered_by_subheadings':bool(q['next_level'] and q['next_level']>q['level'])}
+                                     'answered_by_subheadings':bool(q['next_level'] and q['next_level']>q['level']),
+                                     'teaser':self._links_elsewhere(q['question']),
+                                     'starts_in':q.get('starts_in')}
                                     for q in self.question_answers],
                 'address_text':self.address_text,'icon_links':self.icon_links,'search_form':self.search_form,
-                **self._text_scans(),
+                **self._text_scans(),'running_text':self._running_text(),
                 'search_hint':self.search_hint,'saved_state_hints':self.saved_state_hints,
                 'contact_markup':self.contact_markup}
     def _text_scans(self):
@@ -738,3 +1065,14 @@ class Document(HTMLParser):
         text=' '.join(self.flow)
         if len(text)>_SCAN_HEAD+_SCAN_TAIL:text=text[:_SCAN_HEAD]+' \n '+text[-_SCAN_TAIL:]
         return {'postal_address_text':find_postal_addresses(text),'contact_text':find_contact_details(text)}
+    def _running_text(self):
+        """Blocks of at least 12 words, joined, at most 20,000 characters: the
+        sentences of the page, without the labels, list items and link captions
+        that repeat a word by design."""
+        out=[];size=0
+        for block in ' '.join(self.flow).split('\n'):
+            words=block.split()
+            if len(words)>=12:
+                out.append(' '.join(words));size+=len(out[-1])+1
+                if size>=20000:break
+        return ' '.join(out)[:20000]

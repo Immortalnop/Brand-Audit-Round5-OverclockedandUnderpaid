@@ -16,7 +16,7 @@ MAX_LINKS = 100
 def parse_llms_txt(text, base_url):
     """Structure of an llms.txt file: title, summary, sections, absolute link URLs
     (Markdown links first, then bare URLs) and format problems."""
-    lines = (text or "").splitlines()
+    lines = (text or "").lstrip('\ufeff').splitlines()
     content = [line.strip() for line in lines if line.strip()]
     title = None
     if content and re.match(r"#\s+\S", content[0]) and not content[0].startswith("##"):
@@ -39,14 +39,15 @@ def parse_llms_txt(text, base_url):
         issues.append("the file does not start with an H1 title ('# Name')")
     elif h1_count > 1:
         issues.append(f"the file has {h1_count} H1 titles; the format allows one")
+    advice = []
     if not links:
-        issues.append("the file links to no pages")
+        advice.append("the file links to no pages (file lists are optional)")
     elif not markdown_links:
-        issues.append("pages are listed as bare URLs, not as Markdown links ('- [name](url)')")
+        advice.append("pages are listed as bare URLs, not as Markdown links ('- [name](url)')")
     elif not sections:
-        issues.append("links are not grouped under H2 sections ('## Section')")
+        advice.append("links are not grouped under optional H2 sections ('## Section')")
     return {"title": title, "has_summary": summary, "sections": sections, "links": links[:MAX_LINKS],
-            "link_count": len(links), "markdown_links": markdown_links, "structure_issues": issues}
+            "link_count": len(links), "markdown_links": markdown_links, "structure_issues": issues, 'format_advice': advice}
 
 
 def _add(links, raw, base_url):

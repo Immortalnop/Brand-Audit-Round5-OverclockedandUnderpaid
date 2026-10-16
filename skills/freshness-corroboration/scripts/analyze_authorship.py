@@ -8,8 +8,8 @@ acquisition snapshot only (no requests), on article pages:
 
   - author-missing: an article names no author anywhere: no byline, no meta
     author, no rel=author link and no author in its Article markup.
-  - author-credentials-weak: an author is named, but only as a plain string or
-    an Organization, without a Person profile (url or sameAs) or credentials
+  - author-credentials-weak: an author is named, but lacks a typed Person or
+    Organization identity/profile (url or sameAs), or a Person lacks credentials
     (jobTitle, description, knowsAbout, alumniOf, award, hasCredential), or the
     markup author is not shown on the page, or the byline has no markup.
 
@@ -31,7 +31,7 @@ ARTICLE_TYPES = frozenset({"Article", "BlogPosting", "NewsArticle", "TechArticle
 _CREDENTIAL_KEYS = ("jobTitle", "description", "knowsAbout", "alumniOf", "award", "hasCredential",
                     "hasOccupation", "worksFor")
 _PROFILE_KEYS = ("url", "sameAs")
-_BYLINE_TEXT = re.compile(r"(?:^|[\s|\u00b7\u2022,(])(?:by|written by|author:)\s+([A-Z][\w.'\u2019-]+"
+_BYLINE_TEXT = re.compile(r"^(?:By|by|Written by|written by|Author:)\s+([A-Z][\w.'\u2019-]+"
                           r"(?:\s+[A-Z][\w.'\u2019-]+){1,3})")
 _AUTHOR_PATH = re.compile(r"/(?:authors?|team|people|contributors?|writers?|staff)/[^/?#]+", re.I)
 _MIN_ARTICLE_WORDS = 300
@@ -70,7 +70,9 @@ def is_article(page):
         segments = [s for s in urlsplit(page.url).path.split("/") if s]
     except ValueError:
         return False
-    return len(segments) >= 2 and len((page.visible_text or "").split()) >= _MIN_ARTICLE_WORDS
+    features = page.features or {}
+    body = features.get('body_text', page.visible_text or '')
+    return len(segments) >= 2 and len(body.split()) >= _MIN_ARTICLE_WORDS
 
 
 def _structured_authors(page):
@@ -101,9 +103,13 @@ def _visible_bylines(page):
     features = page.features or {}
     bylines = [b for b in features.get("bylines", ()) if b]
     bylines += [m for m in (features.get("meta") or {}).get("author", ()) if isinstance(m, str) and m.strip()]
-    match = _BYLINE_TEXT.search((page.visible_text or "")[:1500])
-    if match:
-        bylines.append(match.group(1))
+    # Bare "by" in navigation or narrative is not a byline. Explicit author
+    # elements/meta above remain supported; unmarked bylines start a paragraph.
+    opening = (features.get('body_opening') or {}).get('passage', '')
+    for paragraph in features.get('content_paragraphs', features.get('opening_paragraphs', ())):
+        if paragraph not in opening: continue
+        match = _BYLINE_TEXT.search(paragraph)
+        if match: bylines.append(match.group(1))
     return bylines
 
 
@@ -126,11 +132,16 @@ def assess_page(page):
         problems.append("the byline is not stated in Article markup (no author property)")
     else:
         persons = [(n, node) for n, kind, node in authors if kind == "person"]
-        if not persons:
+        organizations = [(n,node) for n,kind,node in authors if kind=='organization']
+        if not persons and not organizations:
             kinds = sorted({kind for _, kind, _ in authors})
             problems.append("the Article author is " + " and ".join(
                 {"text": "a plain name string", "organization": "an Organization",
-                 "untyped": "an untyped object"}[k] for k in kinds) + ", not a Person")
+                 "untyped": "an untyped object"}[k] for k in kinds) + ", not a Person or Organization")
+        for name,node in organizations[:2]:
+            if not name:problems.append('an Organization author has no name')
+            if not any(_has(node.get(k)) for k in _PROFILE_KEYS) and not profiles:
+                problems.append(f'Organization author {name or "(no name)"} has no profile link (url or sameAs)')
         for name, node in persons[:2]:
             label = f"author {name or '(no name)'}"
             if not name:
@@ -189,17 +200,17 @@ def analyze_authorship(artifacts, deadline):
         findings.append(make_finding(
             category="answer_content", finding_type="proactive_improvement", severity="low",
             status="confirmed", confidence=0.75,
-            title="Article authors lack a Person profile or credentials",
-            root_cause="The article author is not stated as a Person with a profile and credentials, so "
-                       "the expertise behind the content cannot be checked",
+            title="Article authors have incomplete identity or profile signals",
+            root_cause="Author identity or profile details are incomplete in the sampled article markup. "
+                       "Both Person and Organization authors are supported; personal credentials apply to people",
             affected_pages=[p.url for p, _ in weak],
             evidence=[{"type": "authorship", "description": "; ".join(problems[:4]), "urls": [page.url]}
                       for page, problems in weak[:10]],
             suggested_action={
-                "summary": "State each article author as a Person with a profile and credentials",
-                "steps": ["Type the Article author as a Person, not a plain string or the Organization",
-                          "Give the Person a url to an author page and sameAs links to professional profiles",
-                          "Add jobTitle, description or knowsAbout that state the author's expertise",
+                "summary": "State the actual article author with a suitable identity and profile",
+                "steps": ["Use Person for an individual author or Organization for an organizational author",
+                          "Give the author a url or sameAs link to a matching profile",
+                          "For a person, add accurate role or expertise details where appropriate",
                           "Show the same author name in the visible byline"],
                 "priority": "low", "effort": "low",
                 "expected_benefit": "The expertise behind each article becomes explicit and checkable",

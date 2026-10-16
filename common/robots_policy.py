@@ -22,20 +22,34 @@ class RobotsPolicy:
                 try:delay=max(0.,float(v))
                 except ValueError:pass
         finish()
-    def _groups(self,agent):
-        agent=agent.lower();specific=[g for g in self.groups if any(a!='*' and a in agent for a in g[0])]
+    def _groups(self,agent,token=False):
+        agent=agent.lower()
+        if token:
+            # RFC 9309 product-token match: the group's token (the leading letters,
+            # '_' and '-' of its User-agent value) equals the crawler's token, so a
+            # "User-agent: Applebot" group never governs Applebot-Extended.
+            specific=[g for g in self.groups if any(a!='*' and (re.match(r'[a-z_-]+',a) or [''])[0]==agent for a in g[0])]
+            return specific or [g for g in self.groups if '*' in g[0]]
+        specific=[g for g in self.groups if any(a!='*' and a in agent for a in g[0])]
         if specific:
             length=max(len(a) for g in specific for a in g[0] if a!='*' and a in agent)
             return [g for g in specific if any(len(a)==length and a in agent for a in g[0])]
         return [g for g in self.groups if '*' in g[0]]
+    def can_fetch_token(self,token,url):
+        """can_fetch for a bare crawler product token (GPTBot, Applebot-Extended),
+        matched exactly as RFC 9309 asks. Used to read another crawler's rules,
+        never to decide what this audit may fetch."""
+        return self._allowed(self._groups(token,token=True),url)
     def can_fetch(self,agent,url):
+        return self._allowed(self._groups(agent),url)
+    def _allowed(self,groups,url):
         p=urlsplit(url);target=p.path or '/'
         if p.query:target+='?'+p.query
         # Decode unreserved percent escapes only; reserved encoded '/' stays distinct.
         def norm(v):
             return re.sub(r'%([0-9a-fA-F]{2})',lambda m: chr(int(m[1],16)) if chr(int(m[1],16)) in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~' else m[0].upper(),v)
         matches=[]
-        for _,rules,_ in self._groups(agent):
+        for _,rules,_ in groups:
             for rule,allow in rules:
                 end=rule.endswith('$');r=norm(rule[:-1] if end else rule)
                 pattern='^'+'.*'.join(re.escape(x) for x in r.split('*'))+('$' if end else '')

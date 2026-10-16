@@ -13,8 +13,8 @@ only (no requests):
     text: after a label ("Address:", "Visit us at"), as a street line
     ("12 High Street, Springfield"), or as comma-separated parts ending in a
     postal code.
-    Two or more kinds of location evidence make it a confirmed medium defect;
-    one kind makes it a low suggestion.
+    Missing optional location markup is a low improvement even when several
+    kinds of location evidence confirm applicability.
   - local-business-incomplete: LocalBusiness (or a subtype) markup without an
     address, which Google requires (confirmed defect, medium), or with an
     address but neither geo nor areaServed (suggestion, low).
@@ -33,9 +33,11 @@ audience, but the audience check never concludes from them that one is missing,
 and the report says how many were skipped.
 """
 import re
+from collections import Counter
 from urllib.parse import urlsplit
 from check_helpers import (eligible_pages, split_script_dependent, script_dependent_warning, contact_details,
                            page_share)
+from check_catalog import calibrated_confidence
 from models import make_finding, skill_result
 from structured_data import iter_nodes, types_of, LOCAL_BUSINESS_TYPES, LOCATION_PROPERTIES, LOCATION_TYPES
 
@@ -49,7 +51,12 @@ _SEGMENT_TEXT = re.compile(
     r"|beginners?|kids|seniors|marketers?|designers?|engineers?|educat(?:ion|ors)|manufacturers?"
     r"|restaurants?|clinics?|law firms?|accountants?|consultants?|enterprise)\b", re.I)
 _SEGMENT_PATH = re.compile(r"/(?:solutions|industries|industry|use-cases?|usecases|who-we-serve|audiences?"
-                           r"|segments?|customers|for-[a-z0-9-]+)(?:/|$)", re.I)
+                           r"|segments?|customers|for-[a-z0-9-]+)(?:/|$)"
+                           r"|/(?:mens?|womens?|men-s|women-s|kids|children|boys|girls|baby|toddlers?|teens?)(?:/|$|[-_])",
+                           re.I)
+# Consumer segments a shop names in its navigation: "Men", "Women's", "Shop Kids".
+_SEGMENT_LABEL = re.compile(r"^(?:shop\s+)?(?:men|women|kids|children|boys|girls|baby|babies|toddlers?|teens?"
+                            r"|juniors?|unisex)(?:'?s)?(?:\s+\S+){0,2}$", re.I)
 _PRICING_PATH = re.compile(r"/(?:pricing|plans|buy|shop)(?:/|$)", re.I)
 
 
@@ -61,27 +68,56 @@ def _has_location_markup(page):
     return bool(microdata & (LOCATION_TYPES | LOCAL_BUSINESS_TYPES))
 
 
-def _location_evidence(page):
-    """Kinds of physical-location evidence on one page: {kind: example}."""
+# Pages where a shown address or map is the organization's own: the home,
+# contact and about pages and location pages ("/locations", "/find-us").
+_OWN_LOCATION_PATH = re.compile(r"/(?:contact|contact-us|about|about-us|locations?|stores?|store-locator|find-us"
+                                r"|visit(?:-us)?|directions|offices?|campus|hours)(?:/|$|[-_.])", re.I)
+
+
+# A post-office box is a mailing address, not a place a visitor or a local
+# answer can be sent to, so it is never physical-location evidence.
+_PO_BOX = re.compile(r"\b(?:p\.?\s*o\.?\s*box|post\s+office\s+box|gpo\s+box|locked\s+bag|postfach|apartado"
+                     r"|boite\s+postale|casilla\s+postal)\b", re.I)
+
+
+def _key(text):
+    return " ".join((text or "").lower().split())
+
+
+def _plain_locations(page):
+    """Postal addresses written as plain text, map embeds and map links on one page,
+    as {kind: [values]}."""
+    f = page.features or {}
+    return {"address": [t for t in f.get("postal_address_text") or () if t and not _PO_BOX.search(t)],
+            "map_embed": [(r.get("src") or "").strip() for r in f.get("media_records") or ()
+                          if r.get("tag") == "iframe" and _MAP_URL.search((r.get("src") or "").strip())],
+            "map_link": [(h or "").strip() for h, _ in f.get("anchors") or () if _MAP_URL.search((h or "").strip())]}
+
+
+def _location_evidence(page, repeated=frozenset()):
+    """Kinds of physical-location evidence on one page: {kind: example}.
+
+    An <address> element always counts. A plain-text address, map embed or map
+    link counts as the organization's own only on a home, contact, about or
+    location page, or when the same value appears on two or more sampled pages
+    (a site-wide header or footer): an address quoted in an article or a map of
+    an event venue is about something else."""
     f = page.features or {}
     found = {}
     for text in f.get("address_text") or ():
-        if re.search(r"\d", text) and len(text.split()) >= 3:
+        if re.search(r"\d", text) and len(text.split()) >= 3 and not _PO_BOX.search(text):
             found["address"] = text[:120]
             break
-    if "address" not in found:
-        # A postal address written as plain text, outside an <address> element.
-        for text in f.get("postal_address_text") or ():
-            found["address"] = text[:120]
-            break
-    for record in f.get("media_records") or ():
-        if record.get("tag") == "iframe" and _MAP_URL.search((record.get("src") or "").strip()):
-            found["map_embed"] = (record.get("src") or "")[:120]
-            break
-    for href, _text in f.get("anchors") or ():
-        if _MAP_URL.search((href or "").strip()):
-            found["map_link"] = href[:120]
-            break
+    try:
+        own_page = page.page_type in ("home", "contact", "about") or bool(_OWN_LOCATION_PATH.search(urlsplit(page.url).path))
+    except ValueError:
+        own_page = page.page_type in ("home", "contact", "about")
+    for kind, values in _plain_locations(page).items():
+        if kind in found:
+            continue
+        value = next((v for v in values if own_page or _key(v) in repeated), None)
+        if value:
+            found[kind] = value[:120]
     return found
 
 
@@ -107,7 +143,7 @@ def _contact_evidence(page):
 def _audience_signals(page):
     f = page.features or {}
     texts = [page.title or ""] + list(page.headings[:20]) + [t for _, t in (f.get("anchors") or ())]
-    if any(_SEGMENT_TEXT.search(t or "") for t in texts):
+    if any(_SEGMENT_TEXT.search(t or "") or _SEGMENT_LABEL.match(" ".join((t or "").split())) for t in texts):
         return True
     paths = [urlsplit(page.url).path] + [urlsplit(u).path for u in page.internal_links]
     if any(_SEGMENT_PATH.search(p or "") for p in paths):
@@ -124,14 +160,17 @@ def analyze_context_signals(artifacts, deadline):
     findings = []
 
     markup_pages = [p for p in pages if _has_location_markup(p)]
-    evidence = [(p, _location_evidence(p)) for p in pages]
+    # Plain-text locations repeated across pages belong to the site chrome.
+    seen = Counter(_key(v) for p in pages for values in _plain_locations(p).values() for v in set(values))
+    repeated = frozenset(k for k, n in seen.items() if n >= 2)
+    evidence = [(p, _location_evidence(p, repeated)) for p in pages]
     evidence = [(p, e) for p, e in evidence if e]
     kinds = {k for _, e in evidence for k in e}
     if evidence and not markup_pages:
         strong = len(kinds) >= 2
         findings.append(make_finding(
-            category="ai_discoverability", finding_type="defect" if strong else "proactive_improvement",
-            severity="medium" if strong else "low", status="confirmed" if strong else "suspected",
+            category="ai_discoverability", finding_type="proactive_improvement",
+            severity="low", status="confirmed" if strong else "suspected",
             confidence=0.85 if strong else 0.55,
             title="Physical location is shown on the page but stated in no structured data",
             root_cause="Assistants answer location-dependent questions from machine-readable addresses, "
@@ -147,7 +186,7 @@ def analyze_context_signals(artifacts, deadline):
                           "Organization or LocalBusiness markup",
                           "Add geo coordinates for each physical location, and areaServed for the regions served",
                           "Keep the visible address, the markup and the business profile identical"],
-                "priority": "medium" if strong else "low", "effort": "low",
+                "priority": "low", "effort": "low",
                 "expected_benefit": "The brand can be matched to location-specific questions",
                 "verification": "Validate the markup and confirm the address matches the visible text"},
             provenance={"skill": "crawl-render-audit", "script": "analyze_context_signals.py",
@@ -198,7 +237,7 @@ def analyze_context_signals(artifacts, deadline):
         contacts.sort(key=lambda item: item[0].page_type not in ("home", "contact"))
         findings.append(make_finding(
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
-            status="suspected", confidence=0.7,
+            status="suspected", confidence=calibrated_confidence("contact-markup-missing", 0.7),
             title="Email or phone shown on " + page_share([p for p, _ in contacts], pages)
                   + " but stated in no structured data",
             root_cause="Assistants answer \"how do I contact them?\" from machine-readable email, telephone and "

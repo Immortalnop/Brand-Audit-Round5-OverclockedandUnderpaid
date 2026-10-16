@@ -25,13 +25,16 @@ def test_partial_pipe_frame_cannot_defeat_timeout(monkeypatch):
     monkeypatch.setattr(isolation,'_child_entry',_partial_writer)
     start=time.monotonic()
     result=isolation.run_isolated(isolation._double,args=(2,),timeout_s=.5)
-    assert result.timed_out and time.monotonic()-start<3
+    # The child would hold the frame for 20 s; 10 s leaves room for a slow
+    # process start and stop under full-suite load and still proves the timeout.
+    assert result.timed_out and time.monotonic()-start<10
 
 
 def test_spawn_is_used_and_large_result_is_preserved():
     assert isolation._get_context().get_start_method()=='spawn'
     from test_v6_regressions import _large_result
-    result=isolation.run_isolated(_large_result,timeout_s=5)
+    # A deadlock never returns, so a generous limit still catches it.
+    result=isolation.run_isolated(_large_result,timeout_s=30)
     assert result.ok and len(result.value)==2000000
 
 
@@ -96,7 +99,7 @@ def test_real_cli_interrupt_returns_json_and_130(tmp_path):
 sys.path.insert(0, %r)
 import run_audit
 
-def slow(site,limits,allow_private):
+def slow(site,limits,allow_private,export_evidence,audit_id):
     while True:time.sleep(1)
 
 if __name__=='__main__':

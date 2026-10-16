@@ -213,11 +213,11 @@ def test_well_formatted_pages_are_quiet():
 
 # ------------------------------------------------------------- 7: personalization and context
 
-def test_location_shown_without_markup_is_a_confirmed_defect_with_two_kinds_of_evidence():
+def test_location_shown_without_markup_is_optional_advice_with_two_kinds_of_evidence():
     html = ('<address>12 High Street, Springfield 4000</address>'
             '<iframe src="https://www.google.com/maps/embed?pb=1"></iframe>')
     finding = by_id(run(analyze_context_signals, page(html)), "location-markup-missing")[0]
-    assert finding["finding_type"] == "defect" and finding["severity"] == "medium"
+    assert finding["finding_type"] == "proactive_improvement" and finding["severity"] == "low"
     assert "12 High Street" in finding["evidence"][0]["description"]
 
 
@@ -264,8 +264,13 @@ def test_site_search_missing_on_large_site_only():
 
 
 def test_shop_without_saved_state_and_with_wishlist():
-    shop = [page(TEXT, url=SITE + "/products/a"), page(TEXT, url=SITE + "/products/b")]
+    price = "<p>Price: $24.00</p>"
+    shop = [page(price + TEXT, url=SITE + "/products/a"), page(price + TEXT, url=SITE + "/products/b")]
     assert by_id(run(analyze_context_retention, *shop), "context-retention-missing")
+    # Product and category paths with nothing for sale (a news site filing audio
+    # by category) are not a shop.
+    unpriced = [page(TEXT, url=SITE + "/category/a"), page(TEXT, url=SITE + "/category/b")]
+    assert not by_id(run(analyze_context_retention, *unpriced), "context-retention-missing")
     saved = [page("<button>Add to wishlist</button>" + TEXT, url=SITE + "/products/a"), shop[1]]
     assert not by_id(run(analyze_context_retention, *saved), "context-retention-missing")
 
@@ -361,15 +366,16 @@ def test_llms_canonical_og_and_twitter_snippets():
     assert build_snippet("viewport", [about], art, facts) is None
 
 
-def test_attach_snippets_reaches_derived_recommendations_and_never_raises():
+def test_attach_snippets_goes_on_the_finding_not_its_link_and_never_raises():
     home = page(TEXT, head="<title>Acme</title>")
     art = snapshot(home)
     finding = {"id": "F-001", "check_id": "missing-canonical", "affected_pages": [SITE + "/"],
                "suggested_action": {"summary": "s", "steps": [], "priority": "low"}}
-    rec = {"id": "R-001", "check_id": "missing-canonical", "affected_pages": [],
-           "provenance": {"finding_id": "F-001"}, "suggested_action": {"summary": "s", "steps": [], "priority": "low"}}
-    attach_fix_snippets([finding], [rec], art, _identity())
-    assert "snippet" in finding["suggested_action"] and "snippet" in rec["suggested_action"]
+    link = {"id": "R-001", "finding_id": "F-001", "check_id": "missing-canonical", "title": "t",
+            "category": "ai_discoverability", "finding_type": "proactive_improvement"}
+    attach_fix_snippets([finding], [link], art, _identity())
+    assert "snippet" in finding["suggested_action"]
+    assert "suggested_action" not in link
     attach_fix_snippets([{"id": "F-9", "check_id": "no-jsonld"}], [], art, None)  # malformed item: no raise
 
 
@@ -425,10 +431,15 @@ def test_full_report_carries_snippets_plan_and_concrete_titles():
         stop()
     assert report["top_actions"] and report["quick_wins"]
     assert sum(r["start_here"] for r in report["top_actions"]) == 1
+    finding_ids = {f["id"] for f in report["findings"]}
     for item in report["findings"] + report["recommendations"]:
+        assert not item["title"].startswith("Review ")
+        if "finding_id" in item:
+            # A link to a finding: the finding carries the action and its placement.
+            assert item["finding_id"] in finding_ids and "suggested_action" not in item
+            continue
         action = item["suggested_action"]
         assert action["impact"] in ("low", "medium", "high") and action["quadrant"]
-        assert not item["title"].startswith("Review ")
     snippets = [f["suggested_action"]["snippet"] for f in report["findings"] if "snippet" in f["suggested_action"]]
     assert snippets and all(s["code"] and s["note"] for s in snippets)
     for key in ("answer_format", "context_signals", "context_retention"):

@@ -36,11 +36,36 @@ def _run(pages):
     return analyze_directives(_Artifacts(pages), make_deadline(DEFAULT_LIMITS))['findings']
 
 
-def test_max_snippet_zero_meta_is_confirmed_high():
-    pages = [_Page('https://x.example/p', meta={'robots': ('max-snippet:0',)})]
+def test_max_snippet_zero_on_homepage_is_confirmed_high():
+    pages = [_Page('https://x.example/', meta={'robots': ('max-snippet:0',)})]
     hits = [f for f in _run(pages) if f['provenance'].get('rule_id') == 'snippet-suppression']
     assert len(hits) == 1
     assert hits[0]['severity'] == 'high' and hits[0]['status'] == 'confirmed'
+    assert 'Homepage' in hits[0]['title']
+
+
+def test_max_snippet_zero_on_inner_page_follows_page_scope():
+    """As with nosnippet, a directive on one inner page limits only that page: low, not high."""
+    pages = [_Page('https://x.example/p', meta={'robots': ('max-snippet:0',)})]
+    hits = [f for f in _run(pages) if f['provenance'].get('rule_id') == 'snippet-suppression']
+    assert len(hits) == 1
+    assert hits[0]['severity'] == 'low' and hits[0]['status'] == 'confirmed'
+    nosnippet = [f for f in _run([_Page('https://x.example/p', meta={'robots': ('nosnippet',)})])
+                 if f['provenance'].get('rule_id') == 'nosnippet']
+    assert nosnippet[0]['severity'] == hits[0]['severity']
+
+
+def test_snippet_suppression_on_intentional_url_is_not_flagged():
+    pages = [_Page('https://x.example/search?q=shoes', meta={'robots': ('max-snippet:0',)})]
+    assert [f for f in _run(pages) if f['provenance'].get('rule_id') == 'snippet-suppression'] == []
+
+
+def test_no_site_specific_paths_in_intentional_exclusions():
+    """A path seen on one site is not a mechanism: /projects-programs must not be exempt."""
+    from analyze_directives import is_intentional_exclusion_url
+    assert not is_intentional_exclusion_url('https://example/projects-programs')
+    assert is_intentional_exclusion_url('https://example/catalog/facet/colour-red')
+    assert is_intentional_exclusion_url('https://example/shop/filter/size-9')
 
 
 def test_max_image_preview_none_header_is_flagged():
@@ -122,7 +147,7 @@ def test_intentional_noindex_excluded():
     """Internal search, pagination, facet, and fragment endpoints are intentional exclusions
     and must not trigger defect findings."""
     search_page = _Page('https://docs.example/3/search.html', meta={'robots': ('noindex',)})
-    facet_page = _Page('https://example/projects-programs', meta={'robots': ('noindex',)})
+    facet_page = _Page('https://example/catalog/facet/colour-red', meta={'robots': ('noindex',)})
     frag_page = _Page('https://example/cc-shared/fragments/hero', meta={'robots': ('noindex',)})
     hits = _run([search_page, facet_page, frag_page])
     assert len(hits) == 0, f"Expected 0 findings for intentional noindex, got: {hits}"

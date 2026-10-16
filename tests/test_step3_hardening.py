@@ -206,7 +206,9 @@ def test_recommendations_have_no_duplicate_titles_or_impl_details():
     recs = report["recommendations"]
     titles = [r["title"] for r in recs]
     assert len(titles) == len(set(titles)), "duplicate recommendation titles"
-    impls = [r["suggested_action"].get("implementation_detail", "") for r in recs]
+    linked = [r["finding_id"] for r in recs if "finding_id" in r]
+    assert len(linked) == len(set(linked)), "two recommendations link to one finding"
+    impls = [r["suggested_action"].get("implementation_detail", "") for r in recs if "finding_id" not in r]
     non_empty = [i for i in impls if i]
     assert len(non_empty) == len(set(non_empty)), "redundant implementation_detail across recommendations"
 
@@ -215,8 +217,13 @@ def test_no_recommendation_restates_a_confirmed_defect():
     report = _clean_report()
     defect_causes = {(f["category"], f["root_cause"]) for f in report["findings"]
                      if f["finding_type"] == "defect"}
+    defect_ids = {f["id"] for f in report["findings"] if f["finding_type"] == "defect"}
     for r in report["recommendations"]:
-        assert (r["category"], r["root_cause"]) not in defect_causes
+        if "finding_id" in r:
+            # Links point only at proactive findings, never at a defect.
+            assert r["finding_id"] not in defect_ids
+        else:
+            assert (r["category"], r["root_cause"]) not in defect_causes
 
 
 # ---------------------------------------------------------------------------

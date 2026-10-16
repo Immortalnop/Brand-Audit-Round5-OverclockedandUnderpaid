@@ -274,7 +274,8 @@ def test_citation_schema_opportunities():
     (finding,) = by_id(run(analyze_citation_schema, faq_page, how_to, rated), "citation-schema-opportunity")
     assert finding["status"] == "suspected" and finding["severity"] == "low"
     text = finding["evidence_text"]
-    assert "3 question-shaped H2/H3 headings with no FAQPage markup" in text
+    assert faq_page.url not in finding["affected_pages"]
+    assert not run(analyze_citation_schema, faq_page)["findings"]
     assert "a 'How to' page with numbered steps and no HowTo markup" in text
     assert "visible rating text ('4.7 out of 5')" in text
 
@@ -328,8 +329,8 @@ def test_complete_person_author_passes():
 
 
 @pytest.mark.parametrize("author,body,text", [
-    ("Jane Doe", "<p>By Jane Doe</p>" + LONG, "the Article author is a plain name string, not a Person"),
-    ({"@type": "Organization", "name": "Acme"}, "<p>Acme team</p>" + LONG, "an Organization, not a Person"),
+    ("Jane Doe", "<p>By Jane Doe</p>" + LONG, "the Article author is a plain name string, not a Person or Organization"),
+    ({"@type": "Organization", "name": "Acme"}, "<p>Acme team</p>" + LONG, "Organization author Acme has no profile link"),
     ({"@type": "Person", "name": "Jane Doe"}, "<p>By Jane Doe</p>" + LONG,
      "author Jane Doe has no profile link (url or sameAs) and no author page is linked"),
     ({"@type": "Person", "name": "Jane Doe", "url": SITE + "/a/jane"}, "<p>By Jane Doe</p>" + LONG,
@@ -343,6 +344,11 @@ def test_weak_author_signals(author, body, text):
     (finding,) = by_id(run(analyze_authorship, article(author, body)), "author-credentials-weak")
     assert finding["severity"] == "low"
     assert text in finding["evidence_text"]
+
+
+def test_organization_author_with_a_profile_is_legitimate():
+    author={'@type':'Organization','name':'Acme Editorial','url':SITE+'/about'}
+    assert run(analyze_authorship,article(author,'<p>By Acme Editorial</p>'+LONG))['findings']==[]
 
 
 def test_author_reference_by_id_is_resolved():

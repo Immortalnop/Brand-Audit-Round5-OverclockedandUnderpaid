@@ -36,4 +36,24 @@ Thumbs.db
 tmp/
 temp/
 .claude/
+report.json
+report.md
 Plan.md/
+# Local benchmark runs (tests/live_benchmark.py)
+benchmark_runs/
+aarush's_Plan.md
+Comparison.md
+final_version_plan.md
+IMPLEMENTATION_STATUS.md
+ROUND5_PLAN.md
+
+/json_results/
+
+# Local audit outputs, verification records and unused repository-analysis state.
+/out/
+/verification/
+/docs/verification/
+/data/
+
+reference-archive/
+ROUND5_PLAN.md/

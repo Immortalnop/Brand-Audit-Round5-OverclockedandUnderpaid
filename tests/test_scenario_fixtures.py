@@ -80,7 +80,7 @@ def test_multi_brand_site_suppresses_footprint_even_with_provider_configured(mon
 # Stale commercial facts: an old date on a /product page.
 # ---------------------------------------------------------------------------
 
-def test_stale_commercial_facts_are_flagged_high_severity():
+def test_old_commercial_dates_are_scoped_review_opportunities():
     base_url, shutdown, limits, deadline, artifacts = _acquire()
     try:
         claims = extract_claims(artifacts, deadline)
@@ -93,7 +93,8 @@ def test_stale_commercial_facts_are_flagged_high_severity():
         commercial_findings = [f for f in freshness["findings"]
                                 if f["provenance"]["rule_id"] == "stale-dates:commercial"]
         assert commercial_findings
-        assert commercial_findings[0]["severity"] == "high"
+        assert commercial_findings[0]["severity"] == "low"
+        assert commercial_findings[0]['finding_type'] == 'proactive_improvement'
     finally:
         shutdown()
 
@@ -103,7 +104,7 @@ def test_stale_commercial_facts_are_flagged_high_severity():
 # via a page link from the main site.
 # ---------------------------------------------------------------------------
 
-def test_broken_navigation_isolated_cluster_detected():
+def test_broken_navigation_isolated_cluster_counted_not_claimed_beside_script_page():
     base_url, shutdown, limits, deadline, artifacts = _acquire(sitemap_mode="broken_nav")
     try:
         urls = {p.url for p in artifacts.pages}
@@ -119,7 +120,16 @@ def test_broken_navigation_isolated_cluster_detected():
         engagement = analyze_engagement(artifacts, graph, rendering, deadline)
         isolated_findings = [f for f in engagement["findings"]
                               if f["provenance"]["rule_id"] == "isolated-clusters"]
-        assert isolated_findings
+        # The fixture also serves /js-heavy, a page built by JavaScript: links it
+        # may add after load are unknown, so the cluster is counted but not
+        # claimed (ROUND5_PLAN T2.2), and the report says why. A complete graph
+        # still reports clusters (test_site_graph_and_severity.py).
+        scope = graph["data"]["crawl_scope"]
+        assert not scope["complete"]
+        assert [u["reason"] for u in scope["unresolved"]] == ["script_dependent"]
+        assert not isolated_findings
+        assert engagement["metrics"]["isolated_clusters"] >= 1
+        assert any("not assessed" in w for w in engagement["warnings"])
     finally:
         shutdown()
 

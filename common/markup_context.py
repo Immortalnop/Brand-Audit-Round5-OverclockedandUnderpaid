@@ -1,0 +1,128 @@
+"""Conservative context from delivered markup; no computed CSS or browser state."""
+from html.parser import HTMLParser
+import re
+
+
+class TemplateScope:
+    """Isolate an HTML template fragment from the surrounding document.
+
+    Inner end tags cannot close live ancestors. Raw-text strings cannot open or
+    close nested templates. The caller still charges ignored tags to its parsing
+    budget; this stores only nesting depth, not a second DOM.
+    """
+    def __init__(self):
+        self.depth = 0
+
+    def start(self, tag, parser):
+        if tag == 'template':
+            self.depth += 1
+        elif self.depth and tag in ('script', 'style', 'textarea', 'title', 'xmp',
+                                    'iframe', 'noembed', 'noframes'):
+            # HTMLParser handles script/style automatically, but not the other
+            # HTML raw-text/RCDATA elements. All this text is inactive here.
+            parser.set_cdata_mode(tag)
+        return bool(self.depth)
+
+    def end(self, tag):
+        if not self.depth:
+            return False
+        if tag == 'template':
+            self.depth -= 1
+        return True
+
+
+def in_chrome(frames):
+    # A document header is site chrome; a header inside main/section/article can
+    # introduce that content. Explicit chrome roles and ancestors still win.
+    content_ancestor = False
+    for frame in frames:
+        tag = frame['tag']
+        role = frame['a'].get('role', '').lower()
+        if (tag in ('nav', 'footer', 'announcement-bar', 'page-header')
+                or role in ('banner', 'navigation', 'contentinfo')):
+            return True
+        if tag == 'header' and not content_ancestor:
+            return True
+        if tag in ('main', 'section', 'article') or role == 'main':
+            content_ancestor = True
+    return False
+
+
+class InlineDisplay(HTMLParser):
+    """Only unconditional, simple display:none rules with no competing display
+    declaration qualify. Conditional/compound overrides veto the simple rule.
+    External styles and dynamic state remain unmeasured.
+    """
+    def __init__(self):
+        super().__init__()
+        self.styles = []
+        self.current = None
+        self.conditional = False
+        self.chars = 0
+        self.hidden = set()
+        self.templates = TemplateScope()
+
+    def handle_starttag(self, tag, attrs):
+        if self.templates.start(tag, self):
+            return
+        if tag == 'style':
+            a = dict(attrs)
+            self.current = []
+            self.conditional = bool(a.get('media') and a.get('media') != 'all')
+
+    def handle_data(self, data):
+        if self.templates.depth:
+            return
+        if self.current is not None and self.chars < 200000:
+            self.current.append(data[:200000-self.chars])
+            self.chars += len(data)
+
+    def handle_endtag(self, tag):
+        if self.templates.end(tag):
+            return
+        if tag == 'style' and self.current is not None:
+            self.styles.append((''.join(self.current),self.conditional))
+            self.current = None
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        # A template is non-void in HTML; <template/> still opens its fragment.
+        if tag != 'template':
+            self.handle_endtag(tag)
+
+    def scan(self, html):
+        self.feed(html)
+        candidates, veto = set(), set()
+        # A truncated stylesheet could contain an unseen override.
+        if self.chars >= 200000: return self
+        for css, conditional in self.styles:
+            css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
+            # Depth distinguishes unconditional rules from @media/@supports.
+            depth, depths = 0, []
+            for c in css:
+                depths.append(depth)
+                if c == '{': depth += 1
+                elif c == '}': depth = max(0, depth-1)
+            for match in re.finditer(r'([^{}]+)\{([^{}]*)\}', css):
+                selectors, declarations = match.groups()
+                display = re.findall(r'(?:^|;)\s*display\s*:\s*([^;]+)', declarations, re.I)
+                if not display: continue
+                tokens = set(re.findall(r'[.#][\w-]+', selectors))
+                none = re.fullmatch(r'none\s*(?:!important\s*)?', display[-1].strip(), re.I)
+                if not none or len(display) > 1:
+                    veto.update(tokens)
+                    continue
+                if conditional or depths[match.start()] != 0: continue
+                for selector in selectors.split(','):
+                    selector = selector.strip()
+                    if re.fullmatch(r'[.#][\w-]+', selector): candidates.add(selector)
+        self.hidden = candidates-veto
+        return self
+
+    def matches(self, attrs):
+        # An explicit inline display declaration takes precedence here; complex
+        # stylesheet cascades are deliberately not inferred.
+        if re.search(r'(?:^|;)\s*display\s*:', attrs.get('style', ''), re.I): return False
+        tokens = {'.'+c for c in attrs.get('class', '').split()}
+        if attrs.get('id'): tokens.add('#'+attrs['id'])
+        return bool(tokens & self.hidden)

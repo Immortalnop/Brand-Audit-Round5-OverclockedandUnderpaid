@@ -334,13 +334,13 @@ def test_ag04_is_ingested_as_facts_in_images_and_merges_with_script_finding(tmp_
     artifacts = snapshot([_pricing()], media([image(SITE + "/img/price-list.png", [PRICING])]))
     agent = ingest_agent_findings(artifacts, None, DEADLINE())
     [vision] = agent["findings"]
-    assert vision["check_id"] == "facts-in-images" and vision["status"] == "confirmed"
+    assert vision["check_id"] == "facts-in-images" and vision["status"] == "suspected"
     assert vision["root_cause"] == get_entry("facts-in-images")["mechanism"]
     assert vision["affected_pages"] == [PRICING]
     script = analyze_non_text(artifacts, DEADLINE())
     merged = [f for f in merge_findings([script, agent]) if f["check_id"] == "facts-in-images"]
-    assert len(merged) == 1 and merged[0]["status"] == "confirmed"
-    assert len(merged[0]["evidence"]) == 2
+    assert len(merged) == 1 and merged[0]['status'] == 'suspected'
+    assert sum(len(f["evidence"]) for f in merged) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -459,13 +459,13 @@ def test_product_node_dates_are_commercial():
 
 def test_invalid_structured_dates_are_reported():
     future = (datetime.now(timezone.utc) + timedelta(days=40)).date().isoformat()
-    pages = [_article("March 5, 2020", None, url=SITE + "/a"),
+    pages = [_article("2026-99-99", None, url=SITE + "/a"),
              _article(future, None, url=SITE + "/b"),
              _article(RECENT, f"{NOW_YEAR - 1}-01-01", url=SITE + "/c")]
     result = assess_freshness(NO_FACTS, snapshot(pages), DEADLINE())
     [finding] = [f for f in result["findings"] if f["check_id"] == "structured-date-invalid"]
     text = " ".join(e["description"] for e in finding["evidence"])
-    assert "not an ISO 8601 date" in text and "in the future" in text and "earlier than datePublished" in text
+    assert "impossible calendar date" in text and "in the future" in text and "earlier than datePublished" in text
     assert finding["severity"] == "low" and finding["status"] == "confirmed"
 
 
@@ -482,7 +482,8 @@ def test_all_text_dates_are_assessed_even_when_ranking_drops_them():
     assert assess_freshness(ranked, artifacts, DEADLINE())["status"] == "insufficient_evidence"
     with_claims = assess_freshness(ranked, artifacts, DEADLINE(), claims)
     [finding] = with_claims["findings"]
-    assert finding["check_id"] == "stale-dates:commercial" and finding["severity"] == "high"
+    assert finding["check_id"] == "stale-dates:commercial" and finding["severity"] == "low"
+    assert finding['finding_type'] == 'proactive_improvement'
 
 
 def test_new_check_ids_are_catalogued():

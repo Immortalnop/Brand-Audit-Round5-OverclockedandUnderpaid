@@ -114,9 +114,12 @@ def _alt_issues(page):
             issues.append((record["src"], alt, reason))
         elif isinstance(alt, str) and alt.strip():
             by_alt.setdefault(" ".join(alt.split()).lower(), set()).add(record["src"])
-    # The same alt text on four or more different images describes none of them.
+    # The same short alt text on four or more different images is a template label
+    # ("Acme product", "thumbnail") that describes none of them. A descriptive alt
+    # of four or more words repeated across a product gallery (every view shows the
+    # same item) is not reported.
     for alt, srcs in by_alt.items():
-        if len(srcs) >= 4:
+        if len(srcs) >= 4 and len(alt.split()) < 4:
             for src in sorted(srcs)[:4]:
                 issues.append((src, alt, f"the same alt text on {len(srcs)} different images"))
     described = sum(1 for r in records if isinstance(r.get("alt"), str) and r["alt"].strip())
@@ -128,6 +131,10 @@ def _media_items(page):
     items = []
     for record in (page.features or {}).get("media_records", ()):
         tag, src = record.get("tag"), record.get("src") or ""
+        # A muted autoplay video with no controls is a moving background: there
+        # is nothing to transcribe or describe as a VideoObject.
+        if record.get("decorative"):
+            continue
         if tag == "video":
             items.append(("video", "native video player", record))
         elif tag == "audio":
@@ -208,7 +215,7 @@ def analyze_media_text(artifacts, deadline):
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect", severity=severity,
             status="confirmed", confidence=0.85,
-            title="Image alt text is a file name or placeholder that describes nothing",
+            title="Image alt text is a file name, placeholder or repeated label that describes nothing",
             root_cause="Alt text such as a file name or a word like 'banner' gives crawlers, assistants "
                        "and screen readers no description of the image",
             affected_pages=[p.url for p, _, _ in alt_pages],

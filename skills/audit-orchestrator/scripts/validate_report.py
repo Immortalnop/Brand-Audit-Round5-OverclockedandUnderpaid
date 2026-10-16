@@ -48,8 +48,40 @@ def _validate_finding_like(items: list, warnings: list, label: str) -> list:
         if not _invariant_i1_ok(f):
             warnings.append(f"Dropped {label} {f['id']}: violates Invariant I-1")
             continue
+        # Defense in depth for the severity gate applied in prioritize_findings:
+        # an unearned high or critical severity is lowered, never kept.
+        from models import apply_severity_gate, apply_status_floor
+        apply_status_floor(f)
+        apply_severity_gate(f)
         seen_ids.add(f["id"])
         kept.append(f)
+    return kept
+
+
+def _is_reference(item) -> bool:
+    # Same test as generate_recommendations.is_finding_reference.
+    return isinstance(item, dict) and "finding_id" in item
+
+
+def _validate_references(items: list, finding_ids: set, used_ids: set, warnings: list) -> list:
+    """Keep recommendations that point at a finding in the report. A pointer to
+    a finding that was dropped, or that has no ID of its own, is dropped too."""
+    kept = []
+    for r in items:
+        rid = r.get("id")
+        if not isinstance(rid, str) or not isinstance(r.get("title"), str) \
+                or not isinstance(r.get("finding_id"), str) \
+                or r.get("finding_type") != "proactive_improvement":
+            warnings.append(f"Dropped recommendation {rid or '?'}: invalid finding reference")
+            continue
+        if r["finding_id"] not in finding_ids:
+            warnings.append(f"Dropped recommendation {rid}: finding {r['finding_id']} is not in the report")
+            continue
+        if rid in used_ids:
+            warnings.append(f"Dropped duplicate recommendation id {rid}")
+            continue
+        used_ids.add(rid)
+        kept.append(r)
     return kept
 
 
@@ -57,17 +89,37 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
     if strict_catalog:
         from check_catalog import enrich_finding, get_entry
         for item in list(report.get("findings", [])) + list(report.get("recommendations", [])):
+            if _is_reference(item):
+                # A pointer carries no catalog wording of its own; its finding does.
+                continue
             enrich_finding(item, strict=True)
             for check_id in item.get("check_ids", []):
                 get_entry(check_id)
     warnings = list(report.get("warnings") or [])
 
     kept_findings = _validate_finding_like(report.get("findings", []), warnings, "finding")
-    kept_recommendations = _validate_finding_like(report.get("recommendations", []), warnings, "recommendation")
+    recommendations = list(report.get("recommendations", []))
+    kept_full = _validate_finding_like([r for r in recommendations if not _is_reference(r)], warnings,
+                                       "recommendation")
+    kept_refs = _validate_references([r for r in recommendations if _is_reference(r)],
+                                     {f["id"] for f in kept_findings}, {r["id"] for r in kept_full}, warnings)
+    # Original order: references to findings first, then the baseline items.
+    # Each kept object appears once, even if the input listed it twice.
+    pending = {id(r) for r in kept_full + kept_refs}
+    kept_recommendations = []
+    for r in recommendations:
+        if id(r) in pending:
+            pending.discard(id(r))
+            kept_recommendations.append(r)
 
     for req in ("site", "audited_at", "summary", "coverage", "execution_status", "limitations", "confidence"):
         if req not in report:
             warnings.append(f"Missing required report field: {req}")
+
+    confidence = report.get("confidence")
+    if isinstance(confidence, dict) and not (isinstance(confidence.get("explanation"), str)
+                                             and confidence["explanation"].strip()):
+        warnings.append("Report confidence has no plain-English explanation.")
 
     if not kept_recommendations:
         # A successful audit must always ship a recommendations section: an empty
@@ -76,7 +128,12 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
         warnings.append("No recommendations were generated for this audit -- "
                          "recommendations are a required, first-class section.")
 
-    summary = {
+    summary = {}
+    failure = (report.get("coverage") or {}).get("acquisition_failure")
+    if isinstance(failure, dict) and failure.get("detail"):
+        # The summary leads with why nothing on the pages was assessed.
+        summary["status_reason"] = failure["detail"]
+    summary.update({
         "total_findings": len(kept_findings),
         "critical": sum(1 for f in kept_findings if f["severity"] == "critical"),
         "high": sum(1 for f in kept_findings if f["severity"] == "high"),
@@ -85,7 +142,7 @@ def validate_report(report: dict, strict_catalog=False) -> dict:
         "proactive_improvements": sum(1 for f in kept_findings if f["finding_type"] == "proactive_improvement"),
         "insufficient_evidence_items": sum(1 for f in kept_findings if f["status"] == "insufficient_evidence"),
         "total_recommendations": len(kept_recommendations),
-    }
+    })
     report = dict(report)
     report["findings"] = kept_findings
     report["recommendations"] = kept_recommendations

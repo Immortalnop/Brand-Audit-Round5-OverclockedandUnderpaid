@@ -131,13 +131,15 @@ def _large_result(): return 'x'*2000000
 
 
 def test_process_large_result_does_not_deadlock():
-    r=run_isolated(_large_result,timeout_s=3)
+    # A deadlock never returns, so a generous limit still catches it; 3 s was
+    # shorter than a Windows spawn start under full-suite load.
+    r=run_isolated(_large_result,timeout_s=30)
     assert r.ok and len(r.value)==2000000
 
 
 def test_hung_worker_is_terminated():
     start=time.monotonic();r=run_isolated(_hang_forever,timeout_s=.1)
-    assert r.timed_out and time.monotonic()-start<2
+    assert r.timed_out and time.monotonic()-start<10
 
 
 def test_numeric_match_cannot_join_unrelated_numbers():
@@ -149,7 +151,7 @@ def test_numeric_match_cannot_join_unrelated_numbers():
 def test_marketplace_frontmatter():
     import yaml
     manifest=json.loads((ROOT/'marketplace.json').read_text())
-    assert len(manifest['skills'])==5
+    assert len(manifest['skills'])==6 and manifest['skills'][0]['id']=='audit'
     assert sum(bool(s.get('entrypoint')) for s in manifest['skills'])==1
     for skill in manifest['skills']:
         path=ROOT/skill['path'];front=yaml.safe_load((path/'SKILL.md').read_text().split('---',2)[1])

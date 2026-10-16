@@ -1,0 +1,13 @@
+{
+  "name": "brand-audit-marketplace",
+  "description": "Brand AI-Readiness Audit command and evidence-based repair handoff.",
+  "owner": {"name": "Overclocked & Underpaid"},
+  "plugins": [
+    {
+      "name": "brand-audit",
+      "source": "./",
+      "version": "8.5.2",
+      "description": "Full URL-based Brand AI-Readiness Audit with reports and a verification/repair handoff."
+    }
+  ]
+}

@@ -27,6 +27,7 @@ Patterns (strong / moderate):
        scripts (moderate); scripts from 10 or more third-party hosts (moderate).
 """
 from field_vitals import THRESHOLDS, UNITS
+from check_catalog import calibrated_confidence
 from check_helpers import eligible_pages
 from models import make_finding, skill_result
 from platforms import host_of
@@ -159,7 +160,7 @@ def analyze_web_vitals(artifacts, deadline, field_handle=None):
             continue
         findings.append(make_finding(
             category="engagement", finding_type="proactive_improvement", severity="low",
-            status="suspected", confidence=0.5,
+            status="suspected", confidence=calibrated_confidence("cwv-risk", 0.5),
             title=f"Likely {_NAMES[metric]} ({metric}) risk, estimated from markup and not measured",
             root_cause=_ROOT_CAUSE[metric],
             affected_pages=[p.url for p, _ in hits],

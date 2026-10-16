@@ -1,16 +1,13 @@
-"""assess_freshness.py -- dates, expired offers, stale contact/leadership.
-A missing date is never treated as proof of staleness.
+"""assess_freshness.py -- contextual date-review opportunities and invalid dates.
+Missing or older dates do not establish factual staleness. Expired offers have
+their own explicit validity check in check_offer_expiry.py.
 
 Fact-category calibration: an old date means different things depending on what
 it's attached to (see extract_claims.py). "Historical" facts (founding dates,
 company-history mentions) are *supposed* to be old and are never flagged as stale.
-The rest are flagged with a severity that matches the real-world stakes of that
-category being wrong: an expired price/offer (commercial) actively misleads a
-visitor or an AI assistant quoting it, so it's high severity; a stale phone number
-or address (contact) breaks the ability to reach the business, so it's also high;
-operational facts (hours, "last verified" style claims) are medium; editorial dates
-(blog/article timestamps) and legal boilerplate (copyright years) are low -- both
-are common and expected to lag.
+Other older dates produce low review opportunities. A publication date or page
+timestamp does not demonstrate an expired price, an incorrect contact detail or
+a changed operational fact. Verify the underlying fact before recommending edits.
 
 Two date sources are combined:
   - dates mentioned in visible text (extract_claims). When the full claims
@@ -30,8 +27,7 @@ Two date sources are combined:
 """
 from datetime import datetime, timezone
 import re
-from models import (skill_result, make_finding, insufficient_evidence_result,
-                     coverage_ratio, scale_confidence, step_down_severity)
+from models import skill_result, make_finding, coverage_ratio, scale_confidence
 from extract_claims import structured_date_claims
 from update_signals import page_update_claims
 
@@ -46,10 +42,13 @@ _CATEGORY_CALIBRATION = {
 # Historical facts (founding dates, "since 1998"-style claims) are expected to be
 # old; being old is not evidence of staleness for this category, so it is excluded
 # from staleness detection entirely rather than assigned a low severity.
-_EXCLUDED_FROM_STALENESS = {"historical"}
+# "unclassified" text dates (extract_claims.py) sit on pages whose type says
+# nothing about them and in sentences with no operational cue, so their age alone
+# is no evidence that a current fact is stale either.
+_EXCLUDED_FROM_STALENESS = {"historical", "unclassified"}
 _STALE_AFTER_YEARS = 3
 _ISSUE_TEXT = {
-    "unparseable": "is not an ISO 8601 date",
+    "invalid_calendar": "is an impossible calendar date or time in the supported ISO form",
     "future": "is in the future",
     "modified_before_published": "is earlier than datePublished",
 }
@@ -100,6 +99,7 @@ def _invalid_dates_finding(issues):
         root_cause="Structured datePublished/dateModified values are unparseable, in the future, "
                    "or inverted, so they cannot serve as a reliable freshness signal",
         evidence=evidence,
+        affected_pages=sorted({i['source'] for i in unique}),
         suggested_action={
             "summary": "Correct the invalid datePublished and dateModified values",
             "steps": ["Emit both dates in ISO 8601 form, for example 2026-03-01 or 2026-03-01T09:00:00Z",
@@ -172,6 +172,9 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
         pool += claims.get("data", {}).get("claims", [])
     text_dates = _dedupe([f for f in pool if f.get("type") == "date" and f.get("origin") != "jsonld"])
     structured, issues = structured_date_claims(artifacts.pages)
+    limitations = [i for i in issues if i['issue'] == 'unsupported_format']
+    issues = [i for i in issues if i['issue'] != 'unsupported_format']
+    limitation_warnings = [f"Unsupported date format on {i['source']}: {i['field']}; not assessed as invalid." for i in limitations[:10]]
     structured = _dedupe(structured)
     page_updates, update_metrics, lastmod_quality = page_update_claims(
         artifacts.pages, artifacts.sitemap_data)
@@ -185,10 +188,11 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
     lastmod_finding = _sitemap_lastmod_finding(artifacts.sitemap_data, lastmod_quality)
 
     if not date_facts and not issues and lastmod_finding is None:
-        return insufficient_evidence_result(
+        return skill_result(
             "freshness-corroboration",
-            "No dated facts found; freshness cannot be assessed (absence is not proof of staleness).",
-            metrics=update_metrics,
+            status='insufficient_evidence',
+            metrics=dict(update_metrics, structured_date_limitations=len(limitations)),
+            warnings=['No dated facts found; freshness cannot be assessed (absence is not proof of staleness).'] + limitation_warnings,
         )
 
     current_year = datetime.now(timezone.utc).year
@@ -220,24 +224,26 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
 
     findings = []
     for category, facts_in_category in by_category.items():
-        severity, label = _CATEGORY_CALIBRATION.get(category, ("medium", f"{category} facts"))
+        _, label = _CATEGORY_CALIBRATION.get(category, ("low", f"{category} facts"))
+        severity = 'low'
         sample_ratio = min(crawl_ratio, coverage_ratio(len(facts_in_category), 3))
         findings.append(make_finding(
-            category="freshness", finding_type="defect",
-            severity=step_down_severity(severity, sample_ratio),
+            category="freshness", finding_type="proactive_improvement",
+            severity=severity,
             status="suspected", confidence=scale_confidence(0.6, sample_ratio),
-            title=f"Old dates found among {label} without recent corroborating updates",
-            root_cause=f"Dated content classified as '{category}' appears outdated relative to the current year"
+            title=f"Older dates among {label} need contextual verification",
+            root_cause=f"Older dates classified as '{category}' warrant a contextual review; age alone does not establish that a current fact is wrong"
                        + ("" if crawl_ratio >= 0.999 else " (within the pages actually crawled; the "
                                                            "rest of the site was not analyzed)"),
             evidence=[{"type": "date", "description": _describe(f), "urls": [f["source"]]}
                       for f in facts_in_category[:5]],
+            affected_pages=sorted({f["source"] for f in facts_in_category if f.get("source")}),
             suggested_action={
-                "summary": f"Review and refresh outdated {label}",
-                "steps": [f"Audit pages with old {label}", "Update or remove stale references"],
+                "summary": f"Verify whether older {label} still describe the current situation",
+                "steps": [f"Review the context and current accuracy of older {label}", "Correct a fact only if it has changed; preserve valid publication and historical dates", "Set an update date only after a meaningful content change"],
                 "priority": severity, "effort": "low",
                 "expected_benefit": "Reduces risk of assistants citing stale facts",
-                "verification": "Re-check dates after the update",
+                "verification": "Check the underlying fact against a current authoritative source; a newer date alone does not prove accuracy",
             },
             provenance={"skill": "freshness-corroboration", "script": "assess_freshness.py",
                         "rule_id": f"stale-dates:{category}"},
@@ -249,10 +255,12 @@ def assess_freshness(facts, artifacts, deadline, claims=None):
 
     return skill_result(
         "freshness-corroboration", findings=findings,
+        warnings=limitation_warnings,
         metrics={"date_facts_found": len(date_facts), "stale_facts": len(stale_assessable),
                  "text_date_facts": len(text_dates), "structured_date_facts": len(structured),
                  "page_update_date_facts": len(page_updates), **update_metrics,
                  "structured_date_issues": len(issues),
+                 "structured_date_limitations": len(limitations),
                  "text_dates_superseded_by_structured_update": len(superseded),
                  "stale_facts_excluded_as_historical": excluded_count,
                  "stale_facts_by_category": {k: len(v) for k, v in by_category.items()}},

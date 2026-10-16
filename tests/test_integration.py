@@ -15,7 +15,7 @@ for _rel in (
 from constants import Limits
 from models import make_deadline
 from instrumentation import Instrumentation
-from acquire_site import acquire_site
+from acquire_site import acquire_site, normalize_url
 from analyze_crawlability import analyze_crawlability
 from analyze_rendering import analyze_rendering
 from build_site_graph import build_site_graph
@@ -63,7 +63,14 @@ def test_redirect_is_followed_and_recorded():
         deadline = make_deadline(limits)
         artifacts = acquire_site(base_url + "/", deadline, limits, allow_private_targets=True)
         home = next(p for p in artifacts.pages if p.url == base_url + "/")
-        assert "/redirect" in home.internal_links or True  # link discovered from home
+        # The link is discovered from home as a full, normalized URL.
+        assert normalize_url("/redirect", base_url + "/") in home.internal_links
+        # /redirect answers 301 to /about: the fetch records /about as its final
+        # URL, and the alias map keeps the requested URL.
+        aliases = artifacts.acquisition_metadata["url_aliases"]
+        assert aliases.get(base_url + "/redirect") == base_url + "/about"
+        about = [p for p in artifacts.pages if (p.final_url or p.url) == base_url + "/about"]
+        assert len(about) == 1  # one page, however many URLs reach it
     finally:
         shutdown()
 
@@ -98,7 +105,8 @@ def test_error_page_reflected_in_crawlability_finding():
 def test_slow_endpoint_times_out_and_is_recorded_as_failed_request():
     base_url, shutdown = start_server(slow_delay_s=2.0)
     try:
-        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
+        # /slow is the start URL, which gets the critical timeout; both are short here.
+        limits = replace(Limits(), PER_FETCH_TIMEOUT_MS=200, CRITICAL_FETCH_TIMEOUT_MS=200, MAX_FETCH_RETRIES=0)
         deadline = make_deadline(limits)
         instrumentation = Instrumentation()
         artifacts = acquire_site(base_url + "/slow", deadline, limits, instrumentation, allow_private_targets=True)

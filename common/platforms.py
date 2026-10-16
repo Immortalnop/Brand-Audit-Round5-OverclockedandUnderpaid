@@ -93,21 +93,39 @@ def audio_platform(url):
     return _match(host_of(url), AUDIO_HOSTS)
 
 
-def review_platform(url):
-    """(name, kind) for a review or directory profile link, else None."""
+_PLACE_ID_QUERY = re.compile(r"(?:^|&)(?:cid|ftid|place_?id)=")
+
+
+def google_maps_link(url):
+    """'place' for a Google Maps or Google local link that identifies one place
+    (a place page, a place id, a share short link), 'not_place' for any other
+    Google Maps link (a map viewport or Street View position such as
+    "/maps/@lat,lng", directions, a search), None for a link that is not Google
+    Maps at all."""
     host = host_of(url)
     if not host:
         return None
     if host in _GOOGLE_PROFILE_HOSTS:
-        return ("Google Business Profile", "local")
+        return "place"
     try:
-        path = urlsplit(url.strip()).path.lower()
+        parts = urlsplit(url.strip())
     except ValueError:
         return None
+    path, query = parts.path.lower(), parts.query.lower()
     if host == "goo.gl" and path.startswith("/maps"):
-        return ("Google Business Profile", "local")
-    if _GOOGLE_HOST.search(host) and (host.startswith("maps.") or path.startswith(("/maps", "/local"))):
-        return ("Google Business Profile", "local")
+        return "place"
     if host == "search.google.com" and path.startswith("/local"):
+        return "place"
+    if _GOOGLE_HOST.search(host) and (host.startswith("maps.") or path.startswith(("/maps", "/local"))):
+        return "place" if "/place/" in path or _PLACE_ID_QUERY.search(query) else "not_place"
+    return None
+
+
+def review_platform(url):
+    """(name, kind) for a review or directory profile link, else None."""
+    maps = google_maps_link(url)
+    if maps == "place":
         return ("Google Business Profile", "local")
-    return _match(host, REVIEW_PLATFORMS)
+    if maps == "not_place":
+        return None
+    return _match(host_of(url), REVIEW_PLATFORMS) if host_of(url) else None

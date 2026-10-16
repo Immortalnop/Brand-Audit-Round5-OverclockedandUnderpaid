@@ -16,6 +16,7 @@ from an answer wait or leave. Two tiers:
 
 Cross-origin images (CDNs) are never requested; they get only the markup check.
 """
+from check_catalog import calibrated_confidence
 from check_helpers import eligible_pages
 from models import make_finding, skill_result
 from non_text import image_tokens, is_excluded_image
@@ -108,7 +109,7 @@ def analyze_image_weight(artifacts, deadline):
     if gaps:
         findings.append(make_finding(
             category="engagement", finding_type="proactive_improvement", severity="low",
-            status="suspected", confidence=0.55,
+            status="suspected", confidence=calibrated_confidence("responsive-images", 0.55),
             title="The main image of a page has no responsive variants",
             root_cause="Without srcset or <picture> sources, phones download the same large file as desktops, "
                        "which delays the largest paint on mobile",

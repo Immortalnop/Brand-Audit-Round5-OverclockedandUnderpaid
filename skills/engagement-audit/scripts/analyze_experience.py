@@ -1,12 +1,97 @@
 """Calibrated UX checks over observed HTML, never claims measured bounce or layout."""
 import re
-from collections import Counter
+from urllib.parse import urljoin,urlsplit
 from models import make_finding,skill_result
-from check_helpers import page_share
+from check_helpers import page_share,script_dependent
+from url_identity import page_identity
+from bot_challenge import visible_digest
+
+
+def _page_key(url):
+    """Identity of a page URL: host, path and query (url_identity.page_identity).
+    The query is kept: /product?id=red and /product?id=blue are different pages."""
+    return page_identity(url) or (url or '')
+
+
+def _alternates(page):
+    """Page keys this page names as its own language alternates (hreflang)."""
+    return {_page_key(urljoin(page.final_url or page.url,h.get('href',''))) for h in page.features.get('hreflang') or ()
+            if h.get('href')}
+
+
+# Query parameters that change how one page is presented, ordered, paged or
+# tracked, never which page it is. Two URLs of one path whose queries differ only
+# in these are views of one page, whatever their text, as before Round 5: a
+# ?tab=, ?sort= or ?page=2 view often shows different text under one title.
+_VIEW_PARAM=re.compile(r'^(?:utm_[a-z_]+|gclid|gbraid|wbraid|fbclid|msclkid|yclid|dclid|mc_cid|mc_eid|_ga|_gl'
+                       r'|ref|referrer|source|igshid|si|tab|view|mode|display|layout|sort|sort_by|sortby|order'
+                       r'|orderby|order_by|dir|direction|page|p|pg|paged|offset|start|limit|per_page|perpage'
+                       r'|show|filter|filters|facet|amp|print|format|hl|lang|locale|q|query|s|search|keyword'
+                       r'|keywords)$',re.I)
+
+
+def _item_query(query):
+    """The query parameters that may name a different page: every pair whose
+    name is not a view, sort, paging or tracking parameter, as a sorted tuple."""
+    from urllib.parse import parse_qsl
+    try:pairs=parse_qsl(query or '',keep_blank_values=True)
+    except ValueError:return (query or '',)
+    return tuple(sorted((k,v) for k,v in pairs if not _VIEW_PARAM.match(k)))
+
+
+def _same_view(key,other):
+    """True when two page identities are one path whose queries differ only in
+    view, sort, paging or tracking parameters."""
+    return (isinstance(key,tuple) and isinstance(other,tuple) and key[:2]==other[:2]
+            and _item_query(key[2])==_item_query(other[2]))
+
+
+def _canonical_key(page):
+    """Identity of the URL a page declares canonical, or None."""
+    if not page.canonical_url:return None
+    return _page_key(page.canonical_url)
+
+
+def shared_title_pages(pages,suppressed=None):
+    """Pages whose title another, different page also uses. Two URLs are one page
+    here when: they reach the same final URL after redirects; they share a path
+    and their queries differ only in view, sort, paging or tracking parameters
+    (?tab=, ?sort=, ?page=2, utm_*), whatever their text; they share a path and
+    the same visible content; they are language alternates that name each other
+    through hreflang; or both declare the same canonical URL. A query that names
+    a different item (/product?id=red and ?id=blue) with different content is a
+    different page: two product pages sharing a generic title are still
+    reported. When suppressed is a list, each suppression is recorded in it as
+    {title, urls, reason}."""
+    groups={}
+    for p in pages:
+        if p.title:groups.setdefault(p.title,[]).append(p)
+    out=[]
+    for title,group in groups.items():
+        distinct=[]
+        for p in group:
+            key,alts,canon=_page_key(p.final_url or p.url),_alternates(p),_canonical_key(p)
+            digest=visible_digest(p.visible_text)
+            match=None
+            for k,a,c,d,urls in distinct:
+                if key==k:match=('same_final_url',urls)
+                elif _same_view(key,k):match=('query_view_variant',urls)
+                elif isinstance(key,tuple) and isinstance(k,tuple) and key[:2]==k[:2] and digest==d:
+                    match=('same_path_same_content',urls)
+                elif key in a or k in alts:match=('hreflang_alternates',urls)
+                elif canon is not None and canon==c:match=('same_canonical',urls)
+                if match:break
+            if match:
+                match[1].append(p.url)
+                if suppressed is not None and match[0]!='same_final_url' and len(suppressed)<20:
+                    suppressed.append({'title':title[:120],'urls':list(match[1])[:5],'reason':match[0]})
+            else:distinct.append((key,alts,canon,digest,[p.url]))
+        if len(distinct)>1:out.extend(group)
+    return out
 
 def analyze_experience(artifacts,deadline):
     pages=[p for p in artifacts.pages if p.status_code==200 and 'html_parse_incomplete' not in p.warnings and p.features and 'response_truncated_at_byte_budget' not in p.warnings and 'non_html_content' not in p.warnings]
-    out=[]
+    out=[];warnings=[]
     def add(rule,title,pages,detail,steps,severity='low',defect=False,confidence=.7):
         if not pages:return
         out.append(make_finding(category='engagement',finding_type='defect' if defect else 'proactive_improvement',severity=severity,status='confirmed' if defect else 'suspected',confidence=confidence,
@@ -18,16 +103,24 @@ def analyze_experience(artifacts,deadline):
     add('h1','Pages have no primary H1 heading',[p for p in pages if not p.features['h1_count'] and len(p.visible_text)>100], 'No H1 was found on these sampled pages.', ['Add a descriptive primary heading where a clear page title is missing'])
     add('scannability','Long pages lack subsection headings',[p for p in pages if len(p.visible_text.split())>800 and not p.features['subheadings']], 'Pages exceed 800 words without observed subsection headings.', ['Divide long content into meaningful sections with descriptive headings'])
     add('long-paragraphs','Dense paragraphs may obscure key answers',[p for p in pages if sum(p.features['paragraph_lengths'])>2000 and sum(n>600 for n in p.features['paragraph_lengths'])>len(p.features['paragraph_lengths'])*.4], 'More than 40% of paragraphs exceed 600 characters on substantial pages.', ['Review dense passages and split by topic','Use lists or tables where appropriate'])
-    counts=Counter(p.title for p in pages if p.title)
-    add('duplicate-titles','Different sampled URLs share page titles',[p for p in pages if p.title and counts[p.title]>1], 'Multiple sampled URLs share the same title; verify canonical duplicates before editing.', ['Give distinct content pages descriptive, distinct titles','Preserve intentional canonical variants'])
+    title_suppressed=[]
+    add('duplicate-titles','Different sampled URLs share page titles',shared_title_pages(pages,title_suppressed), 'Multiple sampled URLs share the same title; verify canonical duplicates before editing.', ['Give distinct content pages descriptive, distinct titles','Preserve intentional canonical variants'])
     add('missing-alt','Images lack alt attributes',[p for p in pages if p.features['missing_alt']>=3], 'At least three images per affected page lack alt attributes; empty decorative alt attributes were not counted.', ['Describe informative images and keep decorative alt text empty','Repeat essential image-only facts in nearby text'])
     # Overlays and cookie banners are judged by analyze_overlays.py.
     add('hash-routing','Navigation uses client-only route fragments',[p for p in pages if sum(h.startswith(('#/','#!')) for h,t in p.features['anchors'])>=2], 'Route fragments are not sent in HTTP requests. Browser deep links may still work; raw-HTML retrieval may lose destination-specific content.', ['Verify direct arrival and raw HTML for each destination','Prefer server-resolvable paths where route-specific content needs indexing'])
-    # email_capture means any type="email" input, so contact and login forms count too; the title must not claim a signup.
-    signup=[p for p in pages if p.features['email_capture'] and p.features['forms']]
-    add('email-summary','Email form on '+page_share(signup,pages)+'; outbound email text was not checked',signup, 'An email form was observed; outbound email contents were not inspected.', ['Provide readable text and multipart fallbacks in outbound emails','Place the key message before decorative content'])
+    # Only an email subscription form (email field, signup wording, no password;
+    # html_features.is_signup_form) means the site sends email worth summarizing.
+    # Contact, search and login forms also hold email fields and do not count.
+    # The emails themselves are out of reach of a site audit, so this is a stated
+    # limit of the audit, not a finding: nothing wrong was observed.
+    signup=[p for p in pages if p.features.get('signup_forms',0)]
+    if signup:
+        warnings.append('An email signup form appears on '+page_share(signup,pages)+'. A site audit cannot see the emails '
+                        'the site sends, so whether inbox assistants can summarize them was not checked.')
     commercial=[p for p in pages if p.page_type in ('product','category')]
-    stuck=[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links]
+    # A page built by JavaScript adds its buttons and links after load.
+    stuck=[p for p in commercial if not p.features['buttons'] and not p.features['forms'] and not p.internal_links
+           and not script_dependent(p)]
     add('next-step','No button, form or internal link on '+page_share(stuck,commercial,'commercial page'),stuck, 'No form, button or internal next-step link was observed on these commercial pages.', ['Add a relevant purchase, inquiry or comparison route if missing'])
     # 2.3 Generic anchor text (ported from donor EN-15, re-plumbed onto the immutable
     # snapshot). Descriptive anchors tell both visitors and machines what a target
@@ -50,9 +143,12 @@ def analyze_experience(artifacts,deadline):
     # orientation heuristic already in analyze_engagement but scoped to substantial
     # inner pages: substantial body text with no descriptive H1 gives an arriving
     # visitor no immediate sense of what the page is about.
-    orient=[p for p in pages if p.page_type not in ('home',) and len(p.visible_text.split())>300 and (not p.features['h1_count'] or not any(4<=len(h.split())<=14 for h in p.headings[:2]))]
-    add('page-orientation','Content pages lack a clear orientation heading above the fold',orient,
-        'Substantial pages were sampled with no descriptive short primary heading in their first headings, so an arriving visitor has no immediate orientation.',
+    # A short H1 such as "About us" or "Ian Berry obituary" orients a visitor as well
+    # as a long one; only a missing H1, or first headings that are all empty or
+    # longer than 14 words, leave the page without one.
+    orient=[p for p in pages if p.page_type not in ('home',) and len(p.features.get('body_text',p.visible_text).split())>300 and not any(1<=len(h.split())<=14 for h in (p.features.get('main_headings',()) if p.features.get('main_region_observed') else p.headings)[:2])]
+    add('page-orientation','Content pages lack a short opening orientation heading in the sampled HTML',orient,
+        'Substantial pages were sampled without a short heading in their first content headings. Visual position and visitor behavior were not measured.',
         ['Lead each content page with a descriptive H1 that names the topic','Follow with scannable H2 sections so the page structure is clear at a glance'])
     # 2.3 Internal discoverability gap: substantial pages that expose few or no
     # internal links leave a visitor (and a crawler) no path onward from that page.
@@ -67,9 +163,12 @@ def analyze_experience(artifacts,deadline):
     # the surrounding page carries the substance only in images (no matching visible
     # text), a summarizer has little to work with. Conservative: fires only when an
     # email flow is present AND the page is image-heavy relative to its visible text.
-    esf=[p for p in pages if p.features['email_capture'] and p.features['images']>=3 and len(p.visible_text.split())<120]
+    # Substance is "in images" only when at least three images carry no alt text:
+    # described images (a product gallery with alt text) put their facts in text too.
+    esf=[p for p in pages if p.features.get('signup_forms',0) and p.features['missing_alt']>=3 and len(p.visible_text.split())<120]
     add('email-summary-readable','Email-capture pages carry substance in images, not readable text',esf,
         'An email-capture flow was observed on pages whose visible text is sparse relative to their images; AI inbox summaries are built from readable text, so image-carried substance can be dropped.',
         ['Provide the key message as real text near the top, not only inside images','In outbound emails put the important lines first and keep decorative content secondary'])
     # Absence of FAQ/search/video/interactive widgets is deliberately NOT a generic defect.
-    return skill_result('engagement-audit',findings=out,metrics={'experience_pages_analyzed':len(pages)})
+    return skill_result('engagement-audit',findings=out,warnings=warnings,metrics={'experience_pages_analyzed':len(pages),
+                        'duplicate_titles_suppressed':title_suppressed})

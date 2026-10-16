@@ -57,6 +57,28 @@ previews. Performance covers observed document bytes, synchronous head scripts,
 image dimension hints and retrieval timing, never fabricated Core Web Vitals.
 Use common/check_catalog.py for rule mechanisms and implementation guidance.
 
+## Sitemaps and AI crawlers by section
+
+Sitemaps are parsed incrementally: one larger than the 512 KB read budget, or a
+gzipped one, still yields every complete `<url>` entry and is listed in
+`sitemap_data.partial`, never reported as malformed. `sitemap-unavailable`
+names the sitemap URLs it checked. `ai-crawler-section-blocked` reports AI
+crawlers that robots.txt disallows on some site sections while leaving them open
+to crawlers in general (one sample URL per section, judged from robots.txt with
+no request): medium for search crawlers, low for training or user-fetch ones.
+
+The crawlers checked are listed in `common/ai_crawlers.py`, each labelled with
+the purpose its operator documents: search (OAI-SearchBot, Claude-SearchBot,
+PerplexityBot, Googlebot, Applebot), user-requested fetch (ChatGPT-User,
+Claude-User, Perplexity-User, Meta-ExternalFetcher, MistralAI-User) or training
+(GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Amazonbot,
+Meta-ExternalAgent, CCBot, Bytespider). A crawler whose stated use mixes answers
+with training is labelled training, the lower severity. Blocking a search
+crawler for the whole site is a high defect; blocking any other is a low
+improvement. Their rules are matched by exact product token (RFC 9309), so a
+`User-agent: Applebot` group never governs Applebot-Extended. Findings and
+`coverage.ai_crawler_purposes` carry the labels.
+
 ## Non-text media
 
 `analyze_non_text.py` reads the image and PDF observations that acquisition
@@ -75,6 +97,7 @@ decorative image is correct and never counted), `media-transcript-missing`
 track on native players; captions inside embedded players cannot be seen and are
 reported as not checked) and `media-schema-missing` (no VideoObject or
 AudioObject markup, or VideoObject without name, thumbnailUrl or uploadDate).
+A muted autoplay video with no controls is a background and is not judged.
 
 ## Citation-oriented markup
 
@@ -82,17 +105,23 @@ AudioObject markup, or VideoObject without name, thumbnailUrl or uploadDate).
 HowTo, Review or AggregateRating markup is incomplete or contradicts the page
 (questions without answers or not shown on the page, HowTo without steps,
 ratings without a value or count, outside their scale or attached to nothing),
-and `citation-schema-opportunity` when a page shows question headings, numbered
-"how to" steps or rating text without matching markup.
+and optional `citation-schema-opportunity` for structured export of existing
+steps or ratings. Q&A without FAQPage markup creates no missing-markup finding.
+Google FAQ rich results ended on 7 May 2026; useful Q&A and FAQPage remain valid
+content, without that retired display feature.
 
 ## llms.txt
 
 Acquisition parses llms.txt (`common/llms_txt.py`), checks the pages it lists
 (crawled pages reuse the crawl result; at most 8 others get a same-origin,
 robots-checked GET) and probes `/llms-full.txt`. `check_llms_txt.py` reports
-`llms-txt-invalid` (no H1 title, no links, bare URLs, no sections, or an HTML
+`llms-txt-invalid` (no H1 title, duplicate H1 titles, or an HTML
 page served as llms-full.txt) and `llms-txt-broken-links` (listed pages that
-answer 404 or 410). Links on other domains are listed, never requested.
+answer 404 or 410). These defects concern the supplied artifact for its configured
+readers. Absence is observation only. Google Search ignores llms.txt, including
+its generative Search features; presence is no proof of ranking or citation gain.
+Links on other domains are listed, never requested. See
+[policy scope](references/search-policy.md).
 
 ## Core Web Vitals
 
@@ -119,6 +148,19 @@ full registry, so a rare valid code is never reported.
 `analyze_rendering.py` excludes `<noscript>` text from the raw-text count. Real
 fallback text of substantial size still prevents a render-gap; a `<noscript>`
 that only says JavaScript is required is cited as evidence and raises confidence.
+A short page that loads no script and has no such `<noscript>` is never a
+render-gap: nothing can add content to it after load, so its raw HTML is judged
+like any other page.
+
+Without a headless browser, a thin page that runs scripts is a suspected
+render-gap only with a sign of client-side rendering in its raw HTML: an empty
+app mount point, a framework bundle or attribute, page state serialized for a
+script (`__NEXT_DATA__`, `window.__INITIAL_STATE__`), or a JavaScript-required
+`<noscript>`. One sign makes it medium, two or more independent signs make it
+high. A framework bundle and its serialized state count as one sign: a
+server-rendered Next.js or Nuxt page ships both. A thin page with
+no sign, or a page whose text is mostly real links (a splash or chooser page), is
+reported only as `render-gap-unconfirmed` (insufficient evidence).
 
 ## Text drawn in graphics
 
@@ -139,3 +181,5 @@ reports files of 300 KB or more (medium at 1 MB, or 500 KB for the likely LCP
 image), images twice their displayed width with no srcset, and 100 KB or larger
 files still served as JPEG, PNG or GIF. `responsive-images` (suspected) reports a
 page whose first content image has no srcset or `<picture>` source.
+
+Limited value interpretation: see [schema value scope](references/schema-value-scope.md).

@@ -1,6 +1,7 @@
 # Crawl & render checklist
 
-- robots.txt: general and AI-crawler-specific directives. Fetch status is one
+- robots.txt: general and AI-crawler-specific directives for the labelled
+  crawlers in common/ai_crawlers.py (search, user-requested fetch, training). Fetch status is one
   of `ok` / `absent` (404, allow-all) / `timeout` / `inaccessible` / `malformed`
   / `blocked` (failed the SSRF check). Only `ok` and `absent` produce a
   confirmed allow/disallow verdict; every other status is `insufficient_evidence`,
@@ -8,10 +9,9 @@
 - sitemap.xml: actually fetched and parsed (present/absent/inaccessible/malformed
   are distinguished; URLs are capped and available in `sitemap_data`).
 - llms.txt: actually fetched (present/absent/inaccessible/blocked are
-  distinguished; absence is `proactive_improvement` only, never a defect).
-  - `llms-txt-invalid` (low): no H1 title, more than one H1, no links, pages
-    listed as bare URLs, links not grouped under H2 sections, or
-    `/llms-full.txt` answering with an HTML page.
+  distinguished; absence is observation only).
+  - `llms-txt-invalid` (medium): no H1 title, more than one H1, or an explicitly
+    linked `/llms-full.txt` answering with an HTML page. Lists and sections are optional.
   - `llms-txt-broken-links` (medium, confirmed): listed same-origin pages that
     answer 404 or 410. Crawled pages reuse their crawl result; at most 8 others
     get a robots-checked GET. Links on other domains, robots-disallowed links and
@@ -51,7 +51,8 @@
     video or podcast embed, on a page whose text and links offer no transcript,
     unless every player has captions (a captions or subtitles track, or
     `cc_load_policy=1` on a YouTube embed). Captions inside embedded players are
-    reported as not checked.
+    reported as not checked. A muted autoplay video with no controls is a moving
+    background and is judged by neither media check.
   - `media-schema-missing` (low): video without VideoObject (JSON-LD or
     microdata), VideoObject without name, thumbnailUrl or uploadDate, or spoken
     audio without AudioObject or PodcastEpisode.
@@ -62,8 +63,7 @@
     rating or an author, ratings outside their bestRating/worstRating scale,
     AggregateRating without a count or with zero ratings, and a top-level
     Review or AggregateRating attached to no item.
-  - `citation-schema-opportunity` (low, suspected): three or more question
-    headings without FAQPage, a "How to" page with numbered steps without
+  - `citation-schema-opportunity` (low, suspected): optional structured-content export for a "How to" page with numbered steps without
     HowTo, or rating text on a product, service or software page without
     AggregateRating.
 - Core Web Vitals (`analyze_web_vitals.py`):
@@ -94,8 +94,9 @@
   - `question-answer-indirect` (low, suspected, English pages only): a
     question-shaped H2 or H3 followed by no text, a first sentence over 40
     words, or a filler opener such as "Great question". Call-to-action
-    headings ("Need more information?") and questions answered by their own
-    subheadings are skipped.
+    headings ("Need more information?"), questions answered by their own
+    subheadings and teasers (a heading whose text a link to another page
+    repeats as its text or aria-label, as on a news front) are skipped.
   - `table-headers-missing` (low, confirmed): a data table of two or more rows
     and columns, not `role="presentation"`, with no `<th>` cells.
   - `comparison-table-missing` (low, suspected): a title or main heading with
@@ -116,8 +117,9 @@
     as plain text within one block: after a label ("Address:", "Visit us at"),
     as a street line ("12 High Street, Springfield"), or as three or more
     comma-separated parts ending in a postal code. Email, IP and web addresses
-    and lists of names followed by a number do not count. Two kinds of
-    evidence make a medium defect; one kind is a low suggestion.
+    and lists of names followed by a number do not count. Missing optional
+    location markup remains low advice; additional evidence confirms applicability,
+    not a universal markup requirement.
   - `contact-markup-missing` (low, suspected): an email or phone number is
     shown (mailto: or tel: links, an email written as text, a phone number
     after a label such as "Phone:" or "Call us on") and no page states an
@@ -136,3 +138,5 @@
     link names an audience ("for students", /industries/, /use-cases/). Pages
     built by JavaScript are not counted toward the three pages it needs, and
     the report warns how many were skipped.
+
+Missing FAQPage/llms.txt is no universal requirement. See [Search policy](search-policy.md).

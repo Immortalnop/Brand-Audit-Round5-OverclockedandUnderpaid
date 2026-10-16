@@ -146,7 +146,8 @@ def _default_transport(origin, deadline_monotonic, limits):
                       MAX_RESPONSE_BYTES=_ENTITY_MAX_BYTES,
                       PER_FETCH_TIMEOUT_MS=max(limits.PER_FETCH_TIMEOUT_MS, _FETCH_TIMEOUT_MS))
     # Never allow private targets here: these are public third-party hosts.
-    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False)
+    return Transport(origin, deadline_monotonic, bounded, Instrumentation(), allow_private=False,
+                     pool="external", stage="knowledge_graph")
 
 
 def _fetch_article_item(lookup, lang, title):
@@ -243,7 +244,7 @@ def _link_missing_finding(org_pages, same_as, malformed, severity, ambiguity_typ
         title="Organization markup does not link the brand to a knowledge-graph entity",
         root_cause="No Wikidata or Wikipedia link is declared, so nothing ties the brand to one "
                    "knowledge-graph entity",
-        evidence=evidence, affected_pages=org_pages[:10],
+        evidence=evidence, affected_pages=org_pages,
         suggested_action=_action(
             "Link the brand to its Wikidata item in Organization sameAs",
             ["Find the brand's Wikidata item, or create one if the organization meets Wikidata's "
@@ -267,7 +268,7 @@ def _one_way_finding(org_pages, entity, link):
                    "description": f"Wikidata {entity['id']} ({entity['label'] or 'no label'}), declared "
                                   f"by sameAs {link}, has no official website (P856)",
                    "urls": org_pages[:10]}],
-        affected_pages=org_pages[:10],
+        affected_pages=org_pages,
         suggested_action=_action(
             "Add this site as the official website (P856) of the brand's Wikidata item",
             ["Edit the Wikidata item and add the site URL under official website (P856)",
@@ -286,7 +287,7 @@ def _mismatch_finding(org_pages, problems, confirmed):
         root_cause="Organization sameAs points at a knowledge-graph entry that is missing or describes "
                    "a different organization",
         evidence=[{"type": "knowledge_graph", "description": p, "urls": org_pages[:10]} for p in problems],
-        affected_pages=org_pages[:10],
+        affected_pages=org_pages,
         suggested_action=_action(
             "Point Organization sameAs at the brand's own knowledge-graph entity",
             ["Check that each Wikidata and Wikipedia link in sameAs is the brand's own entry",

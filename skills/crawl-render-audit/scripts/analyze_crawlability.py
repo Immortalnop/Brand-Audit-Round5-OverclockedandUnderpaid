@@ -51,8 +51,8 @@ def analyze_crawlability(artifacts, deadline):
             category="ai_discoverability", finding_type="proactive_improvement", severity="low",
             status="insufficient_evidence", confidence=0.3,
             title="robots.txt could not be retrieved or parsed",
-            root_cause=f"robots.txt fetch/parse status was '{robots_status}'; the crawl proceeded "
-                       "conservatively (single page only) rather than assuming unrestricted access",
+            root_cause=f"robots.txt fetch/parse status was '{robots_status}'; no page was "
+                       "fetched, since crawl permission was unknown, rather than assuming unrestricted access",
             evidence=[{"type": "robots", "description": f"robots.txt status: {robots_status}",
                        "urls": [artifacts.site_url]}],
             suggested_action={
@@ -72,7 +72,7 @@ def analyze_crawlability(artifacts, deadline):
         findings.append(make_finding(
             category="ai_discoverability", finding_type="defect",
             severity=step_down_severity("medium", crawl_ratio),
-            status="confirmed", confidence=scale_confidence(0.85, crawl_ratio),
+            status="confirmed", confidence=0.9,
             title="Broken pages found during crawl",
             root_cause="Pages return 4xx/5xx status codes"
                        + ("" if crawl_ratio >= 0.999 else
@@ -81,6 +81,7 @@ def analyze_crawlability(artifacts, deadline):
                           "crawled -- the rest of the site was not checked)"),
             evidence=[{"type": "http_status", "description": f"{len(error_pages)} pages returned errors",
                        "urls": [p.url for p in error_pages][:10]}],
+            affected_pages=[p.url for p in error_pages],
             suggested_action={
                 "summary": "Fix or redirect broken URLs",
                 "steps": ["Audit error pages", "Add 301 redirects or restore content"],

@@ -28,6 +28,9 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 
 ## Inputs
 - `site_url`: a URL or bare domain.
+- Saved report, packet and handoff inputs use the limits and numeric policy in
+  [references/input-boundaries.md](references/input-boundaries.md). Invalid typed
+  inputs are rejected atomically before merge; source content remains data.
 
 ## Procedure
 1. Call `scripts/run_audit.py: run_audit(site_url)`.
@@ -38,9 +41,31 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
    (freshness, corroboration, footprint, knowledge graph, off-site profiles,
    Core Web Vitals, engagement). The optional Core Web Vitals field-data request
    starts before acquisition so its latency overlaps the crawl.
-3. Findings are merged (`merge_findings.py`), prioritized
-   (`prioritize_findings.py`), and validated (`validate_report.py`).
-4. Return the resulting report to the user as-is.
+3. Findings are merged (`merge_findings.py`; checks that report one problem with
+   one fix, such as missing alt attributes and images with no text alternative,
+   become one finding), prioritized (`prioritize_findings.py`), and validated
+   (`validate_report.py`). Both of the last two apply the severity gate: a high or
+   critical finding must be confirmed or backed by two independent kinds of
+   evidence, else it is lowered and says why. See `references/severity-rubric.md`.
+4. Agent stage (AG-01 to AG-06). Run the audit with the evidence packet
+   (`python3 scripts/run_audit.py <site> --out report.json --evidence-out packet.json`).
+   The report is complete at this point; the agent stage is optional. Then
+   follow `skills/entity-corroboration-agent/SKILL.md`: read the packet (never
+   the audit's process, and never a new crawl of the site), run each check your
+   tools allow, and write one outcome per check to an outcome envelope. Merge
+   it, with no request:
+   `python3 scripts/run_audit.py --from-report report.json --agent-findings envelope.json --evidence packet.json --out final.json`.
+   The envelope is checked against the report and the packet (audit ID,
+   snapshot and final packet digests (schema 1.1), final references, focused source,
+   per-check semantics, supported affected scope and severity ceilings) and
+   rejected as a whole, with reasons, if anything fails; report.json is left
+   unchanged either way and stays the merge base. AG-01 needs only the packet;
+   AG-02, AG-03, AG-05 and AG-06 need a search tool; AG-04 needs image viewing.
+   A missing capability leaves only its own checks `not_assessed`, and their
+   limitations stay in the report. A legacy findings array is still accepted
+   (`legacy_partial`) but assesses no check. Skip this step when you have no
+   such tools: the report then records the stage as `not_supplied`.
+5. Return the resulting report to the user as-is.
 
 ## Safety guarantees (enforced by `acquire_site.py`, not just documented)
 - **SSRF protection**: every URL fetched -- the initial target, robots.txt,
@@ -49,6 +74,16 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
   metadata hosts/IPs, and (by default) loopback/private/link-local/reserved
   addresses are all rejected before any request is issued. Blocked URLs are
   recorded as safety skips, never as findings.
+- **One re-anchor, never a cross-origin crawl**: redirects to another origin are
+  not followed during the crawl. Only when the start URL or its robots.txt
+  redirects to another origin and no page could be analyzed does the audit move,
+  once, to that origin: the target must resolve and pass the SSRF check, its own
+  robots.txt is read first, and the report names both URLs
+  (`coverage.start_redirect`, `coverage.audited_url`).
+- **Bot challenges are never bypassed**: a bot-protection interstitial is
+  recorded (`coverage.challenged_pages`), never analyzed as content and never
+  retried; the User-Agent never changes. Two challenges in a row, or three in
+  all, end the crawl (`common/bot_challenge.py`).
 - **Robots.txt never fails open**: absence (a confirmed 404) is the only state
   that means "allowed". Timeout, other HTTP errors, or an undecodable body make
   the crawl conservative (no pages fetched until permission is known) and
@@ -90,13 +125,28 @@ problems, or to run the brand-ai-readiness-audit marketplace end to end.
 ## Output
 A JSON report matching `references/report-schema.md`: `site`, `audited_at`,
 `summary`, `coverage`, `findings`, `recommendations`, `execution_status`
-(completed / completed_with_timeouts / degraded / partial_deadline_reached),
+(completed / completed_with_timeouts / degraded / partial_deadline_reached /
+insufficient_evidence when no page could be analyzed: then
+`coverage.acquisition_failure` names the reason, `summary.status_reason`,
+the first limitation and the confidence explanation lead with it, and only
+robots.txt, llms.txt, sitemap and TLS findings are kept),
 `limitations` (plain-English, each tied to a real signal from the run -- never
 unconditional boilerplate), and `confidence` (the minimum of sample
-representativeness, identity confidence, and an execution penalty, with its
-method shown). Sitemap URLs are crawled round-robin across site sections, so a
-bounded crawl samples every section first; `--max-pages N` (at most 100)
+representativeness, counted from analyzed pages, and an execution penalty, with
+its method shown, plus a `level`, the `limiting_factor` and a plain-English
+`explanation`; brand identity confidence is reported beside the score, not in
+it). Each finding's `confidence` is the probability that the stated problem is
+real (a `confirmed` finding needs at least 0.7) and its `coverage` states how
+many of the analyzed pages it was seen on. Login pages (a visible password input, at most 1,500
+characters of visible text, no entity structured data, plus an auth path, a
+login title or a login form outside the page chrome) are fetched but not analyzed;
+`coverage.out_of_scope_pages` lists them with their signals. Sitemap URLs (chosen from the first 2,000 entries) are crawled round-robin across site sections, so a
+bounded crawl samples every section first, including sections a large sitemap lists late; `--max-pages N` (at most 100)
 crawls deeper with proportionally larger request and byte budgets. Recommend-only -- no skill ever modifies a live site.
+
+`common/report_markdown.py` turns a saved JSON report into a Markdown report
+for a non-expert (`python common/report_markdown.py report.json` writes
+`report.md`). It reads only the JSON, makes no requests and escapes all site text.
 
 After validation the entrypoint adds two aids a non-expert can act on
 (`common/fix_snippets.py`, `prioritize_findings.annotate_action_plan`):
@@ -104,6 +154,14 @@ ready-to-paste fix snippets (JSON-LD, llms.txt, canonical and Open Graph tags,
 location and contact markup) built only from observed facts, with every unknown value left
 as a listed REPLACE_WITH_ placeholder; and an impact x effort placement on every
 action, surfaced as `top_actions` (with one `start_here`) and `quick_wins`.
+
+`recommendations` link to proactive findings by `finding_id` instead of
+copying them; only baseline maintenance items carry their own action.
+`whats_working` (`scripts/whats_working.py`) lists the checks that ran and
+passed, each with the observation that shows it. A check is listed only when
+its skill finished, no finding or recommendation carries its check IDs, and the
+observation holds on the snapshot, so it never hides a skipped check or
+contradicts a finding.
 
 Headless rendering runs in an isolated child process
 (`common/subprocess_isolation.py`) with a hard wall-clock kill, not just
@@ -114,7 +172,30 @@ process cannot block the orchestrator past its deadline.
 
 ```
 $ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com
+$ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json
+$ python3 skills/audit-orchestrator/scripts/run_audit.py https://example.com --out report.json --evidence-out packet.json
+$ python3 skills/audit-orchestrator/scripts/run_audit.py --from-report report.json --agent-findings envelope.json --evidence packet.json --out final.json
 ```
+
+`--out PATH` writes the same JSON as UTF-8 (use it in Windows PowerShell, whose
+`>` writes UTF-16). `--evidence-out PATH` also writes the bounded agent evidence
+packet; it is written only when at least one page was analyzed. The report,
+packet, agent input and final report must be four different files.
+
+Time plan: ordinary CLI audits retain a 270-second worker ceiling and the
+50-page default. For a host workflow, capture an ISO 8601 UTC clock before reading
+skills and pass `--workflow-started-at`. The worker is then stopped at the lesser
+of its normal ceiling and the remaining 270-second target after a 45-second reserve
+for saving, merge, rendering and reply. The agent receives at most 210 seconds
+from the remaining allowance; a slow site can still leave no agent time. No new
+allowance starts after core completion. Small batches of independent host reads
+may overlap, but outcome writes and the single merge stay sequential. The report's `timing` and the
+packet's `timing` give the agent deadline as a UTC time. This code cannot stop the host agent: stop the agent
+stage by that deadline, and skip it when `agent_stage_recommended` is false.
+The merge records time through merge, including host preparation when supplied; rendering and the final reply are additional. An operator stopwatch verifies prompt-to-reply duration. Network: every request of the
+audit is charged to one ledger with a site pool (90 requests, 40 MiB by
+default) and an external pool (40 requests, 16 MiB), reported in
+`coverage.network_budget`; the agent's own tool calls are not in it.
 
 Illustrative excerpt (not a complete report):
 
@@ -131,6 +212,7 @@ Illustrative excerpt (not a complete report):
     {"id": "R-001", "category": "engagement", "finding_type": "proactive_improvement"}
   ],
   "execution_status": "completed",
-  "confidence": {"score": 0.82, "method": "weakest_link"}
+  "confidence": {"score": 0.82, "level": "high", "limiting_factor": "sample_representativeness",
+                 "explanation": "Confidence is high (0.82). ..."}
 }
 ```

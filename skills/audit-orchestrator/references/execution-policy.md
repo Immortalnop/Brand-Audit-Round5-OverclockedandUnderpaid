@@ -5,7 +5,11 @@ facts -> dependent batch (9 jobs) -> merge -> prioritize -> recommendations ->
 validate -> JSON. Snapshot data stays immutable until report serialization.
 
 The public API runs the complete audit in an isolated process with a 270-second
-watchdog and brief kill grace. Analysis batches use bounded waits and record
+watchdog and brief kill grace. When a pre-contract host clock is supplied via
+`--workflow-started-at`, the watchdog is narrowed to remaining workflow time
+after the 45-second finalization reserve. The default page cap remains 50.
+The host AG cap is 210 seconds from the remaining allowance, without a reset.
+Analysis batches use bounded waits and record
 unfinished jobs. Acquisition has a 110-second phase deadline. Watchdog failure
 returns an explicit evidence-unavailable report rather than inventing findings.
 
@@ -13,7 +17,12 @@ All acquisition probes, redirects and pages share 90 requests and 40 MiB of body
 bytes; expanded gzip is bounded. Each hop checks URL safety and robots permissions.
 DNS results are validated and the connection uses that address with original-host
 TLS verification. Robots 404 permits crawling; unreadable/error robots fail closed.
-Cross-origin redirects are blocked. Production pacing respects robots crawl-delay.
+Cross-origin redirects are blocked during the crawl. If the start URL or robots.txt redirects to
+another origin and no page was analyzed, acquisition re-anchors once on that origin after an SSRF
+check and a read of its own robots.txt. Production pacing respects robots crawl-delay.
+A bot-protection challenge is recorded and never analyzed, retried or bypassed; two in a row, or
+three in all, end the crawl and skip the optional image, PDF, HTTPS and llms.txt-link requests.
+With no page analyzed the run reports `insufficient_evidence` and the reason.
 
 Optional rendering is opt-in and uses additional local phase caps of 20 requests,
 4 MiB and 25 seconds under the outer deadline. Only allowed same-origin GETs are

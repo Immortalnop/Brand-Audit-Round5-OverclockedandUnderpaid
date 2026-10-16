@@ -1,7 +1,11 @@
 {
   "name": "brand-ai-readiness-audit",
-  "version": "8.2.0",
+  "version": "8.5.2",
   "skills": [
+    {
+      "id": "audit",
+      "path": "skills/audit"
+    },
     {
       "id": "audit-orchestrator",
       "path": "skills/audit-orchestrator",

@@ -88,7 +88,8 @@ def test_confidence_credits_a_representative_sample():
     base = {"pages_discovered": 826, "pages_fetched_attempted": 50, "pages_analyzed": 49,
             "identity_confidence": 0.95}
     broad = overall_confidence({**base, "sections_discovered": 12, "sections_analyzed": 12}, "completed")
-    assert broad["score"] == 0.95 and broad["components"]["crawl_completeness"] == 0.06
+    # Brand identity is reported beside the score, not in it (Plan phase 4).
+    assert broad["score"] == 1.0 and broad["components"]["crawl_completeness"] == 0.06
     narrow = overall_confidence({**base, "sections_discovered": 12, "sections_analyzed": 3}, "completed")
     assert narrow["score"] == 0.25 and narrow["components"]["section_coverage"] == 0.25
     tiny = overall_confidence({**base, "pages_fetched_attempted": 5, "pages_analyzed": 5,

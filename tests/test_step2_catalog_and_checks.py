@@ -1,5 +1,6 @@
 """Step 2 regression coverage: one snapshot, catalog contract and calibrated ports."""
 import ast
+import codecs
 import json
 import sys
 from dataclasses import replace
@@ -13,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[1]
 for rel in ('common','skills/audit-orchestrator/scripts','skills/crawl-render-audit/scripts',
             'skills/freshness-corroboration/scripts','skills/engagement-audit/scripts'):
     sys.path.insert(0,str(ROOT/rel))
-from check_catalog import CATALOG, get_entry
+from check_catalog import CATALOG, RETIRED_CHECK_IDS, get_entry
 from constants import Limits
 from models import AuditArtifacts, freeze_value, make_deadline, hash_artifacts
 from transport import Response, Transport
@@ -61,7 +62,9 @@ def test_catalog_covers_static_and_dynamic_production_rules():
     declared.update('stale-dates:'+k for k in _CATEGORY_CALIBRATION)
     declared.update(('noindex','nosnippet'))
     declared.update('baseline:'+k for k in ('ai_discoverability','engagement','off_site_presence'))
-    assert declared == set(CATALOG), {'missing':declared-set(CATALOG),'unused':set(CATALOG)-declared}
+    # Retired IDs keep their entries for saved reports and are emitted by no script.
+    assert not declared & RETIRED_CHECK_IDS
+    assert declared | RETIRED_CHECK_IDS == set(CATALOG), {'missing':declared-set(CATALOG),'unused':set(CATALOG)-declared-RETIRED_CHECK_IDS}
     for check_id in declared:
         assert all(get_entry(check_id)[k].strip() for k in ('mechanism','implementation_detail','expected_outcome'))
 
@@ -86,7 +89,7 @@ def test_metadata_positive_cases(markup,expected):
     for f in result['findings']:
         entry=get_entry(f['check_id'])
         for field in entry:
-            assert f[field]==entry[field]
+            assert set(entry[field]) <= set(f["suggested_action"][field]) if field == "owner_roles" else f[field]==entry[field]
         assert f['affected_pages'] and f['evidence']
 
 def test_complete_metadata_relative_canonical_and_decorative_alt_are_accepted():
@@ -186,19 +189,47 @@ def test_every_emitted_check_id_resolves_after_merge_and_recommendations():
     try:
         report=run_audit(url+'/',allow_private_targets=True)
         assert report['coverage']['pages_analyzed']>0,report['warnings']
+        finding_ids={f['id'] for f in report['findings']}
         for f in report['findings']+report['recommendations']:
             assert f['check_id'] in CATALOG
             for rid in f.get('check_ids',[]):get_entry(rid)
-            for key,value in get_entry(f['check_id']).items():assert f[key]==value
+            if 'finding_id' in f:
+                # A link to a finding carries no catalog wording; the finding does.
+                assert f['finding_id'] in finding_ids
+                assert not {'mechanism','implementation_detail','expected_outcome'}&f.keys()
+                continue
+            for key,value in get_entry(f['check_id']).items():
+                assert set(value) <= set(f["suggested_action"][key]) if key == "owner_roles" else f[key]==value
         assert not any('Dropped' in w for w in report['warnings'])
         json.dumps(report,allow_nan=False)
     finally:stop()
 
 
+def _project_files():
+    """Files of the project: tracked or new, not git-ignored (local reports and
+    caches are not part of it). Without git, every file under the root."""
+    import subprocess
+    try:
+        out=subprocess.run(['git','ls-files','--cached','--others','--exclude-standard'],cwd=ROOT,
+                           capture_output=True,text=True,timeout=30,check=True).stdout
+        return [ROOT/line for line in out.splitlines() if line]
+    except (OSError,subprocess.SubprocessError):
+        return [p for p in ROOT.rglob('*') if '.git' not in p.parts]
+
+
+def _read_text(p):
+    """Text of a file written as UTF-8, UTF-8 with a BOM, or UTF-16 with a BOM."""
+    raw=p.read_bytes()
+    return raw.decode('utf-16') if raw.startswith((codecs.BOM_UTF16_LE,codecs.BOM_UTF16_BE)) else raw.decode('utf-8-sig')
+
+
 def test_no_em_dash_or_second_skill_orchestrator():
-    for p in ROOT.rglob('*'):
-        if p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
-            assert chr(0x2014) not in p.read_text(encoding='utf-8'),str(p)
+    for p in _project_files():
+        # Acquired examples and user-supplied research must preserve source
+        # Unicode and content hashes; this style rule applies to authored code.
+        owned = p.relative_to(ROOT).parts[0] in ('common','skills','tests') or p.name in ('README.md','marketplace.json')
+        if owned and p.is_file() and p.suffix in ('.py','.md','.txt','.json'):
+            assert chr(0x2014) not in _read_text(p),str(p)
     entry=(ROOT/'skills/audit-orchestrator/scripts/run_audit.py').read_text()
     assert 'subprocess.run(' not in entry and '--workdir' not in entry
 
@@ -266,9 +297,12 @@ def test_2_3_email_summary_readable_fires_on_image_carried_substance():
     from analyze_experience import analyze_experience
     imgs="<img src='a.png'><img src='b.png'><img src='c.png'>"
     html=("<html lang=\"en\"><head><title>T</title></head><body>"
-          "<form><input type='email'></form>"+imgs+"<p>Sign up.</p></body></html>")
+          "<form><input type='email'><button>Sign up</button></form>"+imgs+"<p>Sign up.</p></body></html>")
     result=analyze_experience(snapshot([page(html)]),make_deadline(LIMITS))
     assert 'email-summary-readable' in ids(result)
+    # A contact form also has an email field, but it is not an email subscription.
+    contact=html.replace("<button>Sign up</button>","<textarea name='message'></textarea><button>Send</button>")
+    assert 'email-summary-readable' not in ids(analyze_experience(snapshot([page(contact)]),make_deadline(LIMITS)))
 
 
 def test_2_4_baseline_recommendations_carry_rich_action_and_evidence_status():
@@ -351,7 +385,12 @@ def test_2_6_sample_report_exists_validates_and_is_clean():
     # Strict validation drops nothing from a clean sample.
     assert len(validated['findings'])==len(report['findings'])
     assert len(validated['recommendations'])==len(report['recommendations'])
+    finding_ids={f['id'] for f in validated['findings']}
     for item in validated['findings']+validated['recommendations']:
         assert item['check_id'] in CATALOG
+        if 'finding_id' in item:
+            # A link to a finding: the finding it names carries severity and type.
+            assert item['finding_id'] in finding_ids
+            continue
         if item['status']=='insufficient_evidence':
             assert item['severity']=='low' and item['finding_type']=='proactive_improvement'

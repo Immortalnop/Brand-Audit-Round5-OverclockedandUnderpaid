@@ -29,7 +29,9 @@ A `SkillResult` with engagement findings and metrics.
 
 ## Example
 
-A page with no inbound internal links (an orphan) produces:
+On a crawl that reached every discovered URL, a page with no inbound internal
+links (an orphan) produces the finding below. On a sampled crawl orphans and
+isolated clusters are counted in metrics, not reported, and a warning says so.
 
 ```json
 {"skill": "engagement-audit", "status": "success",
